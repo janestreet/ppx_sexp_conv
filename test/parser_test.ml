@@ -178,72 +178,86 @@ let grep pattern string =
   (* hopefully there is no need for escaping *)
   Sys.command ("echo '" ^ string ^ "' | grep -q '" ^ pattern ^ "'") = 0
 
+let round_trip_all_characters () =
+  let check_string s =
+    let s' =
+      let open Sexplib.Conv in
+      s |> sexp_of_string |> Sexp.to_string |> Sexp.of_string |> string_of_sexp
+    in
+    assert (s = s')
+  in
+  for i = 0 to 255 do
+    check_string (String.make 1 (Char.chr i))
+  done
+;;
+
 let () =
-  same_parse_tree _here_ "(a)" "(a;\n)"; (* single line comment in a list *)
-  same_parse_tree _here_ ";\nb" "b"; (* single line comment at toplevel *)
-  same_parse_tree _here_ ";;\nb" "b"; (* single line comment don't nest *)
-  same_parse_tree _here_ ";\"\nb" "b"; (* single line comment ignore quotes *)
-  same_parse_tree _here_ "(a#)" "(a#;\n)";
-  parse_fail _here_ "a#|"
+  round_trip_all_characters ();
+  same_parse_tree [%here] "(a)" "(a;\n)"; (* single line comment in a list *)
+  same_parse_tree [%here] ";\nb" "b"; (* single line comment at toplevel *)
+  same_parse_tree [%here] ";;\nb" "b"; (* single line comment don't nest *)
+  same_parse_tree [%here] ";\"\nb" "b"; (* single line comment ignore quotes *)
+  same_parse_tree [%here] "(a#)" "(a#;\n)";
+  parse_fail [%here] "a#|"
     (function
     | Failure s -> grep "comment tokens in unquoted atom" s
     | Sexp.Parse_error {Sexp.location = "maybe_parse_bad_atom_hash"; err_msg=_; parse_state=_ } -> true
     | _ -> false);
-  parse_fail _here_ "a|#"
+  parse_fail [%here] "a|#"
     (function
     | Failure s -> grep "comment tokens in unquoted atom" s
     | Sexp.Parse_error {Sexp.location = "maybe_parse_bad_atom_pipe"; err_msg=_; parse_state=_ } -> true
     | _ -> false);
-  parse_fail _here_ "##|"
+  parse_fail [%here] "##|"
     (function
     | Failure s -> grep "comment tokens in unquoted atom" s
     | Sexp.Parse_error {Sexp.location = "maybe_parse_bad_atom_hash"; err_msg=_; parse_state=_ } -> true
     | _ -> false);
-  parse_fail _here_ "||#"
+  parse_fail [%here] "||#"
     (function
     | Failure s -> grep "comment tokens in unquoted atom" s
     | Sexp.Parse_error {Sexp.location = "maybe_parse_bad_atom_pipe"; err_msg=_; parse_state=_ } -> true
     | _ -> false);
-  parse_fail _here_ "#|" (* not terminated *)
+  parse_fail [%here] "#|" (* not terminated *)
     (function
     | Failure s -> grep "incomplete" s || grep "unterminated" s
     | _ -> false);
-  parse_fail _here_ "|#" (* not started *)
+  parse_fail [%here] "|#" (* not started *)
     (function
     | Failure s -> grep "illegal end of comment" s
     | Sexp.Parse_error {Sexp.location = "maybe_parse_close_comment"; err_msg=_; parse_state=_ } -> true
     | _ -> false);
-  parse_fail _here_ ~no_following_sibling:true "#;" (* not followed *)
+  parse_fail [%here] ~no_following_sibling:true "#;" (* not followed *)
     (function
     | Sexp.Parse_error _ | Failure _ -> true
     | _ -> false);
 
-  same_parse_tree _here_ "#;a b" "b"; (* sexp comment + atom *)
-  same_parse_tree _here_ "#;((a)) b" "b"; (* sexp comment + list *)
-  same_parse_tree _here_ "#;\"#;\" b" "b"; (* sexp comment + quoted atom *)
-  same_parse_tree _here_ "#;a;comment\nb" "b"; (* sexp comment + single line commment *)
-  same_parse_tree _here_ "#;#|aa)|#comment b" "b"; (* sexp comment + block commment *)
-  same_parse_tree _here_ "#;a #;(a) #;\"asd\" b" "b"; (* consecutive sexp comment + atom *)
-  same_parse_tree _here_ "(#;a #;(a) #;b)" "()"; (* consecutive sexp comment + nothing *)
-  same_parse_tree _here_ "#; #; #; comment1 comment2 comment3 a" "a"; (* nested sexp comment *)
-  same_parse_tree _here_ "#| ; |# ()" "()"; (* single line comment are not parsed inside of blocks *)
-  same_parse_tree _here_ "#|#||#|#a" "a"; (* consecutive comment opening are not parsed
+  same_parse_tree [%here] "#;a b" "b"; (* sexp comment + atom *)
+  same_parse_tree [%here] "#;((a)) b" "b"; (* sexp comment + list *)
+  same_parse_tree [%here] "#;\"#;\" b" "b"; (* sexp comment + quoted atom *)
+  same_parse_tree [%here] "#;a;comment\nb" "b"; (* sexp comment + single line commment *)
+  same_parse_tree [%here] "#;#|aa)|#comment b" "b"; (* sexp comment + block commment *)
+  same_parse_tree [%here] "#;a #;(a) #;\"asd\" b" "b"; (* consecutive sexp comment + atom *)
+  same_parse_tree [%here] "(#;a #;(a) #;b)" "()"; (* consecutive sexp comment + nothing *)
+  same_parse_tree [%here] "#; #; #; comment1 comment2 comment3 a" "a"; (* nested sexp comment *)
+  same_parse_tree [%here] "#| ; |# ()" "()"; (* single line comment are not parsed inside of blocks *)
+  same_parse_tree [%here] "#|#||#|#a" "a"; (* consecutive comment opening are not parsed
                                              as one invalid atom *)
   (* why do we need a freaking space at the end?? *)
-  same_parse_trees _here_ "a #; b c " "a c ";  (* base case, accepting lists *)
-  same_parse_trees _here_ "#;#;a b c d " "c d "; (* leading comments work alright *)
-  same_parse_trees _here_ "#;#;a b " " "; (* leading comments work alright *)
-  same_parse_trees _here_ "plop #;#;a b " "plop "; (* trailing comments work alright *)
-  same_parse_trees _here_ "#;b " " "; (* leading comments in front of nothing *)
+  same_parse_trees [%here] "a #; b c " "a c ";  (* base case, accepting lists *)
+  same_parse_trees [%here] "#;#;a b c d " "c d "; (* leading comments work alright *)
+  same_parse_trees [%here] "#;#;a b " " "; (* leading comments work alright *)
+  same_parse_trees [%here] "plop #;#;a b " "plop "; (* trailing comments work alright *)
+  same_parse_trees [%here] "#;b " " "; (* leading comments in front of nothing *)
 
   (* making sure that '|' is still accepted in literals *)
-  same_parse_tree _here_ "(a|b)" "(\"a|b\")";
-  same_parse_tree _here_ "(a | b)" "(a \"|\" b)";
-  same_parse_tree _here_ "((a)|b)" "((a)\"|b\")";
-  same_parse_tree _here_ "(b|(a))" "(\"b|\"(a))";
-  same_parse_trees _here_ "a|b " "\"a|b\" ";
-  same_parse_trees _here_ "(a)|b " "(a)\"|b\" ";
-  same_parse_trees _here_ "b|(a)" "\"b|\"(a)";
+  same_parse_tree [%here] "(a|b)" "(\"a|b\")";
+  same_parse_tree [%here] "(a | b)" "(a \"|\" b)";
+  same_parse_tree [%here] "((a)|b)" "((a)\"|b\")";
+  same_parse_tree [%here] "(b|(a))" "(\"b|\"(a))";
+  same_parse_trees [%here] "a|b " "\"a|b\" ";
+  same_parse_trees [%here] "(a)|b " "(a)\"|b\" ";
+  same_parse_trees [%here] "b|(a)" "\"b|\"(a)";
   if !failures <> 0 then (
     Printf.printf "%d / %d tests failed\n%!" !failures !tests;
     exit 2

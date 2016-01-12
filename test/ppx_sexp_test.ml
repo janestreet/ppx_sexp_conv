@@ -2,27 +2,7 @@ open Sexplib
 open Sexp
 open Conv
 
-let debug = ref false
-type ('a, 'b) variant2 = 'a [@@deriving of_sexp]
-type variant3 = [ `B | ([ `C ], int) variant2 ] [@@deriving of_sexp]
-
-let () =
-  let not_deserializable = Atom "C" in
-  try ignore ([%of_sexp: variant3] not_deserializable);
-      failwith "Expected an exception about a silly type"
-  with Conv.Of_sexp_error (exn, sexp) ->
-    if !debug then (
-      let sexp1 = Conv.sexp_of_exn exn in
-      Printf.printf "Conv_error.Of_sexp_error (%s, %s)\n%!"
-        (Sexp.to_string sexp1)
-        (Sexp.to_string sexp)
-    )
-
-(* this one would trigger a warning in 4.0 about unused rec if type_conv
-   says that this definition is recursive *)
-type r = { r : int } [@@deriving sexp]
-
-module Arity_of_constructors = struct
+module Sum_and_polymorphic_variants = struct
   type poly =
     [ `No_arg
     | `One_arg of int
@@ -61,9 +41,152 @@ module Arity_of_constructors = struct
     ]
 end
 
+module Records = struct
+  type t =
+    { a : int
+    ; b : (float * string) list option
+    }
+  [@@deriving sexp]
+
+  let t = { a = 2; b = Some [(1., "a"); (2.3, "b")] }
+  let sexp = Sexp.of_string "((a 2)(b (((1 a)(2.3 b)))))"
+  let () = assert (t_of_sexp sexp = t)
+  let () = assert (sexp_of_t t = sexp)
+end
+
+module User_specified_conversion = struct
+  type my_float = float
+  let sexp_of_my_float n = Atom (Printf.sprintf "%.4f" n)
+  let my_float_of_sexp = float_of_sexp
+
+  let my_float : my_float = 1.2
+  let sexp = Sexp.Atom "1.2000"
+  let () = assert (my_float_of_sexp sexp = my_float)
+  let () = assert (sexp_of_my_float my_float = sexp)
+end
+
+module Exceptions : sig
+  exception E0 [@@deriving sexp]
+  exception E1 of string [@@deriving sexp]
+  exception E2 of string * int [@@deriving sexp]
+  exception E_tuple of (string * int) [@@deriving sexp]
+end = struct
+  exception E0 [@@deriving sexp]
+  exception E1 of string [@@deriving sexp]
+  exception E2 of string * int [@@deriving sexp]
+  exception E_tuple of (string * int) [@@deriving sexp]
+  let cases =
+    [ E0, "ppx_sexp_test.ml.Exceptions.E0"
+    ; E1 "a", "(ppx_sexp_test.ml.Exceptions.E1 a)"
+    ; E2 ("b", 2), "(ppx_sexp_test.ml.Exceptions.E2 b 2)"
+    ; E_tuple ("c", 3), "(ppx_sexp_test.ml.Exceptions.E_tuple(c 3))"
+    ]
+  let () =
+    List.iter (fun (exn, sexp_as_str) ->
+      let sexp = Sexp.of_string sexp_as_str in
+      assert ([%sexp_of: exn] exn = sexp);
+    ) cases
+
+end
+
+module Abtract_types_are_allowed_in_structures : sig
+  type t [@@deriving sexp]
+end = struct
+  type t [@@deriving sexp]
+end
+
+module Manifest_types = struct
+  type a = { t : int }
+  type b = a = { t : int }
+  [@@deriving sexp]
+end
+
+module Uses_of_exn = struct
+  type t = int * exn
+  [@@deriving sexp_of]
+end
+
+module Function_types : sig
+  type t1 = int -> unit [@@deriving sexp]
+  type t2 = label:int -> ?optional:int -> unit -> unit [@@deriving sexp]
+end = struct
+  type t1 = int -> unit
+  [@@deriving sexp]
+
+  type t2 = label:int -> ?optional:int -> unit -> unit
+  [@@deriving sexp]
+end
+
+module No_unused_rec = struct
+  type r = { r : int } [@@deriving sexp]
+end
+
 module Field_name_should_not_be_rewritten = struct
+  open No_unused_rec
   type nonrec r = { r : r }
   let _ = fun (r : r) -> r.r
+end
+
+module Polymorphic_variant_inclusion = struct
+  type sub1 = [ `C1 | `C2 ]
+  [@@deriving sexp]
+  type 'b sub2 = [ `C4 | `C5 of 'b ]
+  [@@deriving sexp]
+
+  type ('a, 'b) t =
+    [ sub1
+    | `C3 of [ `Nested of 'a ]
+    | 'b sub2
+    | `C6 ] option
+  [@@deriving sexp]
+
+  let cases : ((string * string, float) t * _) list =
+    [ None, "()"
+    ; Some `C1, "(C1)"
+    ; Some `C2, "(C2)"
+    ; Some (`C3 (`Nested ("a", "b"))), "((C3 (Nested (a b))))"
+    ; Some `C4, "(C4)"
+    ; Some (`C5 1.5), "((C5 1.5))"
+    ; Some `C6, "(C6)"
+    ]
+  let () =
+    List.iter (fun (t, sexp_as_str) ->
+      let sexp = Sexp.of_string sexp_as_str in
+      assert ([%of_sexp: (string * string, float) t] sexp = t);
+      assert ([%sexp_of: (string * string, float) t] t = sexp);
+    ) cases
+
+
+  type sub1_alias = sub1
+  [@@deriving sexp_poly]
+  type u = [ `A | sub1_alias | `D ]
+  [@@deriving sexp]
+
+  let cases : (u * _) list =
+    [ `A, "A"
+    ; `C1, "C1"
+    ; `C2, "C2"
+    ; `D, "D"
+    ]
+  let () =
+    List.iter (fun (u, sexp_as_str) ->
+      let sexp = Sexp.of_string sexp_as_str in
+      assert ([%of_sexp: u] sexp = u);
+      assert ([%sexp_of: u] u = sexp);
+    ) cases
+end
+
+module Polymorphic_record_field = struct
+  type 'x t =
+    { poly : 'a 'b. 'a list
+    ; maybe_x : 'x option
+    }
+  [@@deriving sexp]
+  let t x = { poly = []; maybe_x = Some x }
+  let sexp = Sexp.of_string "((poly ())(maybe_x (1)))"
+  let () = assert (t_of_sexp int_of_sexp sexp = t 1)
+  let () = assert (sexp_of_t sexp_of_int (t 1) = sexp)
+
 end
 
 module No_unused_value_warnings : sig end = struct
@@ -233,11 +356,14 @@ module True_and_false = struct
   let () = assert (False 2 = u_of_sexp (Sexp.of_string "(false 2)"))
 
   exception True [@@deriving sexp]
-  let () = assert ("pa_sexp_test.ml.True_and_false.True" = Sexp.to_string (sexp_of_exn True))
+  let () = assert ("ppx_sexp_test.ml.True_and_false.True" = Sexp.to_string (sexp_of_exn True))
 
   exception False of int [@@deriving sexp]
-  let () = assert ("(pa_sexp_test.ml.True_and_false.False 1)" = Sexp.to_string (sexp_of_exn (False 1)))
+  let () = assert ("(ppx_sexp_test.ml.True_and_false.False 1)" = Sexp.to_string (sexp_of_exn (False 1)))
 
+  type v = [ `True | `False of int ] [@@deriving sexp]
+  let () = assert (Sexp.to_string (sexp_of_v `True) = "True")
+  let () = assert (Sexp.to_string (sexp_of_v (`False 2)) = "(False 2)")
 end
 
 module Gadt = struct
@@ -310,4 +436,69 @@ module Private = struct
   type ('a, 'b) u = private t [@@deriving sexp_of]
 
   type ('a, 'b, 'c) v = private ('a, 'b) u [@@deriving sexp_of]
+end
+
+module Nonregular_types = struct
+  type 'a nonregular =
+    | Leaf of 'a
+    | Branch of ('a * 'a) nonregular
+  [@@deriving sexp]
+
+  type 'a variant = [ `A of 'a ] [@@deriving sexp]
+  type ('a, 'b) nonregular_with_variant =
+    | Branch of ([ | 'a list variant ], 'b) nonregular_with_variant
+  [@@deriving sexp]
+end
+
+module Magic_types = struct
+  type t =
+    { sexp_array : int sexp_array
+    ; sexp_list : int sexp_list
+    ; sexp_option : int sexp_option
+    ; sexp_bool : sexp_bool
+    }
+  [@@deriving sexp]
+
+  let sexp = Sexp.of_string "()"
+  let t =
+    { sexp_array = [||]
+    ; sexp_list = []
+    ; sexp_option = None
+    ; sexp_bool = false
+    }
+  let () = assert (t_of_sexp sexp = t)
+  let () = assert (sexp_of_t t = sexp)
+
+  let sexp =
+    Sexp.of_string "((sexp_array (1 2))\
+                     (sexp_list (3 4))\
+                     (sexp_option 5)\
+                     (sexp_bool))"
+  let t =
+    { sexp_array = [|1; 2|]
+    ; sexp_list = [3; 4]
+    ; sexp_option = Some 5
+    ; sexp_bool = true
+    }
+  let () = assert (t_of_sexp sexp = t)
+  let () = assert (sexp_of_t t = sexp)
+
+
+  type u =
+    | A of int sexp_list
+  [@@deriving sexp]
+  type v =
+    [ `A of int sexp_list ]
+  [@@deriving sexp]
+  let sexp = Sexp.of_string "(A 1 2 3)"
+  let u = A [1; 2; 3]
+  let v = `A [1; 2; 3]
+  let () = assert (u_of_sexp sexp = u)
+  let () = assert (sexp_of_u u = sexp)
+  let () = assert (v_of_sexp sexp = v)
+  let () = assert (sexp_of_v v = sexp)
+end
+
+module Variance = struct
+  type (+'a, -'b, 'c, +_, -_, _) t [@@deriving sexp]
 end

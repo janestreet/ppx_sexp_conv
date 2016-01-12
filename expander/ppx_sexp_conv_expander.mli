@@ -1,49 +1,55 @@
+open Asttypes
 open Parsetree
+open Ppx_core.Std
 
-(** [sexp_of ty] is an expression of type [ty -> Sexp.t] *)
-val sexp_of : core_type -> expression
+module Attrs : sig
+  val default      : (label_declaration, expression) Attribute.t
+  val drop_default : (label_declaration, unit      ) Attribute.t
+  val drop_if      : (label_declaration, expression) Attribute.t
+end
 
-(**/**)
+module Sexp_of : sig
+  val core_type : core_type -> expression
 
-module Internal : sig
-  module Renaming : sig
-    type t
-    val identity : t
-    type binding_kind =
-      | Universally_bound of string
-      | Existentially_bound
-    val binding_kind : t -> string -> binding_kind
-    val of_gadt : string list -> constructor_declaration -> t
-  end
-
-  module Fun_or_match : sig
-    type t =
-      | Fun   of expression
-      | Match of case list
-
-    val expr : loc:Location.t -> t -> expression
-    val unroll : loc:Location.t -> expression -> t -> expression
-    val map_tmp_vars
-      :  loc:Location.t
-      -> t list
-      -> value_binding list * pattern list * expression list
-  end
-
-  val sexp_of_type    : Renaming.t -> core_type                     -> Fun_or_match.t
-  val sexp_of_variant : Renaming.t -> (Location.t * row_field list) -> Fun_or_match.t
-
-  val type_of_sexp : core_type -> Fun_or_match.t
-  val variant_of_sexp
-    :  ?full_type:core_type
-    -> (Location.t * row_field list)
-    -> Fun_or_match.t
-
-  val mk_cnstr_args_match
+  val sig_type_decl
     :  loc:Location.t
-    -> is_variant:bool
-    -> string
-    -> core_type list
-    -> expression
+    -> path:string
+    -> rec_flag * type_declaration list
+    -> signature
 
-  val replace_variables_by_underscores : core_type -> core_type
+  val sig_exception
+    :  loc:Location.t
+    -> path:string
+    -> extension_constructor
+    -> signature
+
+  val str_type_decl
+    :  loc:Location.t
+    -> path:string
+    -> rec_flag * type_declaration list
+    -> structure
+
+  val str_exception
+    :  loc:Location.t
+    -> path:string
+    -> extension_constructor
+    -> structure
+end
+
+module Of_sexp : sig
+  val core_type : path:string -> core_type -> expression
+
+  val sig_type_decl
+    :  poly:bool
+    -> loc:Location.t
+    -> path:string
+    -> rec_flag * type_declaration list
+    -> signature
+
+  val str_type_decl
+    :  loc:Location.t
+    -> poly:bool
+    -> path:string
+    -> rec_flag * type_declaration list
+    -> structure
 end
