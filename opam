@@ -10,11 +10,11 @@ build: [
   [make]
 ]
 depends: [
-  "ocamlbuild" {build}
-  "oasis"      {build & >= "0.4"}
-  "ocamlfind"  {build & >= "1.3.2"}
+  "ocamlbuild"    {build}
+  "oasis"         {build & >= "0.4"}
+  "ocamlfind"     {build & >= "1.3.2"}
   "ppx_core"
-  "ppx_tools"
+  "ppx_tools"     {>= "0.99.3"}
   "ppx_type_conv"
   "sexplib"
 ]

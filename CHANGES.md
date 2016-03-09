@@ -1,3 +1,11 @@
+## 113.33.00
+
+- Clean up the documentation for sexplib, modernizing it to include
+  `ppx_sexp_conv`, and breaking up the documentation between sexplib and
+  `ppx_sexp_conv`.  Also changed the formatting to use org-mode, so it
+  will render properly on github.  Markdown doesn't render well by
+  default, unless you use quite different conventions about linebeaks.
+
 ## 113.24.00
 
 - Trying to improve the tests in ppx\_sexp\_conv because they are a mess.
