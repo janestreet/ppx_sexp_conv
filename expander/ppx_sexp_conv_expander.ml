@@ -724,7 +724,7 @@ module Str_generate_sexp_of = struct
   let sexp_of_tds ~loc ~path:_ (rec_flag, tds) =
     let rec_flag = really_recursive rec_flag tds in
     let bindings = List.map tds ~f:sexp_of_td |> List.concat in
-    [pstr_value ~loc rec_flag bindings]
+    pstr_value_list ~loc rec_flag bindings
 
   let sexp_of_exn ~loc:_ ~path ec =
     let renaming = Renaming.identity in
@@ -1486,13 +1486,14 @@ module Str_generate_of_sexp = struct
               internals @ externals)
             |> List.concat
           in
-          [pstr_value ~loc Recursive bindings]
+          pstr_value_list ~loc Recursive bindings
         | Nonrecursive ->
           let bindings =
             List.map tds ~f:(fun td ->
               let internals,externals = td_of_sexp ~loc ~poly ~path td in
-              [pstr_value ~loc Nonrecursive internals;
-               pstr_value ~loc Nonrecursive externals])
+              pstr_value_list ~loc Nonrecursive internals @
+              pstr_value_list ~loc Nonrecursive externals
+            )
             |> List.concat
           in
           bindings
@@ -1503,7 +1504,7 @@ module Str_generate_of_sexp = struct
             internals @ externals)
           |> List.concat
         in
-        [pstr_value ~loc rec_flag bindings]
+        pstr_value_list ~loc rec_flag bindings
     end
 
   let type_of_sexp ~path ctyp =
