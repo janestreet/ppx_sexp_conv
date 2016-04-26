@@ -2,26 +2,30 @@ version = "$(pkg_version)"
 description = "Generation of S-expression conversion functions from type definitions"
 requires(-ppx_driver) = "ppx_core.for_ppx_deriving ppx_sexp_conv.expander.for_ppx_deriving ppx_type_conv.for_ppx_deriving sexplib"
 requires(ppx_driver) = "ppx_core ppx_sexp_conv.expander ppx_type_conv"
-archive(ppx_driver, byte          ) = "ppx_sexp_conv.cma"
-archive(ppx_driver, native        ) = "ppx_sexp_conv.cmxa"
-archive(ppx_driver, native, plugin) = "ppx_sexp_conv.cmxs"
+requires(ppx_driver,toploop) += "sexplib"
+archive(ppx_driver, byte  ) = "ppx_sexp_conv.cma"
+archive(ppx_driver, native) = "ppx_sexp_conv.cmxa"
+plugin(ppx_driver, byte  ) = "ppx_sexp_conv.cma"
+plugin(ppx_driver, native) = "ppx_sexp_conv.cmxs"
 exists_if = "ppx_sexp_conv.cma"
-ppxopt(-ppx_driver) = "ppx_deriving,./ppx_sexp_conv.cma"
+ppxopt(-ppx_driver,-custom_ppx) = "ppx_deriving,./ppx_sexp_conv.cma"
 
 package "expander" (
   version = "$(pkg_version)"
   description = "Expander for ppx_sexp_conv"
   requires = "ppx_core"
-  archive(byte          ) = "ppx_sexp_conv_expander.cma"
-  archive(native        ) = "ppx_sexp_conv_expander.cmxa"
-  archive(native, plugin) = "ppx_sexp_conv_expander.cmxs"
+  archive(byte  ) = "ppx_sexp_conv_expander.cma"
+  archive(native) = "ppx_sexp_conv_expander.cmxa"
+  plugin(byte  ) = "ppx_sexp_conv_expander.cma"
+  plugin(native) = "ppx_sexp_conv_expander.cmxs"
   exists_if = "ppx_sexp_conv_expander.cma"
 
+  # Until this is released: https://github.com/whitequark/ppx_deriving/pull/95
   package "for_ppx_deriving" (
     description = "Don't use this directly"
     error(ppx_driver) = "Cannot use ppx_sexp_conv.expander.for_ppx_deriving when ppx_driver is set"
     requires = "ppx_core.for_ppx_deriving ppx_deriving"
     exists_if = "ppx_sexp_conv_expander.cma"
-    ppxopt = "ppx_deriving,./ppx_sexp_conv_expander.cma"
+    ppxopt(-custom_ppx) = "ppx_deriving,./ppx_sexp_conv_expander.cma"
   )
 )
