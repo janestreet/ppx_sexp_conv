@@ -502,3 +502,11 @@ end
 module Variance = struct
   type (+'a, -'b, 'c, +_, -_, _) t [@@deriving sexp]
 end
+
+module Clash = struct
+  (* Same name for type-var and type-name; must be careful when introducing rigid type names. *)
+  type 'hey hey = Hey of 'hey [@@deriving sexp]
+  type 'hey rigid_hey = Hey of 'hey [@@deriving sexp]
+  type ('foo,'rigid_foo) foo = Foo of 'foo [@@deriving sexp]
+  type 'rigid_bar rigid_rigid_bar = Bar [@@deriving sexp]
+end

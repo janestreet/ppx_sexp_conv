@@ -8,6 +8,13 @@ open Ast_builder.Default
 [@@@metaloc loc]
 
 module StringMap = Map.Make(String)
+module String = struct
+  include String
+  let is_prefix s ~prefix =
+    String.length prefix <= String.length s
+    && String.sub s ~pos:0 ~len:(String.length prefix) = prefix
+  ;;
+end
 
 let ( --> ) lhs rhs = case ~guard:None ~lhs ~rhs
 
@@ -200,13 +207,20 @@ let name_type_params_in_td (td : type_declaration) : type_declaration =
   in
   { td with ptype_params = List.map td.ptype_params ~f:name_param }
 
-let make_type_rigid =
+let rigid_type_var ~type_name x =
+  let prefix = "rigid_" in
+  if x = type_name || String.is_prefix x ~prefix
+  then prefix ^ x ^ "_of_type_" ^ type_name
+  else x
+
+let make_type_rigid ~type_name =
   let map = object
     inherit Ast_traverse.map as super
     method! core_type ty =
       let ptyp_desc =
         match ty.ptyp_desc with
-        | Ptyp_var s -> Ptyp_constr (Located.lident ~loc:ty.ptyp_loc s, [])
+        | Ptyp_var s ->
+          Ptyp_constr (Located.lident ~loc:ty.ptyp_loc (rigid_type_var ~type_name s), [])
         | desc -> super#core_type_desc desc
       in
       { ty with ptyp_desc }
@@ -250,9 +264,10 @@ let constrained_function_binding = fun
     in
     if use_rigid_variables
     then
+      let type_name = td.ptype_name.txt in
       List.fold_right tps
-        ~f:(pexp_newtype ~loc)
-        ~init:(pexp_constraint ~loc body (make_type_rigid typ))
+        ~f:(fun tp body -> pexp_newtype ~loc (rigid_type_var ~type_name tp) body)
+        ~init:(pexp_constraint ~loc body (make_type_rigid ~type_name typ))
     else
       if has_vars
       then body
@@ -721,7 +736,7 @@ module Str_generate_sexp_of = struct
   let sexp_of_tds ~loc ~path:_ (rec_flag, tds) =
     let rec_flag = really_recursive rec_flag tds in
     let bindings = List.map tds ~f:sexp_of_td |> List.concat in
-    [pstr_value ~loc rec_flag bindings]
+    pstr_value_list ~loc rec_flag bindings
 
   let sexp_of_exn ~loc:_ ~path ec =
     let renaming = Renaming.identity in
@@ -1479,13 +1494,14 @@ module Str_generate_of_sexp = struct
               internals @ externals)
             |> List.concat
           in
-          [pstr_value ~loc Recursive bindings]
+          pstr_value_list ~loc Recursive bindings
         | Nonrecursive ->
           let bindings =
             List.map tds ~f:(fun td ->
               let internals,externals = td_of_sexp ~loc ~poly ~path td in
-              [pstr_value ~loc Nonrecursive internals;
-               pstr_value ~loc Nonrecursive externals])
+              pstr_value_list ~loc Nonrecursive internals @
+              pstr_value_list ~loc Nonrecursive externals
+            )
             |> List.concat
           in
           bindings
@@ -1496,7 +1512,7 @@ module Str_generate_of_sexp = struct
             internals @ externals)
           |> List.concat
         in
-        [pstr_value ~loc rec_flag bindings]
+        pstr_value_list ~loc rec_flag bindings
     end
 
   let type_of_sexp ~path ctyp =

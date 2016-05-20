@@ -41,11 +41,17 @@ let parsers = [
           | Sexp.Cont_state.Parsing_atom -> begin
             match parse_fun ~pos:0 ~len:1 " " with
             | Sexp.Done (t, _) -> t
-            | Sexp.Cont _ -> failwith "Should have reached the end2"
+            | Sexp.Cont (Sexp.Cont_state.Parsing_atom, _) ->
+              failwith "incomplete quoted atom"
+            | Sexp.Cont _ ->
+              failwith "Should have reached the end2"
           end
           | Sexp.Cont_state.Parsing_sexp_comment
           | Sexp.Cont_state.Parsing_block_comment
-          | Sexp.Cont_state.Parsing_whitespace -> failwith "incomplete"
+          | Sexp.Cont_state.Parsing_toplevel_whitespace ->
+            failwith "string contains no sexp"
+          | Sexp.Cont_state.Parsing_nested_whitespace ->
+            failwith "incomplete"
           | Sexp.Cont_state.Parsing_list -> failwith "Should have reached the end3"
         else aux parse_fun (pos + 1) in
       aux_cont pos cont_state parse_fun
@@ -218,10 +224,66 @@ let () =
     | Failure s -> grep "comment tokens in unquoted atom" s
     | Sexp.Parse_error {Sexp.location = "maybe_parse_bad_atom_pipe"; err_msg=_; parse_state=_ } -> true
     | _ -> false);
-  parse_fail [%here] "#|" (* not terminated *)
+  parse_fail_trees [%here] "#|" (* not terminated *)
+    (function
+      | Failure s ->
+        grep "incomplete" s || grep "unterminated" s
+        || grep "reached EOF while in state" s
+    | _ -> false);
+  parse_fail_trees [%here] "\"" (* unterminated quoted atom *)
+    (function
+      | Failure s ->
+        grep "incomplete" s || grep "unterminated" s
+        || grep "reached EOF while in state" s
+      | _ -> false);
+  parse_fail_trees ~no_following_sibling:true [%here] "\"\\"
+    (function
+      | Failure s ->
+        grep "incomplete" s || grep "unterminated" s || grep "empty token" s
+        || grep "reached EOF while in state" s
+      | _ -> false);
+  parse_fail_trees ~no_following_sibling:true [%here] "\"\\\n"
+    (function
+      | Failure s ->
+        grep "incomplete" s || grep "unterminated" s || grep "empty token" s
+        || grep "reached EOF while in state" s
+      | _ -> false);
+  parse_fail_trees ~no_following_sibling:true [%here] "\"\\\013"
+    (function
+      | Failure s ->
+        grep "incomplete" s || grep "unterminated" s || grep "empty token" s
+        || grep "reached EOF while in state" s
+      | _ -> false);
+  parse_fail_trees ~no_following_sibling:true [%here] "\"\\0"
+    (function
+      | Failure s ->
+        grep "incomplete" s || grep "unterminated" s
+        || grep "reached EOF while in state" s
+      | Sexp.Parse_error {Sexp.location = "parse_dec"; _ } -> true
+      | _ -> false);
+  parse_fail_trees ~no_following_sibling:true [%here] "\"\\x"
+    (function
+      | Failure s ->
+        grep "incomplete" s || grep "unterminated" s
+        || grep "reached EOF while in state" s
+      | Sexp.Parse_error {Sexp.location = "parse_hex"; _ } -> true
+      | _ -> false);
+  parse_fail [%here] "\"hello" (* unterminated quoted atom *)
     (function
     | Failure s -> grep "incomplete" s || grep "unterminated" s
     | _ -> false);
+  parse_fail [%here] "\013x" (* weird newline *)
+    (function
+      | Failure s -> grep "unexpected character" s || grep "empty token" s
+      | Sexp.Parse_error { location = "parse_nl"; err_msg = _; parse_state = _; } -> true
+      | _ -> false);
+  parse_fail_trees [%here] "\013" (* trailing weird newline *)
+    (function
+      | Failure s ->
+        grep "incomplete" s || grep "empty token" s
+        || grep "reached EOF while in state" s
+      | Sexp.Parse_error { location = "parse_nl"; err_msg = _; parse_state = _; } -> true
+      | _ -> false);
   parse_fail [%here] "|#" (* not started *)
     (function
     | Failure s -> grep "illegal end of comment" s
