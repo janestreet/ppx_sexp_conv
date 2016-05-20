@@ -1,3 +1,7 @@
+## 113.43.00
+
+- Fix generator for polymorphic types where var names clashes with type name: `type 't t = ...`
+
 ## 113.33.00
 
 - Clean up the documentation for sexplib, modernizing it to include
