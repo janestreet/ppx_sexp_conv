@@ -417,7 +417,7 @@ module Str_generate_sexp_of = struct
     | { ptyp_desc = Ptyp_package _; _ }
     | { ptyp_desc = Ptyp_extension _; _ }
       ->
-      Location.raise_errorf ~loc "unknown type"
+      Location.raise_errorf ~loc "Type unsupported for ppx [sexp_of] conversion"
 
   (* Conversion of tuples *)
   and sexp_of_tuple renaming (loc,tps) =
@@ -897,7 +897,7 @@ module Str_generate_of_sexp = struct
     | { ptyp_desc = Ptyp_alias (_, _); _ }
     | { ptyp_desc = Ptyp_package _; _ }
     | { ptyp_desc = Ptyp_extension _; _ }
-      -> Location.raise_errorf ~loc "unknown type"
+      -> Location.raise_errorf ~loc "Type unsupported for ppx [of_sexp] conversion"
 
   (* Conversion of tuples *)
   and tuple_of_sexp (loc,tps) =
