@@ -18,6 +18,24 @@ end
 
 let ( --> ) lhs rhs = case ~guard:None ~lhs ~rhs
 
+(* Simplifies match cases, for readability of the generated code. It's not obvious we can
+   stick this in ppx_core, as (match e1 with p -> e2) and (let p = e1 in e2) are not typed
+   exactly the same (type inference goes in different order, meaning type disambiguation
+   differs). *)
+let pexp_match ~loc expr cases =
+  match cases with
+  | [{ pc_lhs; pc_guard = None; pc_rhs }] ->
+    begin match pc_lhs, expr with
+    | { ppat_attributes = []; ppat_desc = Ppat_var { txt = ident; _ }; _ },
+      { pexp_attributes = []; pexp_desc = Pexp_ident { txt = Lident ident'; _ }; _ }
+      when ident = ident' -> pc_rhs
+    | _ ->
+      pexp_let ~loc Nonrecursive
+        [value_binding ~loc ~pat:pc_lhs ~expr]
+        pc_rhs
+    end
+  | _ -> pexp_match ~loc expr cases
+
 module Attrs = struct
   let default =
     Attribute.declare "sexp.default"
@@ -790,7 +808,7 @@ module Str_generate_of_sexp = struct
 
   (* Handle backtracking when variants do not match *)
   let handle_no_variant_match loc expr =
-    [[%pat? Sexplib.Conv_error.No_variant_match _] --> expr]
+    [[%pat? Sexplib.Conv_error.No_variant_match] --> expr]
 
   (* Generate code depending on whether to generate a match for the last
      case of matching a variant *)
@@ -812,7 +830,7 @@ module Str_generate_of_sexp = struct
       :: acc
     in
     let exc_no_variant_match =
-      [%pat? _] --> [%expr Sexplib.Conv_error.no_variant_match _tp_loc _sexp]
+      [%pat? _] --> [%expr Sexplib.Conv_error.no_variant_match ()]
     in
     List.fold_left ~f:coll_structs ~init:[exc_no_variant_match] rev_els
 
@@ -1076,7 +1094,7 @@ module Str_generate_of_sexp = struct
           fun sexp ->
             try [%e pexp_match ~loc [%expr sexp] top_match]
             with
-              Sexplib.Conv_error.No_variant_match (_tp_loc, sexp) ->
+              Sexplib.Conv_error.No_variant_match ->
               Sexplib.Conv_error.no_matching_variant_found _tp_loc sexp
         ]
     else Match top_match
@@ -1449,7 +1467,7 @@ module Str_generate_of_sexp = struct
         if create_internal_function
         then
           let no_variant_match_mc =
-            [ [%pat? Sexplib.Conv_error.No_variant_match (_tp_loc, sexp)] -->
+            [ [%pat? Sexplib.Conv_error.No_variant_match] -->
               [%expr Sexplib.Conv_error.no_matching_variant_found _tp_loc sexp]
             ]
           in
@@ -1458,7 +1476,7 @@ module Str_generate_of_sexp = struct
             eapply ~loc internal_expr (arg_exprs @ [ [%expr sexp] ])
           in
           let try_with = pexp_try ~loc internal_call no_variant_match_mc in
-          false, [%expr fun sexp -> [%e try_with]]
+          false, bind_tp_loc_in [%expr fun sexp -> [%e try_with]]
         else
           true, body
       in
