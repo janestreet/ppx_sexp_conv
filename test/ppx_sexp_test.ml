@@ -54,6 +54,20 @@ module Records = struct
   let () = assert (sexp_of_t t = sexp)
 end
 
+module Inline_records = struct
+  type t =
+    | A of { a : int
+           ; b : (float * string) list option
+           }
+    | B of int
+  [@@deriving sexp]
+
+  let t = A { a = 2; b = Some [(1., "a"); (2.3, "b")] }
+  let sexp = Sexp.of_string "(A (a 2)(b (((1 a)(2.3 b)))))"
+  let () = assert (t_of_sexp sexp = t)
+  let () = assert (sexp_of_t t = sexp)
+end
+
 module User_specified_conversion = struct
   type my_float = float
   let sexp_of_my_float n = Atom (Printf.sprintf "%.4f" n)
@@ -70,16 +84,19 @@ module Exceptions : sig
   exception E1 of string [@@deriving sexp]
   exception E2 of string * int [@@deriving sexp]
   exception E_tuple of (string * int) [@@deriving sexp]
+  exception E_record of {a:string; b:int} [@@deriving sexp]
 end = struct
   exception E0 [@@deriving sexp]
   exception E1 of string [@@deriving sexp]
   exception E2 of string * int [@@deriving sexp]
   exception E_tuple of (string * int) [@@deriving sexp]
+  exception E_record of {a:string; b:int} [@@deriving sexp]
   let cases =
     [ E0, "ppx_sexp_test.ml.Exceptions.E0"
     ; E1 "a", "(ppx_sexp_test.ml.Exceptions.E1 a)"
     ; E2 ("b", 2), "(ppx_sexp_test.ml.Exceptions.E2 b 2)"
     ; E_tuple ("c", 3), "(ppx_sexp_test.ml.Exceptions.E_tuple(c 3))"
+    ; E_record {a="c"; b= 3}, "(ppx_sexp_test.ml.Exceptions.E_record(a c)(b 3))"
     ]
   let () =
     List.iter (fun (exn, sexp_as_str) ->

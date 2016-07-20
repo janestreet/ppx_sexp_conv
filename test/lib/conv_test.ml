@@ -48,5 +48,10 @@ module Exceptions = struct
     Gc.compact ();
     match !ref_for_copy_of_e with
     | None -> failwith "finalizer should have run"
-    | Some e -> sexp_of_exn_opt e = None
+    | Some e ->
+      let r = sexp_of_exn_opt e in
+      match r with
+      | None -> true
+      | Some sexp ->
+        failwith (Printf.sprintf "Unexpected result %s" (Sexplib.Sexp.to_string sexp))
 end

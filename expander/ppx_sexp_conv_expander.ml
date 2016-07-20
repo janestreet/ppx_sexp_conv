@@ -308,10 +308,6 @@ let combinator_type_of_td ~f td =
   let td = name_type_params_in_td td in
   combinator_type_of_type_declaration td ~f
 
-let inline_records_are_unsupported ~loc =
-  Location.raise_errorf ~loc "ppx_sexp_conv: inline records are not supported yet"
-;;
-
 (* Generates the signature for type conversion to S-expressions *)
 module Sig_generate_sexp_of = struct
   let mk_type td =
@@ -518,46 +514,6 @@ module Str_generate_sexp_of = struct
             (pexp_match ~loc [%expr arg] matchings)
         ]
 
-  (* Conversion of sum types *)
-
-  let branch_sum tvars cds =
-    List.map cds ~f:(fun cd ->
-      let renaming = Renaming.of_gadt tvars cd in
-      let loc = cd.pcd_loc in
-      let cnstr = cd.pcd_name in
-      let lid = Located.map lident cnstr in
-      let str = estring ~loc cnstr.txt in
-      match cd.pcd_args with
-      | Pcstr_record _ -> inline_records_are_unsupported ~loc
-      | Pcstr_tuple pcd_args ->
-        match pcd_args with
-        | [] ->
-          ppat_construct ~loc lid None --> [%expr Sexplib.Sexp.Atom [%e str]]
-        | args ->
-          match args with
-          | [ [%type: [%t? tp] sexp_list ] ] ->
-            let cnv_expr = Fun_or_match.expr ~loc (sexp_of_type renaming tp) in
-            ppat_construct ~loc lid (Some [%pat? l]) -->
-            [%expr
-              Sexplib.Sexp.List
-                (Sexplib.Sexp.Atom [%e str] ::
-                 Sexplib.Conv.list_map [%e cnv_expr] l)]
-          | _ ->
-            let sexp_of_args = List.map ~f:(sexp_of_type renaming) args in
-            let cnstr_expr = [%expr Sexplib.Sexp.Atom [%e str] ] in
-            let bindings, patts, vars = Fun_or_match.map_tmp_vars ~loc sexp_of_args in
-            let patt =
-              match patts with
-              | [patt] -> patt
-              | _ -> ppat_tuple ~loc patts
-            in
-            ppat_construct ~loc lid (Some patt) -->
-            pexp_let ~loc Nonrecursive bindings
-              [%expr Sexplib.Sexp.List [%e elist ~loc (cnstr_expr :: vars)]]
-      )
-
-  let sexp_of_sum tps cds = Fun_or_match.Match (branch_sum tps cds)
-
   (* Conversion of record types *)
 
   let mk_rec_patt loc patt name =
@@ -601,7 +557,7 @@ module Str_generate_sexp_of = struct
     sexp_of_record_field patt expr name tp ?sexp_of
       (fun loc expr -> [%expr  Pervasives.(=) [%e default] [%e expr] ])
 
-  let sexp_of_record (loc,flds) : Fun_or_match.t =
+  let sexp_of_label_declaration_list loc flds ~wrap_expr =
     let renaming = Renaming.identity in
     let list_empty_expr loc lst =
       [%expr
@@ -689,13 +645,66 @@ module Str_generate_sexp_of = struct
           patt, expr
         end
     in
-    let init_expr = [%expr  Sexplib.Sexp.List bnds ] in
+    let init_expr = wrap_expr [%expr bnds] in
     let patt, expr =
       List.fold_left ~f:coll ~init:([], init_expr) flds
     in
-    Match
-      [ ppat_record ~loc patt Closed --> [%expr let bnds = [] in [%e expr]]
-      ]
+    ppat_record ~loc patt Closed, [%expr let bnds = [] in [%e expr]]
+
+  (* Conversion of sum types *)
+
+  let branch_sum renaming ~loc constr_lid constr_str args =
+    match args with
+    | Pcstr_record lds ->
+      let cnstr_expr = [%expr Sexplib.Sexp.Atom [%e constr_str] ] in
+      let patt, expr =
+        (* Uncomment to wrap record *)
+        (* sexp_of_label_declaration_list loc lds
+         *   ~wrap_expr:(fun expr ->
+         *     [%expr Sexplib.Sexp.List [ [%e cnstr_expr];
+         *                                Sexplib.Sexp.List [%e expr]
+         *                              ]
+         *     ]) *)
+        sexp_of_label_declaration_list loc lds
+          ~wrap_expr:(fun expr ->
+            [%expr Sexplib.Sexp.List ([%e cnstr_expr] :: [%e expr])])
+      in
+      ppat_construct ~loc constr_lid (Some patt) --> expr
+    | Pcstr_tuple pcd_args ->
+      match pcd_args with
+      | [] ->
+        ppat_construct ~loc constr_lid None --> [%expr Sexplib.Sexp.Atom [%e constr_str]]
+      | args ->
+        match args with
+        | [ [%type: [%t? tp] sexp_list ] ] ->
+          let cnv_expr = Fun_or_match.expr ~loc (sexp_of_type renaming tp) in
+          ppat_construct ~loc constr_lid (Some [%pat? l]) -->
+          [%expr
+            Sexplib.Sexp.List
+              (Sexplib.Sexp.Atom [%e constr_str] ::
+               Sexplib.Conv.list_map [%e cnv_expr] l)]
+        | _ ->
+          let sexp_of_args = List.map ~f:(sexp_of_type renaming) args in
+          let cnstr_expr = [%expr Sexplib.Sexp.Atom [%e constr_str] ] in
+          let bindings, patts, vars = Fun_or_match.map_tmp_vars ~loc sexp_of_args in
+          let patt =
+            match patts with
+            | [patt] -> patt
+            | _ -> ppat_tuple ~loc patts
+          in
+          ppat_construct ~loc constr_lid (Some patt) -->
+          pexp_let ~loc Nonrecursive bindings
+            [%expr Sexplib.Sexp.List [%e elist ~loc (cnstr_expr :: vars)]]
+
+  let sexp_of_sum tps cds =
+    Fun_or_match.Match (
+      List.map cds ~f:(fun cd ->
+        let renaming = Renaming.of_gadt tps cd in
+        let constr_lid = Located.map lident cd.pcd_name in
+        let constr_str = estring ~loc:cd.pcd_name.loc cd.pcd_name.txt in
+        branch_sum renaming ~loc:cd.pcd_loc constr_lid constr_str cd.pcd_args
+      )
+    )
 
   (* Empty type *)
   let sexp_of_nil loc = Fun_or_match.Fun [%expr  fun _v -> assert false ]
@@ -710,7 +719,11 @@ module Str_generate_sexp_of = struct
       let body =
         match td.ptype_kind with
         | Ptype_variant cds -> sexp_of_sum tps cds
-        | Ptype_record  lds -> sexp_of_record (loc,lds)
+        | Ptype_record  lds ->
+          let patt, expr =
+            sexp_of_label_declaration_list loc lds
+              ~wrap_expr:(fun expr -> [%expr Sexplib.Sexp.List [%e expr]]) in
+          Match [patt --> expr]
         | Ptype_open -> Location.raise_errorf ~loc
                           "ppx_sexp_conv: open types not supported"
         | Ptype_abstract ->
@@ -769,40 +782,19 @@ module Str_generate_sexp_of = struct
     let loc = ec.pext_name.loc in
     let expr =
       match ec with
-      | {pext_name = {loc; txt = cnstr};
-         pext_kind = Pext_decl (Pcstr_tuple [], None); _;} ->
+      | {pext_name = cnstr;
+         pext_kind = Pext_decl (extension_constructor_kind, None); _;} ->
+        let constr_lid = Located.map lident cnstr in
+        let converter = branch_sum renaming ~loc
+                          constr_lid
+                          (estring ~loc (get_full_cnstr cnstr.txt))
+                          extension_constructor_kind in
+        let assert_false = ppat_any ~loc --> [%expr assert false] in
         [%expr
-            Sexplib.Exn_magic.register [%e pexp_construct ~loc
-                                             (Located.lident ~loc cnstr) None]
-            [%e estring ~loc (get_full_cnstr cnstr)]
+          Sexplib.Conv.Exn_converter.add
+            [%extension_constructor [%e pexp_construct ~loc constr_lid None]]
+            [%e Fun_or_match.expr ~loc (Match [converter; assert_false])]
         ]
-      | {pext_name = {loc; txt = cnstr};
-         pext_kind = Pext_decl (Pcstr_tuple ((_::_) as tps), None); _;} ->
-        let fps = List.map ~f:(fun tp -> sexp_of_type renaming tp) tps in
-        let sexp_converters = List.map fps ~f:Fun_or_match.(expr ~loc) in
-        let _, patts, vars = Fun_or_match.map_tmp_vars ~loc fps in
-        let qualified_reg_name =
-          let open Longident in
-          pexp_ident ~loc (Location.mkloc (
-            Ldot (Ldot (Lident "Sexplib", "Exn_magic"),
-                  Printf.sprintf "register%d" (List.length fps))) loc)
-        in
-        let make_exc =
-          eabstract ~loc patts (pexp_construct ~loc (Located.lident ~loc cnstr)
-                                  (Some (pexp_tuple ~loc vars)))
-        in
-        let call =
-          let partial =
-            [%expr
-                [%e qualified_reg_name]
-                [%e make_exc] [%e estring ~loc (get_full_cnstr cnstr)]
-            ]
-          in
-          eapply ~loc partial sexp_converters
-        in
-        [%expr  [%e call] ]
-      | { pext_kind = Pext_decl (Pcstr_record _, _); _;} ->
-        inline_records_are_unsupported ~loc
       | { pext_kind = Pext_decl (_, Some _); _} ->
         Location.raise_errorf ~loc "sexp_of_exn/:"
       | { pext_kind = Pext_rebind _; _} ->
@@ -1126,63 +1118,6 @@ module Str_generate_of_sexp = struct
             (pexp_match ~loc [%expr arg] matchings)
         ]
 
-  (* Sum type conversions *)
-
-  (* Generate matching code for well-formed S-expressions wrt. sum types *)
-  let mk_good_sum_matches (loc,cds) =
-    List.map cds ~f:(function
-    | { pcd_args = Pcstr_record _; _} ->
-      inline_records_are_unsupported ~loc
-    | { pcd_name = cnstr; pcd_args = Pcstr_tuple []; _} ->
-      let lcstr = pstring ~loc (String.uncapitalize cnstr.txt) in
-      let str = pstring ~loc cnstr.txt in
-      [%pat? Sexplib.Sexp.Atom ([%p lcstr] | [%p str])] -->
-      pexp_construct ~loc (Located.lident ~loc cnstr.txt) None
-
-    | { pcd_name = cnstr; pcd_args = Pcstr_tuple (_::_ as tps); _} ->
-      let lcstr = pstring ~loc (String.uncapitalize cnstr.txt) in
-      let str = pstring ~loc cnstr.txt in
-      [%pat? (Sexplib.Sexp.List
-                (Sexplib.Sexp.Atom ([%p lcstr] | [%p str] as _tag) ::
-                 sexp_args) as _sexp)
-      ] -->
-      mk_cnstr_args_match ~loc ~is_variant:false cnstr.txt tps
-    )
-
-  (* Generate matching code for malformed S-expressions with good tags
-     wrt. sum types *)
-  let mk_bad_sum_matches (loc,cds) =
-    List.map cds ~f:(function
-    | { pcd_args = Pcstr_record _; _} ->
-      inline_records_are_unsupported ~loc
-    | { pcd_name = cnstr; pcd_args = Pcstr_tuple []; _} ->
-      let lcstr = pstring ~loc (String.uncapitalize cnstr.txt) in
-      let str = pstring ~loc cnstr.txt in
-      [%pat? Sexplib.Sexp.List
-             (Sexplib.Sexp.Atom ([%p lcstr] | [%p str]) :: _) as sexp
-      ] -->
-      [%expr Sexplib.Conv_error.stag_no_args _tp_loc sexp]
-    | { pcd_name = cnstr; pcd_args = Pcstr_tuple (_::_); _} ->
-      let lcstr = pstring ~loc (String.uncapitalize cnstr.txt) in
-      let str = pstring ~loc cnstr.txt in
-      [%pat? Sexplib.Sexp.Atom ([%p lcstr] | [%p str]) as sexp] -->
-      [%expr Sexplib.Conv_error.stag_takes_args _tp_loc sexp]
-    )
-
-  (* Generate matching code for sum types *)
-  let sum_of_sexp (loc,alts) : Fun_or_match.t =
-    Match (List.concat [
-      mk_good_sum_matches (loc,alts);
-      mk_bad_sum_matches (loc,alts);
-      [ [%pat? Sexplib.Sexp.List (Sexplib.Sexp.List _ :: _) as sexp] -->
-        [%expr Sexplib.Conv_error.nested_list_invalid_sum _tp_loc sexp]
-      ; [%pat? Sexplib.Sexp.List [] as sexp] -->
-        [%expr Sexplib.Conv_error.empty_list_invalid_sum _tp_loc sexp]
-      ; [%pat? sexp] -->
-        [%expr Sexplib.Conv_error.unexpected_stag _tp_loc sexp]
-      ]
-    ])
-
   (* Record conversions *)
 
   (* Generate code for extracting record fields *)
@@ -1232,7 +1167,7 @@ module Str_generate_of_sexp = struct
     loop handle_extra handle_extra (List.rev flds)
 
   (* Generate code for handling the result of matching record fields *)
-  let mk_handle_record_match_result has_poly (loc,flds) =
+  let mk_handle_record_match_result has_poly (loc,flds) ~wrap_expr =
     let has_nonopt_fields = ref false in
     let res_tpls, bi_lst, good_patts =
       let rec loop ((res_tpls, bi_lst, good_patts) as acc) = function
@@ -1308,7 +1243,7 @@ module Str_generate_of_sexp = struct
               ]
             end
         in
-        pexp_record ~loc (List.map ~f:cnvt flds) None
+        wrap_expr (pexp_record ~loc (List.map ~f:cnvt flds) None)
     in
     let expr, patt =
       match res_tpls, good_patts with
@@ -1329,7 +1264,7 @@ module Str_generate_of_sexp = struct
     else pexp_match ~loc expr [ patt --> match_good_expr ]
 
   (* Generate code for converting record fields *)
-  let mk_cnv_fields has_poly (loc,flds) =
+  let mk_cnv_fields has_poly (loc,flds) ~wrap_expr =
     let field_refs =
       List.map flds ~f:(function
       | {pld_name = {txt=name; loc};
@@ -1367,7 +1302,7 @@ module Str_generate_of_sexp = struct
           _tp_loc (!duplicates) sexp
       else if Pervasives.(<>) (!extra) [] then
         Sexplib.Conv_error.record_extra_fields _tp_loc (!extra) sexp
-      else [%e mk_handle_record_match_result has_poly (loc,flds)]
+      else [%e mk_handle_record_match_result has_poly (loc,flds) ~wrap_expr]
     ]
 
   let is_poly (_,flds) =
@@ -1375,37 +1310,110 @@ module Str_generate_of_sexp = struct
     | { pld_type = {ptyp_desc = Ptyp_poly _; _ }; _} -> true
     | _ -> false)
 
-  (* Generate matching code for records *)
-  let record_of_sexp (loc,flds) : Fun_or_match.t =
-    let handle_fields =
-      let has_poly = is_poly (loc,flds) in
-      let cnv_fields = mk_cnv_fields has_poly (loc,flds) in
-      if has_poly then
-        let patt =
-          let pats =
-            List.map flds ~f:(fun {pld_name = {txt=name; loc}; _ } ->
-              pvar ~loc name
-            )
-          in
-          match pats with
-          | [pat] -> pat
-          | pats -> ppat_tuple ~loc pats
+  let label_declaration_list_of_sexp loc flds ~wrap_expr =
+    let has_poly = is_poly (loc,flds) in
+    let cnv_fields = mk_cnv_fields has_poly (loc,flds) ~wrap_expr in
+    if has_poly then
+      let patt =
+        let pats =
+          List.map flds ~f:(fun {pld_name = {txt=name; loc}; _ } ->
+            pvar ~loc name
+          )
         in
-        let record_def =
+        match pats with
+        | [pat] -> pat
+        | pats -> ppat_tuple ~loc pats
+      in
+      let record_def =
+        wrap_expr (
           pexp_record ~loc (
             List.map flds ~f:(fun {pld_name = {txt=name; loc}; _ } ->
               (Located.lident ~loc name, evar ~loc name)
-            )) None
-        in
-        pexp_let ~loc Nonrecursive [value_binding ~loc ~pat:patt ~expr:cnv_fields]
-          record_def
-      else cnv_fields
-    in
+            )) None)
+      in
+      pexp_let ~loc Nonrecursive [value_binding ~loc ~pat:patt ~expr:cnv_fields]
+        record_def
+    else cnv_fields
+
+  (* Generate matching code for records *)
+  let record_of_sexp (loc,flds) : Fun_or_match.t =
     Match
-      [ [%pat? Sexplib.Sexp.List field_sexps as sexp] --> handle_fields
+      [ [%pat? Sexplib.Sexp.List field_sexps as sexp] -->
+        (label_declaration_list_of_sexp loc flds
+           ~wrap_expr:(fun x -> x))
       ; [%pat? Sexplib.Sexp.Atom _ as sexp] -->
         [%expr Sexplib.Conv_error.record_list_instead_atom _tp_loc sexp]
       ]
+
+  (* Sum type conversions *)
+
+  (* Generate matching code for well-formed S-expressions wrt. sum types *)
+  let mk_good_sum_matches (loc,cds) =
+    List.map cds ~f:(function
+    | { pcd_name = cnstr; pcd_args = Pcstr_record fields; _} ->
+      let lcstr = pstring ~loc (String.uncapitalize cnstr.txt) in
+      let str = pstring ~loc cnstr.txt in
+      let expr =
+        label_declaration_list_of_sexp loc fields
+          ~wrap_expr:(fun e ->
+            pexp_construct ~loc (Located.lident ~loc cnstr.txt) (Some e))
+      in
+      [%pat?
+             (* Uncomment to wrap record *)
+             (* (Sexplib.Sexp.List
+              *    [ Sexplib.Sexp.Atom ([%p lcstr] | [%p str] as _tag)
+              *    ; Sexplib.Sexp.List field_sexps
+              *    ] as sexp) *)
+             Sexplib.Sexp.List
+               (Sexplib.Sexp.Atom ([%p lcstr] | [%p str] as _tag) :: field_sexps) as sexp
+      ] --> expr
+    | { pcd_name = cnstr; pcd_args = Pcstr_tuple []; _} ->
+      let lcstr = pstring ~loc (String.uncapitalize cnstr.txt) in
+      let str = pstring ~loc cnstr.txt in
+      [%pat? Sexplib.Sexp.Atom ([%p lcstr] | [%p str])] -->
+      pexp_construct ~loc (Located.lident ~loc cnstr.txt) None
+
+    | { pcd_name = cnstr; pcd_args = Pcstr_tuple (_::_ as tps); _} ->
+      let lcstr = pstring ~loc (String.uncapitalize cnstr.txt) in
+      let str = pstring ~loc cnstr.txt in
+      [%pat? (Sexplib.Sexp.List
+                (Sexplib.Sexp.Atom ([%p lcstr] | [%p str] as _tag) ::
+                 sexp_args) as _sexp)
+      ] -->
+      mk_cnstr_args_match ~loc ~is_variant:false cnstr.txt tps
+    )
+
+  (* Generate matching code for malformed S-expressions with good tags
+     wrt. sum types *)
+  let mk_bad_sum_matches (loc,cds) =
+    List.map cds ~f:(function
+    | { pcd_name = cnstr; pcd_args = Pcstr_tuple []; _} ->
+      let lcstr = pstring ~loc (String.uncapitalize cnstr.txt) in
+      let str = pstring ~loc cnstr.txt in
+      [%pat? Sexplib.Sexp.List
+             (Sexplib.Sexp.Atom ([%p lcstr] | [%p str]) :: _) as sexp
+      ] -->
+      [%expr Sexplib.Conv_error.stag_no_args _tp_loc sexp]
+    | { pcd_name = cnstr; pcd_args = (Pcstr_tuple (_ :: _) | Pcstr_record _); _} ->
+      let lcstr = pstring ~loc (String.uncapitalize cnstr.txt) in
+      let str = pstring ~loc cnstr.txt in
+      [%pat? Sexplib.Sexp.Atom ([%p lcstr] | [%p str]) as sexp] -->
+      [%expr Sexplib.Conv_error.stag_takes_args _tp_loc sexp]
+    )
+
+  (* Generate matching code for sum types *)
+  let sum_of_sexp (loc,alts) : Fun_or_match.t =
+    Match (List.concat [
+      mk_good_sum_matches (loc,alts);
+      mk_bad_sum_matches (loc,alts);
+      [ [%pat? Sexplib.Sexp.List (Sexplib.Sexp.List _ :: _) as sexp] -->
+        [%expr Sexplib.Conv_error.nested_list_invalid_sum _tp_loc sexp]
+      ; [%pat? Sexplib.Sexp.List [] as sexp] -->
+        [%expr Sexplib.Conv_error.empty_list_invalid_sum _tp_loc sexp]
+      ; [%pat? sexp] -->
+        [%expr Sexplib.Conv_error.unexpected_stag _tp_loc sexp]
+      ]
+    ])
 
   (* Empty type *)
   let nil_of_sexp loc : Fun_or_match.t =
