@@ -30,28 +30,19 @@ module Exceptions = struct
     check_sexp e_int "(conv_test.ml.Exceptions.E 1)";
     check_sexp e_string "(conv_test.ml.Exceptions.E a)"
 
-  let copy (type a) (e : a) : a =
-    Obj.obj (Obj.dup (Obj.repr e))
-
-  let%test "sexp converters are finalized properly for local exceptions" =
+  let%test_unit "sexp converters are finalized properly for local exceptions" =
+    Gc.compact ();
+    Gc.compact ();
+    let size_before = Sexplib.Conv.Exn_converter.For_unit_tests_only.size () in
     let e = exn 2.5 sexp_of_float in
-    let copy_of_e = copy e in
+    let size_after_local_exn = Sexplib.Conv.Exn_converter.For_unit_tests_only.size () in
     let e_finalized = ref false in
-    let ref_for_copy_of_e = ref None in
     Gc.finalise (fun _ -> e_finalized := true) e;
-    Gc.finalise (fun e -> ref_for_copy_of_e := Some e) copy_of_e;
     check_sexp e         "(conv_test.ml.Exceptions.E 2.5)";
-    check_sexp copy_of_e "(conv_test.ml.Exceptions.E 2.5)";
+    Gc.compact ();
     Gc.compact ();
     assert !e_finalized;
-    check_sexp copy_of_e "(conv_test.ml.Exceptions.E 2.5)";
-    Gc.compact ();
-    match !ref_for_copy_of_e with
-    | None -> failwith "finalizer should have run"
-    | Some e ->
-      let r = sexp_of_exn_opt e in
-      match r with
-      | None -> true
-      | Some sexp ->
-        failwith (Printf.sprintf "Unexpected result %s" (Sexplib.Sexp.to_string sexp))
+    let size_after_gc = Sexplib.Conv.Exn_converter.For_unit_tests_only.size () in
+    assert (size_before + 1 = size_after_local_exn);
+    assert (size_before = size_after_gc)
 end
