@@ -16,7 +16,7 @@ let string_of_sexps_with_layout t_list =
   let m = return () in
   let m =
     List.fold_left (fun m t ->
-      bind m (fun () -> sexp t)
+      bind m ~f:(fun () -> sexp t)
     ) m t_list
   in
   With_layout.Render.run (fun c -> Buffer.add_char b c) m;
