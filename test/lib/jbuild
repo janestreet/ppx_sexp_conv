@@ -1,0 +1,4 @@
+(library
+ ((name sexplib_test)
+  (libraries (sexplib))
+  (preprocess (((pps (pa_type_conv pa_sexp_conv pa_here ppx_inline_test)) All)))))

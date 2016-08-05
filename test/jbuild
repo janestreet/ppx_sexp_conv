@@ -1,0 +1,25 @@
+
+(toplevel_expect_tests
+ ((libraries (sexplib))))
+
+(executables
+ ((names (path_test parser_test printer_test ppx_sexp_test newlines nonrec_test io_test))
+  (libraries (sexplib))
+  (flags (:standard -w -30)) ;; duplicate constructors or labels in recursive types
+  (preprocess (((pps (pa_type_conv pa_sexp_conv pa_here)) All)))))
+
+(rule
+ ((targets (newlines.output))
+  (deps (newlines.exe))
+  (action "./newlines.exe > newlines.output")))
+
+(alias
+ ((name runtest)
+  (deps (path_test.exe parser_test.exe printer_test.exe ppx_sexp_test.exe io_test.exe newlines.expected newlines.output))
+  (action "
+./path_test.exe
+./parser_test.exe --quiet
+./printer_test.exe
+./ppx_sexp_test.exe
+./io_test.exe
+diff -u newlines.expected newlines.output")))
