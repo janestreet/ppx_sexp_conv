@@ -11,7 +11,7 @@ module Sum_and_polymorphic_variants = struct
     ]
   [@@deriving sexp]
 
-  let () =
+  let%test_unit _ =
     List.iter (fun (value, sexp) ->
       assert (sexp_of_poly value = sexp);
       assert (poly_of_sexp sexp = value);
@@ -29,7 +29,7 @@ module Sum_and_polymorphic_variants = struct
     | Two_args of int * string
   [@@deriving sexp]
 
-  let () =
+  let%test_unit _ =
     List.iter (fun (value, sexp) ->
       assert (sexp_of_nominal value = sexp);
       assert (nominal_of_sexp sexp = value);
@@ -48,10 +48,12 @@ module Records = struct
     }
   [@@deriving sexp]
 
-  let t = { a = 2; b = Some [(1., "a"); (2.3, "b")] }
-  let sexp = Sexp.of_string "((a 2)(b (((1 a)(2.3 b)))))"
-  let () = assert (t_of_sexp sexp = t)
-  let () = assert (sexp_of_t t = sexp)
+  let%test_unit _ =
+    let t = { a = 2; b = Some [(1., "a"); (2.3, "b")] } in
+    let sexp = Sexp.of_string "((a 2)(b (((1 a)(2.3 b)))))" in
+    assert (t_of_sexp sexp = t);
+    assert (sexp_of_t t = sexp);
+  ;;
 end
 
 module Inline_records = struct
@@ -62,10 +64,12 @@ module Inline_records = struct
     | B of int
   [@@deriving sexp]
 
-  let t = A { a = 2; b = Some [(1., "a"); (2.3, "b")] }
-  let sexp = Sexp.of_string "(A (a 2)(b (((1 a)(2.3 b)))))"
-  let () = assert (t_of_sexp sexp = t)
-  let () = assert (sexp_of_t t = sexp)
+  let%test_unit _ =
+    let t = A { a = 2; b = Some [(1., "a"); (2.3, "b")] } in
+    let sexp = Sexp.of_string "(A (a 2)(b (((1 a)(2.3 b)))))" in
+    assert (t_of_sexp sexp = t);
+    assert (sexp_of_t t = sexp);
+  ;;
 end
 
 module User_specified_conversion = struct
@@ -73,10 +77,12 @@ module User_specified_conversion = struct
   let sexp_of_my_float n = Atom (Printf.sprintf "%.4f" n)
   let my_float_of_sexp = float_of_sexp
 
-  let my_float : my_float = 1.2
-  let sexp = Sexp.Atom "1.2000"
-  let () = assert (my_float_of_sexp sexp = my_float)
-  let () = assert (sexp_of_my_float my_float = sexp)
+  let%test_unit _ =
+    let my_float : my_float = 1.2 in
+    let sexp = Sexp.Atom "1.2000" in
+    assert (my_float_of_sexp sexp = my_float);
+    assert (sexp_of_my_float my_float = sexp);
+  ;;
 end
 
 module Exceptions : sig
@@ -91,19 +97,20 @@ end = struct
   exception E2 of string * int [@@deriving sexp]
   exception E_tuple of (string * int) [@@deriving sexp]
   exception E_record of {a:string; b:int} [@@deriving sexp]
-  let cases =
-    [ E0, "ppx_sexp_test.ml.Exceptions.E0"
-    ; E1 "a", "(ppx_sexp_test.ml.Exceptions.E1 a)"
-    ; E2 ("b", 2), "(ppx_sexp_test.ml.Exceptions.E2 b 2)"
-    ; E_tuple ("c", 3), "(ppx_sexp_test.ml.Exceptions.E_tuple(c 3))"
-    ; E_record {a="c"; b= 3}, "(ppx_sexp_test.ml.Exceptions.E_record(a c)(b 3))"
-    ]
-  let () =
+  let%test_unit _ =
+    let cases =
+      [ E0, "ppx_sexp_test.ml.Exceptions.E0"
+      ; E1 "a", "(ppx_sexp_test.ml.Exceptions.E1 a)"
+      ; E2 ("b", 2), "(ppx_sexp_test.ml.Exceptions.E2 b 2)"
+      ; E_tuple ("c", 3), "(ppx_sexp_test.ml.Exceptions.E_tuple(c 3))"
+      ; E_record {a="c"; b= 3}, "(ppx_sexp_test.ml.Exceptions.E_record(a c)(b 3))"
+      ]
+    in
     List.iter (fun (exn, sexp_as_str) ->
       let sexp = Sexp.of_string sexp_as_str in
       assert ([%sexp_of: exn] exn = sexp);
     ) cases
-
+  ;;
 end
 
 module Abtract_types_are_allowed_in_structures : sig
@@ -157,40 +164,43 @@ module Polymorphic_variant_inclusion = struct
     | `C6 ] option
   [@@deriving sexp]
 
-  let cases : ((string * string, float) t * _) list =
-    [ None, "()"
-    ; Some `C1, "(C1)"
-    ; Some `C2, "(C2)"
-    ; Some (`C3 (`Nested ("a", "b"))), "((C3 (Nested (a b))))"
-    ; Some `C4, "(C4)"
-    ; Some (`C5 1.5), "((C5 1.5))"
-    ; Some `C6, "(C6)"
-    ]
-  let () =
+  let%test_unit _ =
+    let cases : ((string * string, float) t * _) list =
+      [ None, "()"
+      ; Some `C1, "(C1)"
+      ; Some `C2, "(C2)"
+      ; Some (`C3 (`Nested ("a", "b"))), "((C3 (Nested (a b))))"
+      ; Some `C4, "(C4)"
+      ; Some (`C5 1.5), "((C5 1.5))"
+      ; Some `C6, "(C6)"
+      ]
+    in
     List.iter (fun (t, sexp_as_str) ->
       let sexp = Sexp.of_string sexp_as_str in
       assert ([%of_sexp: (string * string, float) t] sexp = t);
       assert ([%sexp_of: (string * string, float) t] t = sexp);
     ) cases
-
+  ;;
 
   type sub1_alias = sub1
   [@@deriving sexp_poly]
   type u = [ `A | sub1_alias | `D ]
   [@@deriving sexp]
 
-  let cases : (u * _) list =
-    [ `A, "A"
-    ; `C1, "C1"
-    ; `C2, "C2"
-    ; `D, "D"
-    ]
-  let () =
+  let%test_unit _ =
+    let cases : (u * _) list =
+      [ `A, "A"
+      ; `C1, "C1"
+      ; `C2, "C2"
+      ; `D, "D"
+      ]
+    in
     List.iter (fun (u, sexp_as_str) ->
       let sexp = Sexp.of_string sexp_as_str in
       assert ([%of_sexp: u] sexp = u);
       assert ([%sexp_of: u] u = sexp);
     ) cases
+  ;;
 end
 
 module Polymorphic_record_field = struct
@@ -199,11 +209,12 @@ module Polymorphic_record_field = struct
     ; maybe_x : 'x option
     }
   [@@deriving sexp]
-  let t x = { poly = []; maybe_x = Some x }
-  let sexp = Sexp.of_string "((poly ())(maybe_x (1)))"
-  let () = assert (t_of_sexp int_of_sexp sexp = t 1)
-  let () = assert (sexp_of_t sexp_of_int (t 1) = sexp)
-
+  let%test_unit _ =
+    let t x = { poly = []; maybe_x = Some x } in
+    let sexp = Sexp.of_string "((poly ())(maybe_x (1)))" in
+    assert (t_of_sexp int_of_sexp sexp = t 1);
+    assert (sexp_of_t sexp_of_int (t 1) = sexp);
+  ;;
 end
 
 module No_unused_value_warnings : sig end = struct
@@ -254,11 +265,11 @@ module Default = struct
   type t = {
     a : int [@default 2];
   } [@@deriving sexp]
-  let () = assert (Sexp.(List [List [Atom "a"; Atom "1"]]) = sexp_of_t { a = 1 })
-  let () = assert (Sexp.(List [List [Atom "a"; Atom "2"]]) = sexp_of_t { a = 2 })
-  let () = assert (t_of_sexp (Sexp.(List [List [Atom "a"; Atom "1"]])) = { a = 1 })
-  let () = assert (t_of_sexp (Sexp.(List [List [Atom "a"; Atom "2"]])) = { a = 2 })
-  let () = assert (t_of_sexp (Sexp.(List [])) = { a = 2 })
+  let%test _ = Sexp.(List [List [Atom "a"; Atom "1"]]) = sexp_of_t { a = 1 }
+  let%test _ = Sexp.(List [List [Atom "a"; Atom "2"]]) = sexp_of_t { a = 2 }
+  let%test _ = t_of_sexp (Sexp.(List [List [Atom "a"; Atom "1"]])) = { a = 1 }
+  let%test _ = t_of_sexp (Sexp.(List [List [Atom "a"; Atom "2"]])) = { a = 2 }
+  let%test _ = t_of_sexp (Sexp.(List [])) = { a = 2 }
 end
 
 module Type_alias = struct
@@ -272,10 +283,8 @@ module Type_alias = struct
     type a = [ `A ] [@@deriving sexp]
     type t = [ `A ] [@@deriving sexp]
   end
-  let () =
-    assert (Sexp.to_string (B.sexp_of_t `A) = "A");
-    assert (`A = B.t_of_sexp (Sexp.of_string "A"));
-    ()
+  let%test _ = Sexp.to_string (B.sexp_of_t `A) = "A"
+  let%test _ = `A = B.t_of_sexp (Sexp.of_string "A")
 
   module B2 = struct
     type t = [ B.t | `B ] [@@deriving sexp]
@@ -309,26 +318,26 @@ module Drop_default = struct
   type t = {
     a : int [@default 2] [@sexp_drop_default];
   } [@@deriving sexp]
-  let () = assert (Sexp.(List [List [Atom "a"; Atom "1"]]) = sexp_of_t { a = 1 })
-  let () = assert (Sexp.(List []) = sexp_of_t { a = 2 })
-  let () = assert (t_of_sexp (Sexp.(List [List [Atom "a"; Atom "1"]])) = { a = 1 })
-  let () = assert (t_of_sexp (Sexp.(List [List [Atom "a"; Atom "2"]])) = { a = 2 })
-  let () = assert (t_of_sexp (Sexp.(List [])) = { a = 2 })
+  let%test _ = Sexp.(List [List [Atom "a"; Atom "1"]]) = sexp_of_t { a = 1 }
+  let%test _ = Sexp.(List []) = sexp_of_t { a = 2 }
+  let%test _ = t_of_sexp (Sexp.(List [List [Atom "a"; Atom "1"]])) = { a = 1 }
+  let%test _ = t_of_sexp (Sexp.(List [List [Atom "a"; Atom "2"]])) = { a = 2 }
+  let%test _ = t_of_sexp (Sexp.(List [])) = { a = 2 }
 end
 
 module Drop_if = struct
   type t = {
     a : int [@default 2] [@sexp_drop_if fun x -> x mod 2 = 0]
   } [@@deriving sexp]
-  let () = assert (Sexp.(List [List [Atom "a"; Atom "1"]]) = sexp_of_t { a = 1 })
-  let () = assert (Sexp.(List []) = sexp_of_t { a = 2 })
-  let () = assert (Sexp.(List [List [Atom "a"; Atom "3"]]) = sexp_of_t { a = 3 })
-  let () = assert (Sexp.(List []) = sexp_of_t { a = 4 })
-  let () = assert (t_of_sexp (Sexp.(List [List [Atom "a"; Atom "1"]])) = { a = 1 })
-  let () = assert (t_of_sexp (Sexp.(List [List [Atom "a"; Atom "2"]])) = { a = 2 })
-  let () = assert (t_of_sexp (Sexp.(List [List [Atom "a"; Atom "3"]])) = { a = 3 })
-  let () = assert (t_of_sexp (Sexp.(List [List [Atom "a"; Atom "4"]])) = { a = 4 })
-  let () = assert (t_of_sexp (Sexp.(List [])) = { a = 2 })
+  let%test _ = Sexp.(List [List [Atom "a"; Atom "1"]]) = sexp_of_t { a = 1 }
+  let%test _ = Sexp.(List []) = sexp_of_t { a = 2 }
+  let%test _ = Sexp.(List [List [Atom "a"; Atom "3"]]) = sexp_of_t { a = 3 }
+  let%test _ = Sexp.(List []) = sexp_of_t { a = 4 }
+  let%test _ = t_of_sexp (Sexp.(List [List [Atom "a"; Atom "1"]])) = { a = 1 }
+  let%test _ = t_of_sexp (Sexp.(List [List [Atom "a"; Atom "2"]])) = { a = 2 }
+  let%test _ = t_of_sexp (Sexp.(List [List [Atom "a"; Atom "3"]])) = { a = 3 }
+  let%test _ = t_of_sexp (Sexp.(List [List [Atom "a"; Atom "4"]])) = { a = 4 }
+  let%test _ = t_of_sexp (Sexp.(List [])) = { a = 2 }
 
   type u = {
     a : int [@sexp_drop_if fun x ->
@@ -353,34 +362,34 @@ module True_and_false = struct
   | False
   [@@deriving sexp]
 
-  let () = assert (Sexp.to_string (sexp_of_t True) = "True")
-  let () = assert (Sexp.to_string (sexp_of_t False) = "False")
-  let () = assert (True = t_of_sexp (Sexp.of_string "True"))
-  let () = assert (False = t_of_sexp (Sexp.of_string "False"))
-  let () = assert (True = t_of_sexp (Sexp.of_string "true"))
-  let () = assert (False = t_of_sexp (Sexp.of_string "false"))
+  let%test _ = Sexp.to_string (sexp_of_t True) = "True"
+  let%test _ = Sexp.to_string (sexp_of_t False) = "False"
+  let%test _ = True = t_of_sexp (Sexp.of_string "True")
+  let%test _ = False = t_of_sexp (Sexp.of_string "False")
+  let%test _ = True = t_of_sexp (Sexp.of_string "true")
+  let%test _ = False = t_of_sexp (Sexp.of_string "false")
 
   type u =
   | True of int
   | False of int
   [@@deriving sexp]
 
-  let () = assert (Sexp.to_string (sexp_of_u (True 1)) = "(True 1)")
-  let () = assert (Sexp.to_string (sexp_of_u (False 2)) = "(False 2)")
-  let () = assert (True 1 = u_of_sexp (Sexp.of_string "(True 1)"))
-  let () = assert (False 2 = u_of_sexp (Sexp.of_string "(False 2)"))
-  let () = assert (True 1 = u_of_sexp (Sexp.of_string "(true 1)"))
-  let () = assert (False 2 = u_of_sexp (Sexp.of_string "(false 2)"))
+  let%test _ = Sexp.to_string (sexp_of_u (True 1)) = "(True 1)"
+  let%test _ = Sexp.to_string (sexp_of_u (False 2)) = "(False 2)"
+  let%test _ = True 1 = u_of_sexp (Sexp.of_string "(True 1)")
+  let%test _ = False 2 = u_of_sexp (Sexp.of_string "(False 2)")
+  let%test _ = True 1 = u_of_sexp (Sexp.of_string "(true 1)")
+  let%test _ = False 2 = u_of_sexp (Sexp.of_string "(false 2)")
 
   exception True [@@deriving sexp]
-  let () = assert ("ppx_sexp_test.ml.True_and_false.True" = Sexp.to_string (sexp_of_exn True))
+  let%test _ = "ppx_sexp_test.ml.True_and_false.True" = Sexp.to_string (sexp_of_exn True)
 
   exception False of int [@@deriving sexp]
-  let () = assert ("(ppx_sexp_test.ml.True_and_false.False 1)" = Sexp.to_string (sexp_of_exn (False 1)))
+  let%test _ = "(ppx_sexp_test.ml.True_and_false.False 1)" = Sexp.to_string (sexp_of_exn (False 1))
 
   type v = [ `True | `False of int ] [@@deriving sexp]
-  let () = assert (Sexp.to_string (sexp_of_v `True) = "True")
-  let () = assert (Sexp.to_string (sexp_of_v (`False 2)) = "(False 2)")
+  let%test _ = Sexp.to_string (sexp_of_v `True) = "True"
+  let%test _ = Sexp.to_string (sexp_of_v (`False 2)) = "(False 2)"
 end
 
 module Gadt = struct
@@ -393,42 +402,42 @@ module Gadt = struct
 
   (* plain type without argument *)
   type 'a s = Packed : 'a s [@@deriving sexp_of]
-  let () = is_eq ([%sexp_of: int s] Packed) "Packed"
+  let%test_unit _ = is_eq ([%sexp_of: int s] Packed) "Packed"
 
   (* two kind of existential variables *)
   type 'a t = Packed : 'a * _ * 'b sexp_opaque -> 'a t [@@deriving sexp_of]
-  let () = is_eq ([%sexp_of: int t] (Packed (2, "asd", 1.))) "(Packed 2 _ <opaque>)"
+  let%test_unit _ = is_eq ([%sexp_of: int t] (Packed (2, "asd", 1.))) "(Packed 2 _ <opaque>)"
 
   (* plain type with argument *)
   type 'a u = A : 'a -> 'a u [@@deriving sexp_of]
-  let () = is_eq ([%sexp_of: int u] (A 2)) "(A 2)"
+  let%test_unit _ = is_eq ([%sexp_of: int u] (A 2)) "(A 2)"
 
   (* recursive *)
   type v = A : v option -> v [@@deriving sexp_of]
-  let () = is_eq ([%sexp_of: v] (A (Some (A None)))) "(A((A())))"
+  let%test_unit _ = is_eq ([%sexp_of: v] (A (Some (A None)))) "(A((A())))"
 
   (* implicit existential variable *)
   type w = A : 'a * int * ('a -> string) -> w [@@deriving sexp_of]
-  let () = is_eq ([%sexp_of: w] (A (1., 2, string_of_float))) "(A _ 2 <fun>)"
+  let%test_unit _ = is_eq ([%sexp_of: w] (A (1., 2, string_of_float))) "(A _ 2 <fun>)"
 
   (* tricky variable naming *)
   type 'a x = A : 'a -> 'b x [@@deriving sexp_of]
-  let () = is_eq ([%sexp_of: int x] (A 1.)) "(A _)"
+  let%test_unit _ = is_eq ([%sexp_of: int x] (A 1.)) "(A _)"
 
   (* unused but colliding variables *)
   type (_, _) y = A : ('a, 'a) y [@@deriving sexp_of]
-  let () = is_eq ([%sexp_of: (int, int) y] A) "A"
+  let%test_unit _ = is_eq ([%sexp_of: (int, int) y] A) "A"
 
   (* making sure we're not reversing parameters *)
   type (_, _) z = A : ('a * 'b) -> ('a, 'b) z [@@deriving sexp_of]
-  let () = is_eq ([%sexp_of: (int, string) z] (A (1, "a"))) "(A (1 a))"
+  let%test_unit _ = is_eq ([%sexp_of: (int, string) z] (A (1, "a"))) "(A (1 a))"
 
 end
 
 module Anonymous_variable = struct
   type _ t = int [@@deriving sexp]
-  let () = assert (Sexp.to_string ([%sexp_of: _ t] 2) = "2")
-  let () = assert ([%of_sexp: _ t] (Sexp.of_string "2") = 2)
+  let%test _ = Sexp.to_string ([%sexp_of: _ t] 2) = "2"
+  let%test _ = [%of_sexp: _ t] (Sexp.of_string "2") = 2
 
   (* making sure we don't generate signatures like (_ -> Sexp.t) -> _ t -> Sexp.t which
      are too general *)
@@ -483,8 +492,8 @@ module Magic_types = struct
     ; sexp_option = None
     ; sexp_bool = false
     }
-  let () = assert (t_of_sexp sexp = t)
-  let () = assert (sexp_of_t t = sexp)
+  let%test _ = t_of_sexp sexp = t
+  let%test _ = sexp_of_t t = sexp
 
   let sexp =
     Sexp.of_string "((sexp_array (1 2))\
@@ -497,8 +506,8 @@ module Magic_types = struct
     ; sexp_option = Some 5
     ; sexp_bool = true
     }
-  let () = assert (t_of_sexp sexp = t)
-  let () = assert (sexp_of_t t = sexp)
+  let%test _ = t_of_sexp sexp = t
+  let%test _ = sexp_of_t t = sexp
 
 
   type u =
@@ -510,10 +519,10 @@ module Magic_types = struct
   let sexp = Sexp.of_string "(A 1 2 3)"
   let u = A [1; 2; 3]
   let v = `A [1; 2; 3]
-  let () = assert (u_of_sexp sexp = u)
-  let () = assert (sexp_of_u u = sexp)
-  let () = assert (v_of_sexp sexp = v)
-  let () = assert (sexp_of_v v = sexp)
+  let%test _ = u_of_sexp sexp = u
+  let%test _ = sexp_of_u u = sexp
+  let%test _ = v_of_sexp sexp = v
+  let%test _ = sexp_of_v v = sexp
 end
 
 module Variance = struct
