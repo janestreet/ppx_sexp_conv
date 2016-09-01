@@ -394,15 +394,8 @@ module Str_generate_sexp_of = struct
     | Some (), Some _ ->
       Location.raise_errorf ~loc "sexp record field handler defined twice"
 
-  (* Conversion of type paths *)
-  let sexp_of_type_id (id : Longident.t Located.t) =
-    let txt : Longident.t =
-      match id.txt with
-      | Lident   s  -> Lident  ("sexp_of_" ^ s)
-      | Ldot (p, s) -> Ldot (p, "sexp_of_" ^ s)
-      | Lapply _    -> failwith "Ppx_sexp_conv_expander.sexp_of_type_id"
-    in
-    pexp_ident ~loc:id.loc { id with txt }
+  let sexp_of_type_constr ~loc id args =
+    type_constr_conv ~loc id ~f:(fun s -> "sexp_of_" ^ s) args
 
   (* Conversion of types *)
   let rec sexp_of_type (renaming : Renaming.t) typ : Fun_or_match.t =
@@ -419,10 +412,9 @@ module Str_generate_sexp_of = struct
       | Existentially_bound -> sexp_of_type renaming [%type:  _ ]
       end
     | { ptyp_desc = Ptyp_constr (id, args); _ } ->
-      let init = sexp_of_type_id id in
-      Fun (List.fold_left args ~init ~f:(fun exp1 tp2 ->
-        let exp2 = Fun_or_match.expr ~loc (sexp_of_type renaming tp2) in
-        [%expr [%e exp1] [%e exp2]]))
+      Fun (sexp_of_type_constr ~loc id
+             (List.map args
+                ~f:(fun tp -> Fun_or_match.expr ~loc (sexp_of_type renaming tp))))
     | { ptyp_desc = Ptyp_arrow (_,_,_); _ } ->
       Fun [%expr  fun _f -> Sexplib.Conv.sexp_of_fun Pervasives.ignore ]
     | { ptyp_desc = Ptyp_variant (row_fields, _, _); _ } ->
@@ -470,9 +462,8 @@ module Str_generate_sexp_of = struct
         ppat_variant ~loc cnstr (Some patt) --> expr
 
       | Rinherit { ptyp_desc = Ptyp_constr (id, []); _ } ->
-        let call = sexp_of_type_id id in
         ppat_alias ~loc (ppat_type ~loc id) (Location.mkloc "v" loc) -->
-        [%expr [%e call] v]
+        sexp_of_type_constr ~loc id [[%expr v]]
       | Rtag (_,_,true,[_])
       | Rtag (_,_,_,_::_::_) ->
         Location.raise_errorf ~loc "unsupported: sexp_of_variant/Rtag/&"
@@ -870,20 +861,11 @@ module Str_generate_of_sexp = struct
       | Rtag (_,_,false,[]) ->
         assert false
 
-  (* Conversion of type paths *)
-  let path_of_sexp_fun ?(internal=false) (id : Longident.t Located.t) =
-    let map_name s =
+  let type_constr_of_sexp ?(internal=false) id args =
+    type_constr_conv id args ~f:(fun s ->
       let s = s ^ "_of_sexp" in
       if internal then "__" ^ s ^ "__" else s
-    in
-    let txt : Longident.t =
-      match id.txt with
-      | Lident   s  -> Lident  (map_name s)
-      | Ldot (p, s) -> Ldot (p, map_name s)
-      | Lapply _    ->
-        failwith "Ppx_sexp_conv_expander.Str_generate_of_sexp.path_of_sexp_fun"
-    in
-    pexp_ident ~loc:id.loc { id with txt }
+    )
 
   (* Conversion of types *)
   let rec type_of_sexp ?(internal=false) typ : Fun_or_match.t =
@@ -903,9 +885,8 @@ module Str_generate_of_sexp = struct
     | { ptyp_desc = Ptyp_tuple tp; _ } -> Match (tuple_of_sexp (loc,tp))
     | { ptyp_desc = Ptyp_var parm; _ } -> Fun (evar ~loc ("_of_" ^ parm))
     | { ptyp_desc = Ptyp_constr (id, args); _ } ->
-      let init = path_of_sexp_fun ~internal id in
       let args = List.map args ~f:(fun arg -> Fun_or_match.expr ~loc (type_of_sexp arg)) in
-      Fun (eapply ~loc init args)
+      Fun (type_constr_of_sexp ~loc ~internal id args)
 
     | { ptyp_desc = Ptyp_arrow (_,_,_); _ } -> Fun [%expr  Sexplib.Conv.fun_of_sexp ]
     | { ptyp_desc = Ptyp_variant (row_fields, _, _); _ } ->

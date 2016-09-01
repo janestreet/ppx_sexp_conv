@@ -536,3 +536,31 @@ module Clash = struct
   type ('foo,'rigid_foo) foo = Foo of 'foo [@@deriving sexp]
   type 'rigid_bar rigid_rigid_bar = Bar [@@deriving sexp]
 end
+
+module Applicative_functor_types = struct
+  module Bidirectional_map = struct
+    type ('k1, 'k2) t
+    module S(K1 : sig type t end)(K2 : sig type t end) = struct
+      type nonrec t = (K1.t, K2.t) t
+    end
+    module type Of_sexpable = sig
+      type t [@@deriving of_sexp]
+    end
+    let s__t_of_sexp
+          (type k1 k2)
+          (module K1 : Of_sexpable with type t = k1)
+          (module K2 : Of_sexpable with type t = k2)
+          (_ : Sexp.t) : (k1, k2) t = assert false
+  end
+  module Int = struct
+    type t = int [@@deriving of_sexp]
+  end
+  module String = struct
+    type t = string [@@deriving of_sexp]
+  end
+  module M : sig
+    type t = Bidirectional_map.S(String)(Int).t [@@deriving of_sexp]
+  end = struct
+    type t = Bidirectional_map.S(String)(Int).t [@@deriving of_sexp]
+  end
+end
