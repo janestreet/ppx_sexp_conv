@@ -9,6 +9,8 @@ module Attrs : sig
 end
 
 module Sexp_of : sig
+  val type_extension : core_type -> core_type
+
   val core_type : core_type -> expression
 
   val sig_type_decl
@@ -37,6 +39,8 @@ module Sexp_of : sig
 end
 
 module Of_sexp : sig
+  val type_extension : core_type -> core_type
+
   val core_type : path:string -> core_type -> expression
 
   val sig_type_decl

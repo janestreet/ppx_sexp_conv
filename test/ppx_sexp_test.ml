@@ -564,3 +564,8 @@ module Applicative_functor_types = struct
     type t = Bidirectional_map.S(String)(Int).t [@@deriving of_sexp]
   end
 end
+
+module Type_extensions = struct
+  let _ = ([%sexp_of: int] : [%sexp_of: int])
+  let _ = ([%of_sexp: int] : [%of_sexp: int])
+end

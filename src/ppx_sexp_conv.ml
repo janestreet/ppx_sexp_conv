@@ -8,6 +8,7 @@ module Attrs     = Ppx_sexp_conv_expander.Attrs
 
 module Sexp_of = struct
   module E = Ppx_sexp_conv_expander.Sexp_of
+  let name = "sexp_of"
 
   let str_type_decl =
     Type_conv.Generator.make_noarg E.str_type_decl
@@ -32,17 +33,27 @@ module Sexp_of = struct
   let extension ~loc:_ ~path:_ ctyp = E.core_type ctyp
 
   let deriver =
-    Type_conv.add "sexp_of"
+    Type_conv.add name
       ~str_type_decl
       ~str_exception
       ~sig_type_decl
       ~sig_exception
       ~extension
   ;;
+
+  let () =
+    Ppx_driver.register_transformation name
+      ~rules:[ Context_free.Rule.extension
+                 (Extension.declare name
+                    Core_type Ast_pattern.(ptyp __)
+                    (fun ~loc:_ ~path:_ ty -> E.type_extension ty))
+             ]
+  ;;
 end
 
 module Of_sexp = struct
   module E = Ppx_sexp_conv_expander.Of_sexp
+  let name = "of_sexp"
 
   let str_type_decl =
     Type_conv.Generator.make_noarg (E.str_type_decl ~poly:false)
@@ -60,6 +71,15 @@ module Of_sexp = struct
       ~str_type_decl
       ~sig_type_decl
       ~extension
+  ;;
+
+  let () =
+    Ppx_driver.register_transformation name
+      ~rules:[ Context_free.Rule.extension
+                 (Extension.declare name
+                    Core_type Ast_pattern.(ptyp __)
+                    (fun ~loc:_ ~path:_ ty -> E.type_extension ty))
+             ]
   ;;
 end
 

@@ -3,5 +3,5 @@
   (public_name ppx_sexp_conv)
   (public_release ((kind ppx_type_conv_plugin)))
   (wrapped false)
-  (libraries (ppx_core ppx_type_conv ppx_sexp_conv_expander))
+  (libraries (ppx_core ppx_type_conv ppx_driver ppx_sexp_conv_expander))
   (preprocess ((no_preprocessing All)))))

@@ -1,6 +1,6 @@
 version = "$(pkg_version)"
 description = "Generation of S-expression conversion functions from type definitions"
-requires = "ppx_core ppx_sexp_conv.expander ppx_type_conv"
+requires = "ppx_core ppx_driver ppx_sexp_conv.expander ppx_type_conv"
 requires(-ppx_driver)        += "sexplib"
 requires(ppx_driver,toploop) += "sexplib"
 archive(ppx_driver, byte  ) = "ppx_sexp_conv.cma"

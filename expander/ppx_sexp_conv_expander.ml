@@ -212,19 +212,6 @@ let replace_variables_by_underscores =
   end in
   map#core_type
 
-let name_type_params_in_td (td : type_declaration) : type_declaration =
-  let name_param (tp, variance) =
-    let ptyp_desc =
-      match tp.ptyp_desc with
-      | Ptyp_any -> Ptyp_var ("v" ^ gen_symbol ())
-      | Ptyp_var _ as v -> v
-      | _ -> Location.raise_errorf ~loc:tp.ptyp_loc
-               "ppx_sexp_conv: not a type parameter"
-    in
-    ({ tp with ptyp_desc }, variance)
-  in
-  { td with ptype_params = List.map td.ptype_params ~f:name_param }
-
 let rigid_type_var ~type_name x =
   let prefix = "rigid_" in
   if x = type_name || String.is_prefix x ~prefix
@@ -304,14 +291,12 @@ let really_recursive rec_flag tds =
   | Recursive    -> if sexp_type_is_recursive tds then Recursive else Nonrecursive
   | Nonrecursive -> Nonrecursive
 
-let combinator_type_of_td ~f td =
-  let td = name_type_params_in_td td in
-  combinator_type_of_type_declaration td ~f
-
 (* Generates the signature for type conversion to S-expressions *)
 module Sig_generate_sexp_of = struct
-  let mk_type td =
-    combinator_type_of_td td ~f:(fun ~loc t -> [%type: [%t t] -> Sexplib.Sexp.t])
+  let type_of_sexp_of ~loc t =
+    [%type: [%t t] -> Sexplib.Sexp.t]
+
+  let mk_type td = combinator_type_of_type_declaration td ~f:type_of_sexp_of
 
   let mk_sig ~loc:_ ~path:_ (_rf, tds) =
     List.map tds ~f:(fun td ->
@@ -344,8 +329,10 @@ let is_polymorphic_variant =
 
 (* Generates the signature for type conversion from S-expressions *)
 module Sig_generate_of_sexp = struct
-  let mk_type td =
-    combinator_type_of_td td ~f:(fun ~loc t -> [%type: Sexplib.Sexp.t -> [%t t] ])
+  let type_of_of_sexp ~loc t =
+    [%type: Sexplib.Sexp.t -> [%t t]]
+
+  let mk_type td = combinator_type_of_type_declaration td ~f:type_of_of_sexp
 
   let sig_of_td with_poly td =
     let of_sexp_type = mk_type td in
@@ -1558,6 +1545,7 @@ module Str_generate_of_sexp = struct
 end
 
 module Sexp_of = struct
+  let type_extension ty = Sig_generate_sexp_of.type_of_sexp_of ~loc:ty.ptyp_loc ty
   let core_type ty =
     Str_generate_sexp_of.sexp_of_type Renaming.identity ty
     |> Fun_or_match.expr ~loc:ty.ptyp_loc
@@ -1570,6 +1558,7 @@ module Sexp_of = struct
 end
 
 module Of_sexp = struct
+  let type_extension ty = Sig_generate_of_sexp.type_of_of_sexp ~loc:ty.ptyp_loc ty
   let core_type = Str_generate_of_sexp.type_of_sexp
 
   let sig_type_decl = Sig_generate_of_sexp.mk_sig
