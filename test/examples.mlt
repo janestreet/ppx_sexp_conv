@@ -7,8 +7,8 @@ module Position_for_polymorphic_variant_errors = struct
 end
 [%%expect{|
 Exception:
-Base0__Sexp_conv.Of_sexp_error
+(Sexplib.Conv.Of_sexp_error
  (Failure
-   "examples.mlt.Position_for_polymorphic_variant_errors.t3_of_sexp: no matching variant found",
+  "examples.mlt.Position_for_polymorphic_variant_errors.t3_of_sexp: no matching variant found")
  C).
 |}]

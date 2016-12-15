@@ -6,19 +6,19 @@ bug-reports: "https://github.com/janestreet/ppx_sexp_conv/issues"
 dev-repo: "https://github.com/janestreet/ppx_sexp_conv.git"
 license: "Apache-2.0"
 build: [
-  ["./configure" "--prefix" prefix]
-  [make]
+  ["jbuilder" "build-package" "ppx_sexp_conv" "-j" jobs]
 ]
 depends: [
-  "ocamlbuild"     {build}
-  "oasis"          {build & >= "0.4"}
-  "ocamlfind"      {build & >= "1.3.2"}
-  "js-build-tools" {build}
+  "jbuilder"
   "ppx_core"
   "ppx_driver"
-  "ppx_tools"      {>= "0.99.3"}
   "ppx_type_conv"
   "sexplib"
+  "ppx_tools"     {>= "0.99.3"}
 ]
 available: [ ocaml-version >= "4.03.0" ]
-conflicts: [ "oasis" {= "0.4.7"} ]
+descr: "
+Generation of S-expression conversion functions from type definitions
+
+Part of the Jane Street's PPX rewriters collection.
+"

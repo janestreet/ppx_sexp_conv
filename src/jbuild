@@ -1,7 +1,8 @@
 (library
  ((name ppx_sexp_conv)
   (public_name ppx_sexp_conv)
-  (public_release ((kind ppx_type_conv_plugin)))
-  (wrapped false)
+  (kind ppx_type_conv_plugin)
   (libraries (ppx_core ppx_type_conv ppx_driver ppx_sexp_conv_expander))
-  (preprocess ((no_preprocessing All)))))
+  (preprocess no_preprocessing)
+  (js_of_ocaml ())
+  ))

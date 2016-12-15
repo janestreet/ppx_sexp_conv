@@ -1,6 +1,8 @@
 (library
  ((name ppx_sexp_conv_expander)
   (public_name ppx_sexp_conv.expander)
-  (wrapped false)
-  (libraries (ocamlcommon ppx_core))
-  (preprocess ((metaquot All)))))
+  (libraries (compiler-libs.common ppx_core))
+  (ppx_runtime_libraries (sexplib))
+  (preprocess metaquot)
+  (js_of_ocaml ())
+  ))

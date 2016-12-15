@@ -389,7 +389,7 @@ module Str_generate_sexp_of = struct
     let loc = typ.ptyp_loc in
     match typ with
     | [%type:  _ ] ->
-      Fun [%expr  fun _ -> Sexp.Atom "_" ]
+      Fun [%expr  fun _ -> Sexplib.Sexp.Atom "_" ]
     | [%type: [%t? _] sexp_opaque ] ->
       Fun [%expr  Sexplib.Conv.sexp_of_opaque ]
     | { ptyp_desc = Ptyp_tuple tp; _ } -> Match [sexp_of_tuple renaming (loc,tp)]
