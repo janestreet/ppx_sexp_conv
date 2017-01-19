@@ -424,6 +424,10 @@ module Gadt = struct
   type 'a x = A : 'a -> 'b x [@@deriving sexp_of]
   let%test_unit _ = is_eq ([%sexp_of: int x] (A 1.)) "(A _)"
 
+  (* interaction with inline record *)
+  type _ x2 = A : { x : 'c } -> 'c x2 [@@deriving sexp_of]
+  let%test_unit _ = is_eq ([%sexp_of: int x2] (A { x = 1 })) "(A (x 1))"
+
   (* unused but colliding variables *)
   type (_, _) y = A : ('a, 'a) y [@@deriving sexp_of]
   let%test_unit _ = is_eq ([%sexp_of: (int, int) y] A) "A"
@@ -432,6 +436,9 @@ module Gadt = struct
   type (_, _) z = A : ('a * 'b) -> ('a, 'b) z [@@deriving sexp_of]
   let%test_unit _ = is_eq ([%sexp_of: (int, string) z] (A (1, "a"))) "(A (1 a))"
 
+  (* interaction with universal quantifiers *)
+  type _ z2 = A : { x : 'c. 'c option } -> 'c z2 [@@deriving sexp_of]
+  let%test_unit _ = is_eq ([%sexp_of: unit z2] (A { x = None })) "(A (x ()))"
 end
 
 module Anonymous_variable = struct

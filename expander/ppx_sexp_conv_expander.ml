@@ -108,6 +108,7 @@ end
 module Renaming : sig
   type t
   val identity : t
+  val add_universally_bound : t -> string -> t
 
   type binding_kind =
     | Universally_bound of string
@@ -117,7 +118,6 @@ module Renaming : sig
 
   val of_gadt : string list -> constructor_declaration -> t
 end = struct
-  type ('a, 'b) result = Ok of 'a | Error of 'b
   type t = (string, Location.error) result StringMap.t option
 
   let identity = None
@@ -125,6 +125,11 @@ end = struct
   type binding_kind =
     | Universally_bound of string
     | Existentially_bound
+
+  let add_universally_bound (t : t) name : t =
+    match t with
+    | None -> None
+    | Some map -> Some (StringMap.add ~key:name ~data:(Ok name) map)
 
   let binding_kind t var =
     match t with
@@ -472,9 +477,6 @@ module Str_generate_sexp_of = struct
   (* Polymorphic record fields *)
 
   and sexp_of_poly renaming parms tp =
-    assert (renaming = Renaming.identity); (* because this is only for record fields.
-                                              Otherwise, we'd need to update the renaming
-                                              with the newly bound vars. *)
     let loc = tp.ptyp_loc in
     let bindings =
       let mk_binding parm =
@@ -483,6 +485,7 @@ module Str_generate_sexp_of = struct
       in
       List.map ~f:mk_binding parms
     in
+    let renaming = List.fold_left parms ~init:renaming ~f:Renaming.add_universally_bound in
     match sexp_of_type renaming tp with
     | Fun fun_expr -> Fun (pexp_let ~loc Nonrecursive bindings fun_expr)
     | Match matchings ->
@@ -501,8 +504,7 @@ module Str_generate_sexp_of = struct
     in
     patt @ [p]
 
-  let sexp_of_record_field patt expr name tp ?sexp_of is_empty_expr =
-    let renaming = Renaming.identity in
+  let sexp_of_record_field ~renaming patt expr name tp ?sexp_of is_empty_expr =
     let loc = tp.ptyp_loc in
     let patt = mk_rec_patt loc patt name in
     let cnv_expr = match (sexp_of_type renaming tp) with
@@ -531,12 +533,11 @@ module Str_generate_sexp_of = struct
     in
     patt, expr
 
-  let sexp_of_default_field patt expr name tp ?sexp_of default =
-    sexp_of_record_field patt expr name tp ?sexp_of
+  let sexp_of_default_field ~renaming patt expr name tp ?sexp_of default =
+    sexp_of_record_field ~renaming patt expr name tp ?sexp_of
       (fun loc expr -> [%expr  Pervasives.(=) [%e default] [%e expr] ])
 
-  let sexp_of_label_declaration_list loc flds ~wrap_expr =
-    let renaming = Renaming.identity in
+  let sexp_of_label_declaration_list ~renaming loc flds ~wrap_expr =
     let list_empty_expr loc lst =
       [%expr
           match [%e lst] with
@@ -588,11 +589,11 @@ module Str_generate_sexp_of = struct
         patt, expr
       | {pld_name = {txt=name; loc};
          pld_type = [%type: [%t? tp] sexp_list]; _ } ->
-        sexp_of_record_field patt expr name tp
+        sexp_of_record_field ~renaming patt expr name tp
           ~sexp_of:[%expr  sexp_of_list ] list_empty_expr
       | {pld_name = {txt=name; loc};
          pld_type = [%type: [%t? tp] sexp_array]; _ } ->
-        sexp_of_record_field patt expr name tp
+        sexp_of_record_field ~renaming patt expr name tp
           ~sexp_of:[%expr  sexp_of_array ] array_empty_expr
       | {pld_name = {txt=name; loc}; pld_type = tp; _ } as ld ->
         begin match get_record_field_handler ~loc ld with
@@ -601,10 +602,10 @@ module Str_generate_sexp_of = struct
             | None ->
               Location.raise_errorf ~loc "no default to drop"
             | Some default ->
-              sexp_of_default_field patt expr name tp default
+              sexp_of_default_field ~renaming patt expr name tp default
           end
         | `drop_if test ->
-          sexp_of_record_field patt expr name tp
+          sexp_of_record_field ~renaming patt expr name tp
             (fun loc expr -> [%expr [%e test] [%e expr]])
         | `keep ->
           let patt = mk_rec_patt loc patt name in
@@ -643,7 +644,7 @@ module Str_generate_sexp_of = struct
          *                                Sexplib.Sexp.List [%e expr]
          *                              ]
          *     ]) *)
-        sexp_of_label_declaration_list loc lds
+        sexp_of_label_declaration_list ~renaming loc lds
           ~wrap_expr:(fun expr ->
             [%expr Sexplib.Sexp.List ([%e cnstr_expr] :: [%e expr])])
       in
@@ -698,8 +699,9 @@ module Str_generate_sexp_of = struct
         match td.ptype_kind with
         | Ptype_variant cds -> sexp_of_sum tps cds
         | Ptype_record  lds ->
+          let renaming = Renaming.identity in
           let patt, expr =
-            sexp_of_label_declaration_list loc lds
+            sexp_of_label_declaration_list ~renaming loc lds
               ~wrap_expr:(fun expr -> [%expr Sexplib.Sexp.List [%e expr]]) in
           Match [patt --> expr]
         | Ptype_open -> Location.raise_errorf ~loc
