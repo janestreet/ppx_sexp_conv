@@ -1,7 +1,6 @@
 (* sexp_conv: Preprocessing Module for Automated S-expression Conversions *)
 
-open! StdLabels
-open Ppx_core.Std
+open Ppx_core
 
 module Type_conv = Ppx_type_conv.Std.Type_conv
 module Attrs     = Ppx_sexp_conv_expander.Attrs

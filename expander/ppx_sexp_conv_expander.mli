@@ -1,6 +1,4 @@
-open Asttypes
-open Parsetree
-open Ppx_core.Std
+open Ppx_core
 
 module Attrs : sig
   val default      : (label_declaration, expression) Attribute.t

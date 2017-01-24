@@ -1,20 +1,5 @@
-open StdLabels
-open MoreLabels
-open Ppx_core.Std
-open Asttypes
-open Parsetree
+open Ppx_core
 open Ast_builder.Default
-
-[@@@metaloc loc]
-
-module StringMap = Map.Make(String)
-module String = struct
-  include String
-  let is_prefix s ~prefix =
-    String.length prefix <= String.length s
-    && String.sub s ~pos:0 ~len:(String.length prefix) = prefix
-  ;;
-end
 
 let ( --> ) lhs rhs = case ~guard:None ~lhs ~rhs
 
@@ -28,7 +13,7 @@ let pexp_match ~loc expr cases =
     begin match pc_lhs, expr with
     | { ppat_attributes = []; ppat_desc = Ppat_var { txt = ident; _ }; _ },
       { pexp_attributes = []; pexp_desc = Pexp_ident { txt = Lident ident'; _ }; _ }
-      when ident = ident' -> pc_rhs
+      when String.equal ident ident' -> pc_rhs
     | _ ->
       pexp_let ~loc Nonrecursive
         [value_binding ~loc ~pat:pc_lhs ~expr]
@@ -72,9 +57,9 @@ module Fun_or_match = struct
     | Match cases -> pexp_match ~loc e cases
 
   let map_tmp_vars ~loc ts =
-    let vars = List.mapi ts ~f:(fun i _ -> "v" ^ string_of_int i) in
+    let vars = List.mapi ts ~f:(fun i _ -> "v" ^ Int.to_string i) in
     let bindings =
-      List.map2 vars ts ~f:(fun var t ->
+      List.map2_exn vars ts ~f:(fun var t ->
         let expr = unroll ~loc (evar ~loc var) t in
         value_binding ~loc ~pat:(pvar ~loc var) ~expr)
     in
@@ -118,7 +103,8 @@ module Renaming : sig
 
   val of_gadt : string list -> constructor_declaration -> t
 end = struct
-  type t = (string, Location.error) result StringMap.t option
+  type error = string Loc.t
+  type t = (string, error) Result.t Map.M(String).t option
 
   let identity = None
 
@@ -129,16 +115,16 @@ end = struct
   let add_universally_bound (t : t) name : t =
     match t with
     | None -> None
-    | Some map -> Some (StringMap.add ~key:name ~data:(Ok name) map)
+    | Some map -> Some (Map.add ~key:name ~data:(Ok name) map)
 
   let binding_kind t var =
     match t with
     | None -> Universally_bound var
     | Some map ->
-      match StringMap.find var map with
-      | exception Not_found -> Existentially_bound
-      | Ok value    -> Universally_bound value
-      | Error error -> raise (Location.Error error)
+      match Map.find map var with
+      | None                      -> Existentially_bound
+      | Some (Ok value)           -> Universally_bound value
+      | Some (Error { loc; txt }) -> raise (Location.raise_errorf ~loc "%s" txt)
 
   (* Return a map translating type variables appearing in the return type of a GADT
      constructor to their name in the type parameter list.
@@ -164,16 +150,17 @@ end = struct
   let of_gadt =
     (* Add all type variables of a type to a map. *)
     let add_typevars = object
-      inherit [ (string, Location.error) result StringMap.t ] Ast_traverse.fold
+      inherit [ (string, error) Result.t Map.M(String).t ] Ast_traverse.fold
         as super
       method! core_type ty map =
         match ty.ptyp_desc with
         | Ptyp_var var ->
           let error =
-            Location.error ~loc:ty.ptyp_loc
-              "ppx_sexp_conv: variable is not a parameter of the type constructor"
+            { loc = ty.ptyp_loc
+            ; txt = "ppx_sexp_conv: variable is not a parameter of the type constructor"
+            }
           in
-          StringMap.add map ~key:var ~data:(Error error)
+          Map.add map ~key:var ~data:(Error error)
         | _ -> super#core_type ty map
     end in
 
@@ -181,13 +168,13 @@ end = struct
       match tp_in_return_type.ptyp_desc with
       | Ptyp_var var ->
         let data =
-          if StringMap.mem var map then
+          if Map.mem map var then
             let loc = tp_in_return_type.ptyp_loc in
-            Error (Location.error ~loc "ppx_sexp_conv: duplicate variable")
+            Error { loc; txt = "ppx_sexp_conv: duplicate variable" }
           else
             Ok tp_name
         in
-        StringMap.add map ~key:var ~data
+        Map.add map ~key:var ~data
       | _ ->
         add_typevars#core_type tp_in_return_type map
     in
@@ -201,7 +188,8 @@ end = struct
           if List.length params <> List.length tps then
             None
           else
-            Some (List.fold_left2 tps params ~init:StringMap.empty ~f:aux)
+            Some (Caml.ListLabels.fold_left2 tps params ~init:(Map.empty (module String))
+                    ~f:aux)
         | _ ->
           None
 end
@@ -219,7 +207,7 @@ let replace_variables_by_underscores =
 
 let rigid_type_var ~type_name x =
   let prefix = "rigid_" in
-  if x = type_name || String.is_prefix x ~prefix
+  if String.equal x type_name || String.is_prefix x ~prefix
   then prefix ^ x ^ "_of_type_" ^ type_name
   else x
 
@@ -249,7 +237,7 @@ let tvars_of_core_type : (core_type -> string list) =
     inherit [string list] Ast_traverse.fold as super
     method! core_type x acc =
       match x.ptyp_desc with
-      | Ptyp_var x -> if List.mem x ~set:acc then acc else x :: acc
+      | Ptyp_var x -> if List.mem acc x ~equal:String.equal then acc else x :: acc
       | _ ->
         super#core_type x acc
   end
@@ -366,8 +354,7 @@ module Sig_generate_of_sexp = struct
       ]
 
   let mk_sig ~poly ~loc:_ ~path:_ (_rf, tds) =
-    List.map tds ~f:(sig_of_td poly)
-    |> List.flatten
+    List.concat_map tds ~f:(sig_of_td poly)
 end
 
 module Str_generate_sexp_of = struct
@@ -408,7 +395,7 @@ module Str_generate_sexp_of = struct
              (List.map args
                 ~f:(fun tp -> Fun_or_match.expr ~loc (sexp_of_type renaming tp))))
     | { ptyp_desc = Ptyp_arrow (_,_,_); _ } ->
-      Fun [%expr  fun _f -> Sexplib.Conv.sexp_of_fun Pervasives.ignore ]
+      Fun [%expr  fun _f -> Sexplib.Conv.(sexp_of_fun ignore) ]
     | { ptyp_desc = Ptyp_variant (row_fields, _, _); _ } ->
       sexp_of_variant renaming (loc,row_fields)
     | { ptyp_desc = Ptyp_poly (parms, poly_tp); _ } ->
@@ -454,7 +441,7 @@ module Str_generate_sexp_of = struct
         ppat_variant ~loc cnstr (Some patt) --> expr
 
       | Rinherit { ptyp_desc = Ptyp_constr (id, []); _ } ->
-        ppat_alias ~loc (ppat_type ~loc id) (Location.mkloc "v" loc) -->
+        ppat_alias ~loc (ppat_type ~loc id) (Loc.make "v" ~loc) -->
         sexp_of_type_constr ~loc id [[%expr v]]
       | Rtag (_,_,true,[_])
       | Rtag (_,_,_,_::_::_) ->
@@ -462,7 +449,7 @@ module Str_generate_sexp_of = struct
 
       | Rinherit ({ ptyp_desc = Ptyp_constr (id, _::_); _ } as typ) ->
         let call = Fun_or_match.expr ~loc (sexp_of_type renaming typ) in
-        ppat_alias ~loc (ppat_type ~loc id) (Location.mkloc "v" loc) -->
+        ppat_alias ~loc (ppat_type ~loc id) (Loc.make "v" ~loc) -->
         [%expr [%e call] v]
 
       | Rinherit _ ->
@@ -499,7 +486,7 @@ module Str_generate_sexp_of = struct
 
   let mk_rec_patt loc patt name =
     let p =
-      Location.mkloc (Longident.Lident name) loc ,
+      Loc.make (Longident.Lident name) ~loc ,
       pvar ~loc ("v_" ^ name)
     in
     patt @ [p]
@@ -535,7 +522,7 @@ module Str_generate_sexp_of = struct
 
   let sexp_of_default_field ~renaming patt expr name tp ?sexp_of default =
     sexp_of_record_field ~renaming patt expr name tp ?sexp_of
-      (fun loc expr -> [%expr  Pervasives.(=) [%e default] [%e expr] ])
+      (fun loc expr -> [%expr  Sexplib.Conv.(=) [%e default] [%e expr] ])
 
   let sexp_of_label_declaration_list ~renaming loc flds ~wrap_expr =
     let list_empty_expr loc lst =
@@ -1160,7 +1147,7 @@ module Str_generate_of_sexp = struct
                 has_nonopt_fields := true;
                 (
                   [%expr
-                      (Pervasives.(=) [%e fld] None, [%e estring ~loc nm]) ] :: bi_lst,
+                      (Sexplib.Conv.(=) [%e fld] None, [%e estring ~loc nm]) ] :: bi_lst,
                   [%pat?  Some [%p pvar ~loc (nm ^ "_value")] ] :: good_patts
                 )
           in
@@ -1267,12 +1254,16 @@ module Str_generate_of_sexp = struct
         ]
       in
       iter field_sexps;
-      if Pervasives.(<>) (!duplicates) [] then
+      match !duplicates with
+      | _ :: _ ->
         Sexplib.Conv_error.record_duplicate_fields
           _tp_loc (!duplicates) sexp
-      else if Pervasives.(<>) (!extra) [] then
-        Sexplib.Conv_error.record_extra_fields _tp_loc (!extra) sexp
-      else [%e mk_handle_record_match_result has_poly (loc,flds) ~wrap_expr]
+      | [] ->
+        match !extra with
+        | _ :: _ ->
+          Sexplib.Conv_error.record_extra_fields _tp_loc (!extra) sexp
+        | [] ->
+          [%e mk_handle_record_match_result has_poly (loc,flds) ~wrap_expr]
     ]
 
   let is_poly (_,flds) =
@@ -1435,7 +1426,7 @@ module Str_generate_of_sexp = struct
     let external_name = type_name ^ "_of_sexp" in
     let internal_name = "__" ^ type_name ^ "_of_sexp__" in
     let arg_patts, arg_exprs =
-      List.split (
+      List.unzip (
         List.map ~f:(fun tp ->
             let name = "_of_" ^ tp in
             pvar ~loc name, evar ~loc name)
@@ -1533,9 +1524,8 @@ module Str_generate_of_sexp = struct
       | Match matchings -> pexp_match ~loc [%expr sexp] matchings
     in
     let full_type_name =
-      let _, line_num, _ = Location.get_pos_info loc.Location.loc_start in
       Printf.sprintf "%s line %i: %s"
-        path line_num
+        path loc.loc_start.pos_lnum
         (string_of_core_type ctyp)
     in
     [%expr
