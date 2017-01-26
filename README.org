@@ -37,7 +37,7 @@ open Sexplib.Std
 #+end_src
 
 If you're using [[https://github.com/janestreet/core][=Core=]] or [[https://github.com/janestreet/core_kernel][=Core_kernel=]], you can get the same effect with
-=open Core.Std= or =open Core_kernel.Std=.
+=open Core= or =open Core_kernel.Std=.
 
 It's also possible to construct converters based on type expressions,
 /i.e./:
