@@ -127,7 +127,7 @@ optional. /e.g./:
   type t =
     { x : int option;
       y : int sexp_option;
-    } with sexp
+    } [@@deriving sexp]
 #+end_src
 
 The type =sexp_option= is equivalent to ordinary options, but is
@@ -181,7 +181,7 @@ converting from OCaml values.
 For example:
 
 #+begin_src ocaml
-  type t = A | B of int * float * t with sexp
+  type t = A | B of int * float * t [@@deriving sexp]
   B (42, 3.14, B (-1, 2.72, A))  =>  (B 42 3.14 (B -1 2.72 A))
 #+end_src
 
