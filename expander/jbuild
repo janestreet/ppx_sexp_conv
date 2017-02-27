@@ -6,3 +6,5 @@
   (preprocess (pps (ppx_metaquot)))
   (js_of_ocaml ())
   ))
+
+(jbuild_version jane_street)
