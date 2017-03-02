@@ -1,5 +1,3 @@
-(toplevel_expect_tests
- ((libraries (sexplib))))
 
 (library
  ((name ppx_sexp_conv_test)
