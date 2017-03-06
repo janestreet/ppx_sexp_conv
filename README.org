@@ -1,3 +1,6 @@
+#+TITLE: ppx_sexp_conv
+#+PARENT: ../README.md
+
 * [@@deriving sexp]
 
 =ppx_sexp_conv= is a PPX syntax extension that generates code for
@@ -202,6 +205,22 @@ example as in:
   type ab = [ `A | `B ] [@@deriving sexp]
   type cd = [ `C | `D ] [@@deriving sexp]
   type abcd = [ ab | cd ] [@@deriving sexp]
+#+end_src
+
+However, because `ppx_sexp_conv` needs to generate additional code to
+support inclusions of polymorphic variants, `ppx_sexp_conv` needs to
+know when processing a type definition whether it might be included in
+a polymorphic variant. `ppx_sexp_conv` will only generate the extra
+code automatically in the common case where the type definition is
+syntactically a polymorphic variant like in the example
+above. Otherwise, you will need to indicate it by using `[@@deriving
+sexp_poly]` (resp `of_sexp_poly`) instead of `[@@deriving sexp]` (resp
+`of_sexp`):
+
+#+begin_src ocaml
+  type ab = [ `A | `B ] [@@deriving sexp]
+  type alias_of_ab = ab [@@deriving sexp_poly]
+  type abcd = [ ab | `C | `D ] [@@deriving sexp]
 #+end_src
 
 *** Polymorphic values
