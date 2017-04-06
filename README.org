@@ -49,7 +49,7 @@ It's also possible to construct converters based on type expressions,
   [%sexp_of: (int * string) list] [1,"one"; 2,"two"]
   |> Sexp.to_string;;
   => "((1 one) (2 two))"
-  
+
   [%sexp_of: (int * string) list] [1,"one"; 2,"two"]
   |> [%of_sexp: (int * string) list];;
   => [1,"one"; 2,"two"]
@@ -61,7 +61,7 @@ putting underscores for that type name.
 #+begin_src ocaml
   [%sexp_of: (int * _) list] [1,"one"; 2,"two"]
   |> Sexp.to_string;;
-  => "((1 _)(2 _))"  
+  => "((1 _)(2 _))"
 #+end_src
 
 ** Conversion rules
