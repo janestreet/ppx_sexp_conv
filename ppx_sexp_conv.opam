@@ -9,7 +9,7 @@ build: [
   ["jbuilder" "build" "--only-packages" "ppx_sexp_conv" "--root" "." "-j" jobs "@install"]
 ]
 depends: [
-  "jbuilder"                {build & >= "1.0+beta2"}
+  "jbuilder"                {build & >= "1.0+beta8"}
   "ppx_core"
   "ppx_driver"
   "ppx_metaquot"

@@ -677,7 +677,7 @@ module Str_generate_sexp_of = struct
 
   (* Generate code from type definitions *)
 
-  let sexp_of_td td =
+  let sexp_of_td td ~rec_flag =
     let td = name_type_params_in_td td in
     let tps = List.map td.ptype_params ~f:(fun tp -> (get_type_param_name tp).txt) in
     let {ptype_name = {txt = type_name; loc = _}; ptype_loc = loc; _} = td in
@@ -720,27 +720,27 @@ module Str_generate_sexp_of = struct
         let coercion = [%expr  (v : [%t ty_src] :> [%t ty_dst]) ] in
         match body with
         | Fun fun_expr ->
-          [%expr  fun v -> [%e fun_expr] [%e coercion] ]
+          [%expr fun v -> [%e eapply ~loc fun_expr [coercion]] ]
         | Match matchings ->
-          [%expr  fun v -> [%e pexp_match ~loc coercion matchings]]
+          [%expr fun v -> [%e pexp_match ~loc coercion matchings]]
       else
         match body with
           (* Prevent violation of value restriction and problems with recursive types by
              eta-expanding function definitions *)
-        | Fun fun_expr -> [%expr fun v -> [%e fun_expr] v ]
+        | Fun fun_expr -> [%expr fun v -> [%e eapply ~loc fun_expr [[%expr v]]] ]
         | Match matchings -> pexp_function ~loc matchings
     in
     let typ = Sig_generate_sexp_of.mk_type td in
     let func_name = "sexp_of_" ^ type_name in
     let body =
       let patts = List.map tps ~f:(fun id -> pvar ~loc ("_of_" ^ id)) in
-      eabstract ~loc patts body
+      eta_reduce_if_possible_and_nonrec ~rec_flag (eabstract ~loc patts body)
     in
     [constrained_function_binding loc td typ ~tps ~func_name body]
 
   let sexp_of_tds ~loc ~path:_ (rec_flag, tds) =
     let rec_flag = really_recursive rec_flag tds in
-    let bindings = List.map tds ~f:sexp_of_td |> List.concat in
+    let bindings = List.concat_map tds ~f:(sexp_of_td ~rec_flag) in
     pstr_value_list ~loc rec_flag bindings
 
   let sexp_of_exn ~loc:_ ~path ec =
@@ -1382,7 +1382,7 @@ module Str_generate_of_sexp = struct
 
   (* Generate code from type definitions *)
 
-  let td_of_sexp ~loc:_ ~poly ~path td =
+  let td_of_sexp ~loc:_ ~poly ~path ~rec_flag td =
     let td = name_type_params_in_td td in
     let tps = List.map td.ptype_params ~f:(fun tp -> (get_type_param_name tp).txt) in
     let {ptype_name = {txt = type_name; loc = _}; ptype_loc = loc; _} = td in
@@ -1420,7 +1420,7 @@ module Str_generate_of_sexp = struct
       match body with
       (* Prevent violation of value restriction and problems with
          recursive types by eta-expanding function definitions *)
-      | Fun fun_expr -> [%expr fun t -> [%e fun_expr] t ]
+      | Fun fun_expr -> [%expr fun t -> [%e eapply ~loc fun_expr [[%expr t]]] ]
       | Match matchings -> pexp_function ~loc matchings
     in
     let external_name = type_name ^ "_of_sexp" in
@@ -1434,14 +1434,18 @@ module Str_generate_of_sexp = struct
     in
     let bind_tp_loc_in =
       let full_type_name = Printf.sprintf "%s.%s" path type_name in
-      (fun e ->
-         [%expr
-           let _tp_loc = [%e estring ~loc full_type_name] in
-           [%e e]])
+      fun e ->
+        match e with
+        | { pexp_desc = Pexp_ident _; _ } ->
+          (* we definitely don't use the string, so clean up the generated code a bit *)
+          e
+        | _ -> [%expr let _tp_loc = [%e estring ~loc full_type_name] in [%e e]]
     in
     let internal_fun_body =
       if create_internal_function
-      then Some (bind_tp_loc_in (eabstract ~loc arg_patts body))
+      then Some (bind_tp_loc_in
+                   (eta_reduce_if_possible_and_nonrec ~rec_flag
+                      (eabstract ~loc arg_patts body)))
       else None
     in
     let external_fun_body =
@@ -1462,7 +1466,9 @@ module Str_generate_of_sexp = struct
         else
           true, body
       in
-      let body_with_lambdas = eabstract ~loc arg_patts body_below_lambdas in
+      let body_with_lambdas =
+        eta_reduce_if_possible_and_nonrec ~rec_flag
+          (eabstract ~loc arg_patts body_below_lambdas) in
       if need_tp_loc
       then bind_tp_loc_in body_with_lambdas
       else body_with_lambdas
@@ -1481,39 +1487,30 @@ module Str_generate_of_sexp = struct
 
   (* Generate code from type definitions *)
   let tds_of_sexp ~loc ~poly ~path (rec_flag, tds) =
-    begin
-      (* special case for singleton type defs to match camlp4 *)
-      let singleton = (match tds with [_] -> true | _ -> false) in
-      if singleton
-      then
-        match really_recursive rec_flag tds with
-        | Recursive ->
-          let bindings =
-            List.map tds ~f:(fun td ->
-              let internals,externals = td_of_sexp ~loc ~poly ~path td in
-              internals @ externals)
-            |> List.concat
-          in
-          pstr_value_list ~loc Recursive bindings
-        | Nonrecursive ->
-          let bindings =
-            List.map tds ~f:(fun td ->
-              let internals,externals = td_of_sexp ~loc ~poly ~path td in
-              pstr_value_list ~loc Nonrecursive internals @
-              pstr_value_list ~loc Nonrecursive externals
-            )
-            |> List.concat
-          in
-          bindings
-      else
+    let singleton = (match tds with [_] -> true | _ -> false) in
+    if singleton then
+      let rec_flag = really_recursive rec_flag tds in
+      match rec_flag with
+      | Recursive ->
         let bindings =
-          List.map tds ~f:(fun td ->
-            let internals,externals = td_of_sexp ~poly ~loc ~path td in
+          List.concat_map tds ~f:(fun td ->
+            let internals,externals = td_of_sexp ~loc ~poly ~path ~rec_flag td in
             internals @ externals)
-          |> List.concat
         in
-        pstr_value_list ~loc rec_flag bindings
-    end
+        pstr_value_list ~loc Recursive bindings
+      | Nonrecursive ->
+        List.concat_map tds ~f:(fun td ->
+          let internals,externals = td_of_sexp ~loc ~poly ~path ~rec_flag td in
+          pstr_value_list ~loc Nonrecursive internals @
+          pstr_value_list ~loc Nonrecursive externals
+        )
+    else
+      let bindings =
+        List.concat_map tds ~f:(fun td ->
+          let internals,externals = td_of_sexp ~poly ~loc ~path ~rec_flag td in
+          internals @ externals)
+      in
+      pstr_value_list ~loc rec_flag bindings
 
   let type_of_sexp ~path ctyp =
     let loc = ctyp.ptyp_loc in
