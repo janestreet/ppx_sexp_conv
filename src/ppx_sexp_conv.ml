@@ -101,11 +101,14 @@ module Of_sexp_poly = struct
   ;;
 end
 
-let () =
-  Type_conv.add_alias "sexp" [Sexp_of.deriver; Of_sexp.deriver]
-    ~str_exception:[Sexp_of.deriver]
-    ~sig_exception:[Sexp_of.deriver]
-  |> Type_conv.ignore;
-  Type_conv.add_alias "sexp_poly" [Sexp_of.deriver; Of_sexp_poly.deriver]
-  |> Type_conv.ignore;
-;;
+let sexp_of = Sexp_of.deriver
+let of_sexp = Of_sexp.deriver
+let of_sexp_poly = Of_sexp_poly.deriver
+
+let sexp =
+  Type_conv.add_alias "sexp" [sexp_of; of_sexp]
+    ~str_exception:[sexp_of]
+    ~sig_exception:[sexp_of]
+
+let sexp_poly =
+  Type_conv.add_alias "sexp_poly" [sexp_of; of_sexp_poly]
