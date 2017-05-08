@@ -351,6 +351,37 @@ module Drop_if = struct
   } [@@deriving sexp]
 end
 
+module Omit_nil = struct
+  type natural_option = int
+
+  let sexp_of_natural_option i =
+    if i >= 0 then sexp_of_int i
+    else sexp_of_unit ()
+
+  let natural_option_of_sexp = function
+    | List [] -> -1
+    | sexp -> int_of_sexp sexp
+
+  let check sexp_of_t t_of_sexp str t =
+    let sexp = Sexp.of_string str in
+    assert (sexp = sexp_of_t t);
+    assert (t_of_sexp sexp = t);
+  ;;
+
+  type t =
+    { a : natural_option [@sexp.omit_nil] }
+  [@@deriving sexp]
+  let%test_unit _ = check sexp_of_t t_of_sexp "()" { a = -1 }
+  let%test_unit _ = check sexp_of_t t_of_sexp "((a 1))" { a = 1 }
+
+  type t2 =
+    | A of { a : int list [@sexp.omit_nil] }
+  [@@deriving sexp]
+  let%test_unit _ = check sexp_of_t2 t2_of_sexp "(A)" (A { a = [] })
+  let%test_unit _ = check sexp_of_t2 t2_of_sexp "(A (a (1)))" (A { a = [ 1 ] })
+
+end
+
 module No_unused_rec_warning = struct
   type r = { field : r -> unit }
   [@@deriving sexp_of]

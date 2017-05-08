@@ -155,11 +155,11 @@ More complex default values can be specified explicitly using several
 constructs, /e.g./:
 
 #+begin_src ocaml
-  let z_test v = v > 42
   type t =
-    { x : int [@default 42];
-      y : int [@default 3] [@sexp_drop_default];
-      z : int [@default 3] [@sexp_drop_if fun x -> x = 3];
+    { a : int [@default 42];
+      b : int [@default 3] [@sexp_drop_default];
+      c : int [@default 3] [@sexp_drop_if fun x -> x = 3];
+      d : int Queue.t [@sexp.omit_nil]
     } [@@deriving sexp]
 #+end_src
 
@@ -168,9 +168,12 @@ selected if the field is not specified, when converting from an
 s-expression.  The =@sexp_drop_default= annotation implies that the
 field will be dropped when generating the s-expression if the value
 being serialized is equal to the default according to polymorphic
-equality.  Finally, =@sexp_drop_if= is like =@sexp_drop_default=,
-except that it lets you specify the condition under which the field is
-dropped.
+equality.  =@sexp_drop_if= is like =@sexp_drop_default=, except that
+it lets you specify the condition under which the field is dropped.
+Finally, =@sexp.omit_nil= means to treat a missing field as if it
+has value =List []= when reading, and drop the field if it has value
+=List []= when writing. It is a generalization of =sexp_array= and
+=sexp_list=.
 
 *** Variants
 

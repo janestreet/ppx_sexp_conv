@@ -39,6 +39,12 @@ module Attrs = struct
       Attribute.Context.label_declaration
       Ast_pattern.(pstr (pstr_eval __ nil ^:: nil))
       (fun x -> x)
+
+  let omit_nil =
+    Attribute.declare "sexp.omit_nil"
+      Attribute.Context.label_declaration
+      Ast_pattern.(pstr nil)
+      ()
 end
 
 module Fun_or_match = struct
@@ -360,18 +366,40 @@ end
 module Str_generate_sexp_of = struct
   (* Handling of record defaults *)
 
-  type record_field_handler = [ `keep | `drop_default | `drop_if of expression ]
+  type record_field_handler =
+    [ `keep
+    | `drop_default
+    | `drop_if of expression
+    | `omit_nil
+    | `sexp_array of core_type
+    | `sexp_bool
+    | `sexp_list of core_type
+    | `sexp_option of core_type
+    ]
 
   let get_record_field_handler ~loc ld : record_field_handler =
-    match
-      Attribute.get Attrs.drop_default ld,
-      Attribute.get Attrs.drop_if ld
-    with
-    | None, None -> `keep
-    | Some (), None -> `drop_default
-    | None, Some e -> `drop_if e
-    | Some (), Some _ ->
-      Location.raise_errorf ~loc "sexp record field handler defined twice"
+    let get_attribute attr ~f =
+      Option.map (Attribute.get attr ld) ~f:(fun x -> f x, Attribute.name attr)
+    in
+    let attributes =
+      List.filter_opt
+        [ get_attribute Attrs.drop_default ~f:(fun () -> `drop_default)
+        ; get_attribute Attrs.drop_if ~f:(fun x -> `drop_if x)
+        ; get_attribute Attrs.omit_nil ~f:(fun () -> `omit_nil)
+        ; (match ld.pld_type with
+           | [%type: sexp_bool ] -> Some (`sexp_bool, "sexp_bool")
+           | [%type: [%t? ty] sexp_option ] -> Some (`sexp_option ty, "sexp_option")
+           | [%type: [%t? ty] sexp_list ] -> Some (`sexp_list ty, "sexp_list")
+           | [%type: [%t? ty] sexp_array ] -> Some (`sexp_array ty, "sexp_array")
+           | _ -> None)
+        ]
+    in
+    match attributes with
+    | [] -> `keep
+    | [ (v, _) ] -> v
+    | _ :: _ :: _ ->
+      Location.raise_errorf ~loc "The following elements are mutually exclusive: %s"
+        (String.concat ~sep:" " (List.map attributes ~f:snd))
 
   let sexp_of_type_constr ~loc id args =
     type_constr_conv ~loc id ~f:(fun s -> "sexp_of_" ^ s) args
@@ -537,9 +565,11 @@ module Str_generate_sexp_of = struct
           | [||] -> true
           | _ -> false ]
     in
-    let coll ((patt : (Longident.t loc * pattern) list), expr) = function
-      | {pld_name = {txt=name; loc};
-         pld_type = [%type: [%t? tp] sexp_option]; _ } ->
+    let coll ((patt : (Longident.t loc * pattern) list), expr) ld =
+      let name = ld.pld_name.txt in
+      let loc = ld.pld_name.loc in
+      match get_record_field_handler ~loc ld with
+      | `sexp_option tp ->
         let patt = mk_rec_patt loc patt name in
         let vname = [%expr  v ] in
         let cnv_expr = Fun_or_match.unroll ~loc vname (sexp_of_type renaming tp) in
@@ -559,8 +589,7 @@ module Str_generate_sexp_of = struct
           ]
         in
         patt, expr
-      | {pld_name = {txt=name; loc};
-         pld_type = [%type: sexp_bool]; _ } ->
+      | `sexp_bool ->
         let patt = mk_rec_patt loc patt name in
         let expr =
           [%expr
@@ -574,42 +603,45 @@ module Str_generate_sexp_of = struct
           ]
         in
         patt, expr
-      | {pld_name = {txt=name; loc};
-         pld_type = [%type: [%t? tp] sexp_list]; _ } ->
+      | `sexp_list tp ->
         sexp_of_record_field ~renaming patt expr name tp
           ~sexp_of:[%expr  sexp_of_list ] list_empty_expr
-      | {pld_name = {txt=name; loc};
-         pld_type = [%type: [%t? tp] sexp_array]; _ } ->
+      | `sexp_array tp ->
         sexp_of_record_field ~renaming patt expr name tp
           ~sexp_of:[%expr  sexp_of_array ] array_empty_expr
-      | {pld_name = {txt=name; loc}; pld_type = tp; _ } as ld ->
-        begin match get_record_field_handler ~loc ld with
-        | `drop_default -> begin
-            match Attribute.get Attrs.default ld with
-            | None ->
-              Location.raise_errorf ~loc "no default to drop"
-            | Some default ->
-              sexp_of_default_field ~renaming patt expr name tp default
-          end
-        | `drop_if test ->
-          sexp_of_record_field ~renaming patt expr name tp
-            (fun loc expr -> [%expr [%e test] [%e expr]])
-        | `keep ->
-          let patt = mk_rec_patt loc patt name in
-          let vname = evar ~loc ("v_" ^ name) in
-          let cnv_expr = Fun_or_match.unroll ~loc vname (sexp_of_type renaming tp) in
-          let expr =
-            [%expr
-             let arg = [%e cnv_expr] in
-             let bnd =
-               Sexplib.Sexp.List [Sexplib.Sexp.Atom [%e estring ~loc name]; arg]
-             in
-             let bnds = bnd :: bnds in
-             [%e expr]
-            ]
-          in
-          patt, expr
+      | `drop_default ->
+        let tp = ld.pld_type in
+        begin match Attribute.get Attrs.default ld with
+        | None ->
+          Location.raise_errorf ~loc "no default to drop"
+        | Some default ->
+          sexp_of_default_field ~renaming patt expr name tp default
         end
+      | `drop_if test ->
+        let tp = ld.pld_type in
+        sexp_of_record_field ~renaming patt expr name tp
+          (fun loc expr -> [%expr [%e test] [%e expr]])
+      | `omit_nil | `keep as test ->
+        let tp = ld.pld_type in
+        let patt = mk_rec_patt loc patt name in
+        let vname = evar ~loc ("v_" ^ name) in
+        let cnv_expr = Fun_or_match.unroll ~loc vname (sexp_of_type renaming tp) in
+        let bnds =
+          match test with
+          | `keep ->
+            [%expr
+              let arg = [%e cnv_expr] in
+              Sexplib.Sexp.List [Sexplib.Sexp.Atom [%e estring ~loc name]; arg] :: bnds
+            ]
+          | `omit_nil ->
+            [%expr
+              match [%e cnv_expr] with
+              | Sexplib.Sexp.List [] -> bnds
+              | arg ->
+                Sexplib.Sexp.List [Sexplib.Sexp.Atom [%e estring ~loc name]; arg] :: bnds
+            ]
+        in
+        patt, [%expr let bnds = [%e bnds] in [%e expr]]
     in
     let init_expr = wrap_expr [%expr bnds] in
     let patt, expr =
@@ -1077,41 +1109,65 @@ module Str_generate_of_sexp = struct
 
   (* Record conversions *)
 
+  let get_record_field_handler ~loc ld =
+    let get_attribute attr ~f =
+      Option.map (Attribute.get attr ld) ~f:(fun x -> f x, Attribute.name attr)
+    in
+    let attributes =
+      List.filter_opt
+        [ get_attribute Attrs.default ~f:(fun default -> `default default)
+        ; get_attribute Attrs.omit_nil ~f:(fun () -> `omit_nil)
+        ; (match ld.pld_type with
+           | [%type: sexp_bool ] -> Some (`sexp_bool, "sexp_bool")
+           | [%type: [%t? ty] sexp_option ] -> Some (`sexp_option ty, "sexp_option")
+           | [%type: [%t? ty] sexp_list ] -> Some (`sexp_list ty, "sexp_list")
+           | [%type: [%t? ty] sexp_array ] -> Some (`sexp_array ty, "sexp_array")
+           | _ -> None)
+        ]
+    in
+    match attributes with
+    | [] -> None
+    | [ (v, _) ] -> Some v
+    | _ :: _ :: _ ->
+      Location.raise_errorf ~loc "The following elements are mutually exclusive: %s"
+        (String.concat ~sep:" " (List.map attributes ~f:snd))
+
   (* Generate code for extracting record fields *)
   let mk_extract_fields (loc,flds) =
     let rec loop no_args args = function
-      | {pld_name = {txt=nm; loc};
-         pld_type = [%type: sexp_bool ] ; _ } :: more_flds ->
-        let no_args =
-          (pstring ~loc nm -->
-           [%expr
-             if ! [%e evar ~loc (nm ^ "_field")] then
-               duplicates := ( field_name :: !duplicates )
-             else [%e evar ~loc (nm ^ "_field")] := true
-           ]
-          ) :: no_args
-        in
-        loop no_args args more_flds
-      | {pld_name = {txt=nm; loc};
-         pld_type = [%type: [%t? tp] sexp_option ] ; _ } :: more_flds
-      | {pld_name = {txt=nm; loc}; pld_type = tp; _ } :: more_flds ->
-        let unrolled =
-          Fun_or_match.unroll ~loc [%expr  _field_sexp ] (type_of_sexp tp)
-        in
-        let args =
-          (pstring ~loc nm -->
-           [%expr
-             match ! [%e evar ~loc (nm ^ "_field")] with
-             | None ->
-               let fvalue = [%e unrolled] in
-               [%e evar ~loc (nm ^ "_field")] := Some fvalue
-             | Some _ ->
-               duplicates := (field_name :: ! duplicates) ]
-          ) :: args
-        in
-        loop no_args args more_flds
-      | [] ->
-        no_args,args
+      | [] -> no_args,args
+      | ld :: more_flds ->
+        let loc = ld.pld_name.loc in
+        let nm = ld.pld_name.txt in
+        match get_record_field_handler ~loc ld, ld.pld_type with
+        | Some `sexp_bool, _ ->
+          let no_args =
+            (pstring ~loc nm -->
+             [%expr
+               if ! [%e evar ~loc (nm ^ "_field")] then
+                 duplicates := ( field_name :: !duplicates )
+               else [%e evar ~loc (nm ^ "_field")] := true
+             ]
+            ) :: no_args
+          in
+          loop no_args args more_flds
+        | Some (`sexp_option tp), _
+        | (None | Some (`default _ | `omit_nil | `sexp_array _ | `sexp_list _)), tp ->
+          let unrolled =
+            Fun_or_match.unroll ~loc [%expr  _field_sexp ] (type_of_sexp tp)
+          in
+          let args =
+            (pstring ~loc nm -->
+             [%expr
+               match ! [%e evar ~loc (nm ^ "_field")] with
+               | None ->
+                 let fvalue = [%e unrolled] in
+                 [%e evar ~loc (nm ^ "_field")] := Some fvalue
+               | Some _ ->
+                 duplicates := (field_name :: ! duplicates) ]
+            ) :: args
+          in
+          loop no_args args more_flds
     in
     let handle_extra =
       [ [%pat? _] -->
@@ -1128,28 +1184,22 @@ module Str_generate_of_sexp = struct
     let has_nonopt_fields = ref false in
     let res_tpls, bi_lst, good_patts =
       let rec loop ((res_tpls, bi_lst, good_patts) as acc) = function
-        | {pld_name = {txt=nm; loc}; pld_type = tp; _ } as ld :: more_flds ->
+        | {pld_name = {txt=nm; loc}; _ } as ld :: more_flds ->
           let fld = [%expr ! [%e evar ~loc (nm ^ "_field")]] in
           let mk_default loc =
             bi_lst, [%pat? [%p pvar ~loc (nm ^ "_value")] ] :: good_patts
           in
           let new_bi_lst, new_good_patts =
-            match tp with
-            | [%type: sexp_bool ]
-            | [%type: [%t? _] sexp_option ]
-            | [%type: [%t? _] sexp_list ]
-            | [%type: [%t? _] sexp_array ]
-              -> mk_default loc
-            | _ ->
-              match Attribute.get Attrs.default ld with
-              | Some _ -> mk_default loc
-              | None ->
-                has_nonopt_fields := true;
-                (
-                  [%expr
-                      (Sexplib.Conv.(=) [%e fld] None, [%e estring ~loc nm]) ] :: bi_lst,
-                  [%pat?  Some [%p pvar ~loc (nm ^ "_value")] ] :: good_patts
-                )
+            match get_record_field_handler ~loc ld with
+            | Some (`default _ | `sexp_bool | `sexp_option _ | `sexp_list _
+                   | `sexp_array _ | `omit_nil) -> mk_default loc
+            | None ->
+              has_nonopt_fields := true;
+              (
+                [%expr
+                  (Sexplib.Conv.(=) [%e fld] None, [%e estring ~loc nm]) ] :: bi_lst,
+                [%pat? Some [%p pvar ~loc (nm ^ "_value")] ] :: good_patts
+              )
           in
           let acc =(
             [%expr  [%e fld] ] :: res_tpls,
@@ -1171,34 +1221,46 @@ module Str_generate_of_sexp = struct
         | [match_good_expr] -> match_good_expr
         | match_good_exprs -> pexp_tuple ~loc match_good_exprs
       else
-        let cnvt = function
-          | {pld_name = {txt=nm; _};
-             pld_type = [%type: [%t? _] sexp_list ]; _ } ->
-            (Located.lident ~loc nm),
-            [%expr
-                match [%e evar ~loc (nm ^ "_value")] with
-                | None -> [] | Some v -> v
-            ]
-
-          | {pld_name = {txt=nm; _};
-             pld_type = [%type: [%t? _] sexp_array ]; _ } ->
-            (Located.lident ~loc nm),
-            [%expr
-                match [%e evar ~loc (nm ^ "_value")] with
-                | None -> [||] | Some v -> v
-            ]
-          | {pld_name = {txt=nm; _}; _ } as ld ->
-            begin match Attribute.get Attrs.default ld with
-            | None ->
-              Located.lident ~loc nm,
-              evar ~loc (nm ^ "_value")
-            | Some default ->
-              Located.lident ~loc nm,
+        let cnvt ld =
+          let nm = ld.pld_name.txt in
+          let value =
+            match get_record_field_handler ~loc ld with
+            | Some (`sexp_list _) ->
               [%expr
                   match [%e evar ~loc (nm ^ "_value")] with
-                    None -> [%e default] | Some v -> v
+                  | None -> []
+                  | Some v -> v
               ]
-            end
+            | Some (`sexp_array _) ->
+              [%expr
+                  match [%e evar ~loc (nm ^ "_value")] with
+                  | None -> [||]
+                  | Some v -> v
+                ]
+            | Some (`default default) ->
+              [%expr
+                match [%e evar ~loc (nm ^ "_value")] with
+                | None -> [%e default]
+                | Some v -> v
+              ]
+            | Some (`sexp_bool | `sexp_option _) | None ->
+              evar ~loc (nm ^ "_value")
+            | Some `omit_nil ->
+              [%expr
+                match [%e evar ~loc (nm ^ "_value")] with
+                | Some v -> v
+                | None ->
+                  (* We change the exception so it contains a sub-sexp of the
+                     initial sexp, otherwise sexplib won't find the source location
+                     for the error. *)
+                  try
+                    [%e Fun_or_match.unroll ~loc [%expr Sexplib.Sexp.List [] ]
+                          (type_of_sexp ld.pld_type) ]
+                  with Sexplib.Conv_error.Of_sexp_error (e, _sexp) ->
+                    raise (Sexplib.Conv_error.Of_sexp_error (e, sexp))
+              ]
+          in
+          Located.lident ~loc nm, value
         in
         wrap_expr (pexp_record ~loc (List.map ~f:cnvt flds) None)
     in
