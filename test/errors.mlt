@@ -3,7 +3,7 @@ type t =
 [@@deriving sexp_of]
 [%%expect{|
 Line _, characters 4-5:
-The following elements are mutually exclusive: sexp.sexp_drop_default sexp.omit_nil
+Error: The following elements are mutually exclusive: sexp.sexp_drop_default sexp.omit_nil
 |}]
 
 type t =
@@ -11,7 +11,7 @@ type t =
 [@@deriving sexp_of]
 [%%expect{|
 Line _, characters 4-5:
-The following elements are mutually exclusive: sexp.omit_nil sexp_list
+Error: The following elements are mutually exclusive: sexp.omit_nil sexp_list
 |}]
 
 type t =
@@ -19,5 +19,5 @@ type t =
 [@@deriving of_sexp]
 [%%expect{|
 Line _, characters 4-5:
-The following elements are mutually exclusive: sexp.default sexp.omit_nil
+Error: The following elements are mutually exclusive: sexp.default sexp.omit_nil
 |}]
