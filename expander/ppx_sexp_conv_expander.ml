@@ -279,16 +279,17 @@ let constrained_function_binding = fun
   in
   value_binding ~loc ~pat ~expr:body
 
-let sexp_type_is_recursive =
-  types_are_recursive ~short_circuit:(fun typ ->
-    match typ with
-    | [%type: [%t? _] sexp_opaque ] -> Some false
-    | _ -> None)
-
 let really_recursive rec_flag tds =
-  match rec_flag with
-  | Recursive    -> if sexp_type_is_recursive tds then Recursive else Nonrecursive
-  | Nonrecursive -> Nonrecursive
+  (object
+    inherit type_is_recursive rec_flag tds as super
+
+    method! core_type ctype =
+      match ctype with
+      | [%type: [%t? _] sexp_opaque ] -> ()
+      | _ -> super#core_type ctype
+
+  end)#go ()
+;;
 
 (* Generates the signature for type conversion to S-expressions *)
 module Sig_generate_sexp_of = struct
