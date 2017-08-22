@@ -149,6 +149,13 @@ The types =sexp_list= and =sexp_array= can be used in ways similar to
 the type =sexp_option=.  They assume the empty list and empty array
 respectively as default values.
 
+These types need to be already in scope in order to use them. This can be done by
+writing:
+
+#+begin_src ocaml
+open Sexplib.Conv
+#+end_src
+
 **** Defaults
 
 More complex default values can be specified explicitly using several
