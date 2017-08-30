@@ -130,7 +130,7 @@ end = struct
       match Map.find map var with
       | None                      -> Existentially_bound
       | Some (Ok value)           -> Universally_bound value
-      | Some (Error { loc; txt }) -> raise (Location.raise_errorf ~loc "%s" txt)
+      | Some (Error { loc; txt }) -> Location.raise_errorf ~loc "%s" txt
 
   (* Return a map translating type variables appearing in the return type of a GADT
      constructor to their name in the type parameter list.
