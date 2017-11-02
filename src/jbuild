@@ -2,6 +2,7 @@
  ((name ppx_sexp_conv)
   (public_name ppx_sexp_conv)
   (kind ppx_deriver)
+  (flags (:standard -safe-string))
   (libraries (ppx_core ppx_type_conv ppx_driver ppx_sexp_conv_expander))
   (preprocess no_preprocessing)
   ))
