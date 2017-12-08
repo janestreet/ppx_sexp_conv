@@ -121,7 +121,7 @@ end = struct
   let add_universally_bound (t : t) name : t =
     match t with
     | None -> None
-    | Some map -> Some (Map.add ~key:name ~data:(Ok name) map)
+    | Some map -> Some (Map.set ~key:name ~data:(Ok name) map)
 
   let binding_kind t var =
     match t with
@@ -166,7 +166,7 @@ end = struct
             ; txt = "ppx_sexp_conv: variable is not a parameter of the type constructor"
             }
           in
-          Map.add map ~key:var ~data:(Error error)
+          Map.set map ~key:var ~data:(Error error)
         | _ -> super#core_type ty map
     end in
 
@@ -180,7 +180,7 @@ end = struct
           else
             Ok tp_name
         in
-        Map.add map ~key:var ~data
+        Map.set map ~key:var ~data
       | _ ->
         add_typevars#core_type tp_in_return_type map
     in
