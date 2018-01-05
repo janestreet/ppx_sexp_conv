@@ -1,5 +1,5 @@
-open Sexplib
-open Conv
+open Base
+open Ppx_sexp_conv_lib.Conv
 
 type t = float [@@deriving sexp]
 

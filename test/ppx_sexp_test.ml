@@ -1,5 +1,4 @@
-open Sexplib
-open Sexp
+open Ppx_sexp_conv_lib
 open Conv
 
 module Sum_and_polymorphic_variants = struct
@@ -50,7 +49,7 @@ module Records = struct
 
   let%test_unit _ =
     let t = { a = 2; b = Some [(1., "a"); (2.3, "b")] } in
-    let sexp = Sexp.of_string "((a 2)(b (((1 a)(2.3 b)))))" in
+    let sexp = Sexplib.Sexp.of_string "((a 2)(b (((1 a)(2.3 b)))))" in
     assert (t_of_sexp sexp = t);
     assert (sexp_of_t t = sexp);
   ;;
@@ -66,7 +65,7 @@ module Inline_records = struct
 
   let%test_unit _ =
     let t = A { a = 2; b = Some [(1., "a"); (2.3, "b")] } in
-    let sexp = Sexp.of_string "(A (a 2)(b (((1 a)(2.3 b)))))" in
+    let sexp = Sexplib.Sexp.of_string "(A (a 2)(b (((1 a)(2.3 b)))))" in
     assert (t_of_sexp sexp = t);
     assert (sexp_of_t t = sexp);
   ;;
@@ -74,7 +73,7 @@ end
 
 module User_specified_conversion = struct
   type my_float = float
-  let sexp_of_my_float n = Atom (Printf.sprintf "%.4f" n)
+  let sexp_of_my_float n = Sexp.Atom (Printf.sprintf "%.4f" n)
   let my_float_of_sexp = float_of_sexp
 
   let%test_unit _ =
@@ -107,7 +106,7 @@ end = struct
       ]
     in
     List.iter (fun (exn, sexp_as_str) ->
-      let sexp = Sexp.of_string sexp_as_str in
+      let sexp = Sexplib.Sexp.of_string sexp_as_str in
       assert ([%sexp_of: exn] exn = sexp);
     ) cases
   ;;
@@ -176,7 +175,7 @@ module Polymorphic_variant_inclusion = struct
       ]
     in
     List.iter (fun (t, sexp_as_str) ->
-      let sexp = Sexp.of_string sexp_as_str in
+      let sexp = Sexplib.Sexp.of_string sexp_as_str in
       assert ([%of_sexp: (string * string, float) t] sexp = t);
       assert ([%sexp_of: (string * string, float) t] t = sexp);
     ) cases
@@ -196,7 +195,7 @@ module Polymorphic_variant_inclusion = struct
       ]
     in
     List.iter (fun (u, sexp_as_str) ->
-      let sexp = Sexp.of_string sexp_as_str in
+      let sexp = Sexplib.Sexp.of_string sexp_as_str in
       assert ([%of_sexp: u] sexp = u);
       assert ([%sexp_of: u] u = sexp);
     ) cases
@@ -211,7 +210,7 @@ module Polymorphic_record_field = struct
   [@@deriving sexp]
   let%test_unit _ =
     let t x = { poly = []; maybe_x = Some x } in
-    let sexp = Sexp.of_string "((poly ())(maybe_x (1)))" in
+    let sexp = Sexplib.Sexp.of_string "((poly ())(maybe_x (1)))" in
     assert (t_of_sexp int_of_sexp sexp = t 1);
     assert (sexp_of_t sexp_of_int (t 1) = sexp);
   ;;
@@ -284,7 +283,7 @@ module Type_alias = struct
     type t = [ `A ] [@@deriving sexp]
   end
   let%test _ = Sexp.to_string (B.sexp_of_t `A) = "A"
-  let%test _ = `A = B.t_of_sexp (Sexp.of_string "A")
+  let%test _ = `A = B.t_of_sexp (Sexplib.Sexp.of_string "A")
 
   module B2 = struct
     type t = [ B.t | `B ] [@@deriving sexp]
@@ -359,11 +358,11 @@ module Omit_nil = struct
     else sexp_of_unit ()
 
   let natural_option_of_sexp = function
-    | List [] -> -1
+    | Sexp.List [] -> -1
     | sexp -> int_of_sexp sexp
 
   let check sexp_of_t t_of_sexp str t =
-    let sexp = Sexp.of_string str in
+    let sexp = Sexplib.Sexp.of_string str in
     assert (sexp = sexp_of_t t);
     assert (t_of_sexp sexp = t);
   ;;
@@ -395,10 +394,10 @@ module True_and_false = struct
 
   let%test _ = Sexp.to_string (sexp_of_t True) = "True"
   let%test _ = Sexp.to_string (sexp_of_t False) = "False"
-  let%test _ = True = t_of_sexp (Sexp.of_string "True")
-  let%test _ = False = t_of_sexp (Sexp.of_string "False")
-  let%test _ = True = t_of_sexp (Sexp.of_string "true")
-  let%test _ = False = t_of_sexp (Sexp.of_string "false")
+  let%test _ = True = t_of_sexp (Sexplib.Sexp.of_string "True")
+  let%test _ = False = t_of_sexp (Sexplib.Sexp.of_string "False")
+  let%test _ = True = t_of_sexp (Sexplib.Sexp.of_string "true")
+  let%test _ = False = t_of_sexp (Sexplib.Sexp.of_string "false")
 
   type u =
   | True of int
@@ -407,10 +406,10 @@ module True_and_false = struct
 
   let%test _ = Sexp.to_string (sexp_of_u (True 1)) = "(True 1)"
   let%test _ = Sexp.to_string (sexp_of_u (False 2)) = "(False 2)"
-  let%test _ = True 1 = u_of_sexp (Sexp.of_string "(True 1)")
-  let%test _ = False 2 = u_of_sexp (Sexp.of_string "(False 2)")
-  let%test _ = True 1 = u_of_sexp (Sexp.of_string "(true 1)")
-  let%test _ = False 2 = u_of_sexp (Sexp.of_string "(false 2)")
+  let%test _ = True 1 = u_of_sexp (Sexplib.Sexp.of_string "(True 1)")
+  let%test _ = False 2 = u_of_sexp (Sexplib.Sexp.of_string "(False 2)")
+  let%test _ = True 1 = u_of_sexp (Sexplib.Sexp.of_string "(true 1)")
+  let%test _ = False 2 = u_of_sexp (Sexplib.Sexp.of_string "(false 2)")
 
   exception True [@@deriving sexp]
   let%test _ = "ppx_sexp_test.ml.True_and_false.True" = Sexp.to_string (sexp_of_exn True)
@@ -425,7 +424,7 @@ end
 
 module Gadt = struct
   let is_eq sexp str =
-    let sexp2 = Sexp.of_string str in
+    let sexp2 = Sexplib.Sexp.of_string str in
     if sexp <> sexp2 then begin
       Printf.printf "%S vs %S\n%!" (Sexp.to_string sexp) str;
       assert false
@@ -475,7 +474,7 @@ end
 module Anonymous_variable = struct
   type _ t = int [@@deriving sexp]
   let%test _ = Sexp.to_string ([%sexp_of: _ t] 2) = "2"
-  let%test _ = [%of_sexp: _ t] (Sexp.of_string "2") = 2
+  let%test _ = [%of_sexp: _ t] (Sexplib.Sexp.of_string "2") = 2
 
   (* making sure we don't generate signatures like (_ -> Sexp.t) -> _ t -> Sexp.t which
      are too general *)
@@ -523,7 +522,7 @@ module Magic_types = struct
     }
   [@@deriving sexp]
 
-  let sexp = Sexp.of_string "()"
+  let sexp = Sexplib.Sexp.of_string "()"
   let t =
     { sexp_array = [||]
     ; sexp_list = []
@@ -534,7 +533,7 @@ module Magic_types = struct
   let%test _ = sexp_of_t t = sexp
 
   let sexp =
-    Sexp.of_string "((sexp_array (1 2))\
+    Sexplib.Sexp.of_string "((sexp_array (1 2))\
                      (sexp_list (3 4))\
                      (sexp_option 5)\
                      (sexp_bool))"
@@ -554,7 +553,7 @@ module Magic_types = struct
   type v =
     [ `A of int sexp_list ]
   [@@deriving sexp]
-  let sexp = Sexp.of_string "(A 1 2 3)"
+  let sexp = Sexplib.Sexp.of_string "(A 1 2 3)"
   let u = A [1; 2; 3]
   let v = `A [1; 2; 3]
   let%test _ = u_of_sexp sexp = u

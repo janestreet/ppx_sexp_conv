@@ -1,4 +1,5 @@
-open Sexplib.Conv
+open Ppx_sexp_conv_lib
+open Conv
 
 module Exceptions = struct
 
@@ -6,7 +7,7 @@ module Exceptions = struct
     match sexp_of_exn_opt exn with
     | None -> raise exn
     | Some sexp ->
-      let sexp_as_string = Sexplib.Sexp.to_string sexp in
+      let sexp_as_string = Ppx_sexp_conv_lib.Sexp.to_string sexp in
       if sexp_as_string <> string
       then failwith sexp_as_string
 
@@ -33,16 +34,16 @@ module Exceptions = struct
   let%test_unit "sexp converters are finalized properly for local exceptions" =
     Gc.compact ();
     Gc.compact ();
-    let size_before = Sexplib.Conv.Exn_converter.For_unit_tests_only.size () in
+    let size_before = Ppx_sexp_conv_lib.Conv.Exn_converter.For_unit_tests_only.size () in
     let e = exn 2.5 sexp_of_float in
-    let size_after_local_exn = Sexplib.Conv.Exn_converter.For_unit_tests_only.size () in
+    let size_after_local_exn = Ppx_sexp_conv_lib.Conv.Exn_converter.For_unit_tests_only.size () in
     let e_finalized = ref false in
     Gc.finalise (fun _ -> e_finalized := true) e;
     check_sexp e         "(conv_test.ml.Exceptions.E 2.5)";
     Gc.compact ();
     Gc.compact ();
     assert !e_finalized;
-    let size_after_gc = Sexplib.Conv.Exn_converter.For_unit_tests_only.size () in
+    let size_after_gc = Ppx_sexp_conv_lib.Conv.Exn_converter.For_unit_tests_only.size () in
     assert (size_before + 1 = size_after_local_exn);
     assert (size_before = size_after_gc)
 end

@@ -3,7 +3,7 @@
   (public_name ppx_sexp_conv.expander)
   (flags (:standard -safe-string))
   (libraries (ppx_core))
-  (ppx_runtime_libraries (sexplib))
+  (ppx_runtime_libraries (ppx_sexp_conv.runtime-lib))
   (preprocess (pps (ppx_metaquot ppx_driver.runner)))
   ))
 
