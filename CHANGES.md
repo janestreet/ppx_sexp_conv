@@ -1,3 +1,13 @@
+## v0.10
+
+- Added new `[@@deriving sexp]` record-field attribute, `[@sexp.omit_nil]`, for
+  a field that is omitted if its sexp representation is `()`.
+
+- Improved `[%sexp_of: 'a]` and `[%of_sexp: 'a]` to not expose variable names
+  intended for internal use.
+
+## v0.9
+
 ## 113.43.00
 
 - Fix generator for polymorphic types where var names clashes with type name: `type 't t = ...`
