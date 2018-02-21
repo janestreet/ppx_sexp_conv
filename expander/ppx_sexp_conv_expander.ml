@@ -99,7 +99,7 @@ end
 module Renaming : sig
   type t
   val identity : t
-  val add_universally_bound : t -> string -> t
+  val add_universally_bound : t -> string loc -> t
 
   type binding_kind =
     | Universally_bound of string
@@ -119,6 +119,7 @@ end = struct
     | Existentially_bound
 
   let add_universally_bound (t : t) name : t =
+    let name = name.txt in
     match t with
     | None -> None
     | Some map -> Some (Map.set ~key:name ~data:(Ok name) map)
@@ -252,7 +253,7 @@ let tvars_of_core_type : (core_type -> string list) =
 
 let constrained_function_binding = fun
   (* placing a suitably polymorphic or rigid type constraint on the pattern or body *)
-  (loc:Location.t) (td:type_declaration) (typ:core_type) ~(tps:string list)
+  (loc:Location.t) (td:type_declaration) (typ:core_type) ~(tps:string loc list)
   ~(func_name:string) (body:expression)
 ->
   let vars = tvars_of_core_type typ in
@@ -260,6 +261,7 @@ let constrained_function_binding = fun
   let pat =
     let pat = pvar ~loc func_name in
     if not has_vars then pat else
+      let vars = List.map ~f:(fun txt -> { txt; loc; }) vars in
       ppat_constraint ~loc pat (ptyp_poly ~loc vars typ)
   in
   let body =
@@ -270,7 +272,8 @@ let constrained_function_binding = fun
     then
       let type_name = td.ptype_name.txt in
       List.fold_right tps
-        ~f:(fun tp body -> pexp_newtype ~loc (rigid_type_var ~type_name tp) body)
+        ~f:(fun tp body ->
+          pexp_newtype ~loc { txt = rigid_type_var ~type_name tp.txt; loc = tp.loc; } body)
         ~init:(pexp_constraint ~loc body (make_type_rigid ~type_name typ))
     else
       if has_vars
@@ -511,7 +514,7 @@ module Str_generate_sexp_of = struct
     | `ok renaming ->
       let bindings =
         let mk_binding parm =
-          value_binding ~loc ~pat:(pvar ~loc ("_of_" ^ parm))
+          value_binding ~loc ~pat:(pvar ~loc ("_of_" ^ parm.txt))
             ~expr:[%expr Ppx_sexp_conv_lib.Conv.sexp_of_opaque]
         in
         List.map ~f:mk_binding parms
@@ -739,12 +742,12 @@ module Str_generate_sexp_of = struct
 
   let sexp_of_td td ~rec_flag =
     let td = name_type_params_in_td td in
-    let tps = List.map td.ptype_params ~f:(fun tp -> (get_type_param_name tp).txt) in
+    let tps = List.map td.ptype_params ~f:get_type_param_name in
     let {ptype_name = {txt = type_name; loc = _}; ptype_loc = loc; _} = td in
     let body =
       let body =
         match td.ptype_kind with
-        | Ptype_variant cds -> sexp_of_sum tps cds
+        | Ptype_variant cds -> sexp_of_sum (List.map tps ~f:(fun x -> x.txt)) cds
         | Ptype_record  lds ->
           let renaming = Renaming.identity in
           let patt, expr =
@@ -793,7 +796,7 @@ module Str_generate_sexp_of = struct
     let typ = Sig_generate_sexp_of.mk_type td in
     let func_name = "sexp_of_" ^ type_name in
     let body =
-      let patts = List.map tps ~f:(fun id -> pvar ~loc ("_of_" ^ id)) in
+      let patts = List.map tps ~f:(fun id -> pvar ~loc ("_of_" ^ id.txt)) in
       eta_reduce_if_possible_and_nonrec ~rec_flag (eabstract ~loc patts body)
     in
     [constrained_function_binding loc td typ ~tps ~func_name body]
@@ -1134,7 +1137,7 @@ module Str_generate_of_sexp = struct
     let loc = tp.ptyp_loc in
     let bindings =
       let mk_binding parm =
-        value_binding ~loc ~pat:(pvar ~loc ("_of_" ^ parm))
+        value_binding ~loc ~pat:(pvar ~loc ("_of_" ^ parm.txt))
           ~expr:[%expr fun sexp ->
             Ppx_sexp_conv_lib.Conv_error.record_poly_field_value _tp_loc sexp]
       in
@@ -1491,7 +1494,7 @@ module Str_generate_of_sexp = struct
 
   let td_of_sexp ~typevar_handling ~loc:_ ~poly ~path ~rec_flag td =
     let td = name_type_params_in_td td in
-    let tps = List.map td.ptype_params ~f:(fun tp -> (get_type_param_name tp).txt) in
+    let tps = List.map td.ptype_params ~f:get_type_param_name in
     let {ptype_name = {txt = type_name; loc = _}; ptype_loc = loc; _} = td in
     let full_type =
       core_type_of_type_declaration td
@@ -1535,7 +1538,7 @@ module Str_generate_of_sexp = struct
     let arg_patts, arg_exprs =
       List.unzip (
         List.map ~f:(fun tp ->
-            let name = "_of_" ^ tp in
+            let name = "_of_" ^ tp.txt in
             pvar ~loc name, evar ~loc name)
           tps)
     in
