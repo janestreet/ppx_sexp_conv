@@ -1,4 +1,5 @@
-open Ppx_core
+open Base
+open Ppxlib
 open Ast_builder.Default
 
 let ( --> ) lhs rhs = case ~guard:None ~lhs ~rhs

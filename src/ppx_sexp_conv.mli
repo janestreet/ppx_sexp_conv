@@ -1,7 +1,7 @@
-open Ppx_type_conv.Std
+open Ppxlib
 
-val of_sexp      : Type_conv.t
-val sexp_of      : Type_conv.t
-val sexp         : Type_conv.t
-val of_sexp_poly : Type_conv.t
-val sexp_poly    : Type_conv.t
+val of_sexp      : Deriving.t
+val sexp_of      : Deriving.t
+val sexp         : Deriving.t
+val of_sexp_poly : Deriving.t
+val sexp_poly    : Deriving.t

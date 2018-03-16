@@ -1,3 +1,8 @@
+## v0.11
+
+- Depend on ppxlib instead of (now deprecated) ppx\_core, ppx\_driver and
+  ppx\_metaquot.
+
 ## v0.10
 
 - Added new `[@@deriving sexp]` record-field attribute, `[@sexp.omit_nil]`, for

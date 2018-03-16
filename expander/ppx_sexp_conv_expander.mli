@@ -1,4 +1,4 @@
-open Ppx_core
+open Ppxlib
 
 module Attrs : sig
   val default      : (label_declaration, expression) Attribute.t
