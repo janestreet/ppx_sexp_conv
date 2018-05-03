@@ -463,10 +463,10 @@ module Str_generate_sexp_of = struct
   and sexp_of_variant ~typevar_handling ((loc,row_fields):(Location.t * row_field list))
     : Fun_or_match.t =
     let item = function
-      | Rtag (cnstr,_,true,[]) ->
+      | Rtag ({ txt = cnstr; _},_,true,[]) ->
         ppat_variant ~loc cnstr None -->
         [%expr Ppx_sexp_conv_lib.Sexp.Atom [%e estring ~loc cnstr]]
-      | Rtag (cnstr,_,_,[ [%type: [%t? tp] sexp_list] ]) ->
+      | Rtag ({ txt = cnstr; _ },_,_,[ [%type: [%t? tp] sexp_list] ]) ->
         let cnv_expr = Fun_or_match.expr ~loc (sexp_of_type ~typevar_handling tp) in
         ppat_variant ~loc cnstr (Some [%pat? l]) -->
         [%expr
@@ -475,8 +475,10 @@ module Str_generate_sexp_of = struct
               Ppx_sexp_conv_lib.Conv.list_map [%e cnv_expr] l
             )
         ]
-      | Rtag (cnstr,_,false,[tp]) ->
-        let cnstr_expr = [%expr Ppx_sexp_conv_lib.Sexp.Atom [%e estring ~loc cnstr] ] in
+      | Rtag ({ txt = cnstr; _ },_,false,[tp]) ->
+        let cnstr_expr =
+          [%expr Ppx_sexp_conv_lib.Sexp.Atom [%e estring ~loc cnstr] ]
+        in
         let var, patt = evar ~loc "v0", pvar ~loc "v0" in
         let cnstr_arg = Fun_or_match.unroll ~loc var (sexp_of_type ~typevar_handling tp) in
         let expr = [%expr Ppx_sexp_conv_lib.Sexp.List [%e elist ~loc [cnstr_expr; cnstr_arg]]] in
@@ -871,7 +873,7 @@ module Str_generate_of_sexp = struct
      and structured variants + included variant types. *)
   let split_row_field ~loc (atoms, structs, ainhs, sinhs) row_field =
     match row_field with
-    | Rtag (cnstr,_,true,[]) ->
+    | Rtag ({ txt = cnstr; _ },_,true,[]) ->
       let tpl = loc, cnstr in
       (
         tpl :: atoms,
@@ -879,7 +881,7 @@ module Str_generate_of_sexp = struct
         `A tpl :: ainhs,
         sinhs
       )
-    | Rtag (cnstr,_,false,[tp]) ->
+    | Rtag ({ txt = cnstr; _ },_,false,[tp]) ->
       let loc = tp.ptyp_loc in
       (
         atoms,
