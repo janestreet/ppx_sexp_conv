@@ -1,3 +1,7 @@
+## v0.11.2
+
+- Update for AST 4.06
+
 ## v0.11.1
 
 - Make ppx_sexp_conv.runtime-lib depend on sexplib0 rather than base (fix #22)
