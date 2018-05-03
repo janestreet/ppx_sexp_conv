@@ -1,3 +1,7 @@
+## v0.11.1
+
+- Make ppx_sexp_conv.runtime-lib depend on sexplib0 rather than base (fix #22)
+
 ## v0.11
 
 - Depend on ppxlib instead of (now deprecated) ppx\_core, ppx\_driver and
