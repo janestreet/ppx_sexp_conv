@@ -10,6 +10,7 @@ build: [
 ]
 depends: [
   "base"
+  "sexplib0"
   "jbuilder"                {build & >= "1.0+beta18.1"}
   "ocaml-migrate-parsetree" {>= "1.0"}
   "ppxlib"                  {>= "0.1.0"}
