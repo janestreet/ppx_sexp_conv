@@ -112,7 +112,7 @@ end = struct
   ;;
 end
 
-module Abtract_types_are_allowed_in_structures : sig
+module Abstract_types_are_allowed_in_structures : sig
   type t [@@deriving sexp]
 end = struct
   type t [@@deriving sexp]
