@@ -55,3 +55,11 @@ module Of_sexp : sig
     -> rec_flag * type_declaration list
     -> structure
 end
+
+module Sig_sexp : sig
+  val sig_type_decl
+    :  loc:Location.t
+    -> path:string
+    -> rec_flag * type_declaration list
+    -> signature
+end

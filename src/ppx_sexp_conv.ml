@@ -65,7 +65,7 @@ module Of_sexp = struct
   let extension ~loc:_ ~path ctyp = E.core_type ~path ctyp
 
   let deriver =
-    Deriving.add "of_sexp"
+    Deriving.add name
       ~str_type_decl
       ~sig_type_decl
       ~extension
@@ -104,8 +104,21 @@ let sexp_of = Sexp_of.deriver
 let of_sexp = Of_sexp.deriver
 let of_sexp_poly = Of_sexp_poly.deriver
 
+module Sexp_in_sig = struct
+  module E = Ppx_sexp_conv_expander.Sig_sexp
+
+  let sig_type_decl =
+    Deriving.Generator.make_noarg E.sig_type_decl
+  ;;
+
+  let deriver =
+    Deriving.add "let this be a string that wouldn't parse if put in the source"
+      ~sig_type_decl
+end
+
 let sexp =
   Deriving.add_alias "sexp" [sexp_of; of_sexp]
+    ~sig_type_decl:[Sexp_in_sig.deriver]
     ~str_exception:[sexp_of]
     ~sig_exception:[sexp_of]
 

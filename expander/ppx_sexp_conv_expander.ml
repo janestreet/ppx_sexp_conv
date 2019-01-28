@@ -314,23 +314,6 @@ module Sig_generate_sexp_of = struct
   let mk_sig_exn ~loc:_ ~path:_ _te = []
 end
 
-let is_polymorphic_variant =
-  let rec check = function
-    | { ptyp_desc = Ptyp_variant _; _ } -> `Definitely
-    | { ptyp_desc = Ptyp_alias (typ,_); _ } -> check typ
-    | { ptyp_desc = Ptyp_constr _; _ } -> `Maybe
-    | _ -> `Surely_not (* Type vars go here even though they could be polymorphic
-                          variants, however we don't handle it if they get substituted
-                          by a polymorphic variant that is then included. *)
-  in
-  fun td ~sig_ ->
-    match td.ptype_kind with
-    | Ptype_variant _ | Ptype_record _ | Ptype_open -> `Surely_not
-    | Ptype_abstract ->
-      match td.ptype_manifest with
-      | None -> if sig_ then `Maybe else `Surely_not
-      | Some typ -> check typ
-
 (* Generates the signature for type conversion from S-expressions *)
 module Sig_generate_of_sexp = struct
   let type_of_of_sexp ~loc t =
@@ -1674,4 +1657,18 @@ module Of_sexp = struct
 
   let sig_type_decl = Sig_generate_of_sexp.mk_sig
   let str_type_decl = Str_generate_of_sexp.tds_of_sexp
+end
+
+module Sig_sexp = struct
+  let mk_sig ~loc ~path decls =
+    Sig_generate_sexp_of.mk_sig ~loc ~path decls
+    @ Sig_generate_of_sexp.mk_sig ~poly:false ~loc ~path decls
+
+  let sig_type_decl ~loc ~path ((_rf, tds) as decls) =
+    match
+      mk_named_sig ~loc ~sg_name:"Ppx_sexp_conv_lib.Sexpable.S"
+        ~handle_polymorphic_variant:false tds
+    with
+    | Some include_infos -> [psig_include ~loc include_infos]
+    | None -> mk_sig ~loc ~path decls
 end
