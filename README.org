@@ -183,6 +183,23 @@ has value =List []= when reading, and drop the field if it has value
 =List []= when writing. It is a generalization of =sexp_array= and
 =sexp_list=.
 
+**** Allowing extra fields
+
+The =@sexp.allow_extra_fields= annotation lets one specify that the
+sexp-converters should silently ignore extra fields, instead of
+raising.
+
+#+begin_src ocaml
+  type t = { a: int } [@@deriving sexp]
+  ((a 0)(b b)) => exception
+
+  type t = { a: int } [@@deriving sexp] [@@sexp.allow_extra_fields]
+  ((a 0)(b b)) => {a = 0}
+
+  type t = A of { a : int } [@sexp.allow_extra_fields] [@@deriving sexp]
+  (A (a 0)(b b)) => A {a = 0}
+#+end_src
+
 *** Variants
 
 Constant constructors in variants are represented as

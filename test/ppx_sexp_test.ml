@@ -606,3 +606,39 @@ module Type_extensions = struct
   let _ = ([%sexp_of: int] : [%sexp_of: int])
   let _ = ([%of_sexp: int] : [%of_sexp: int])
 end
+
+
+module Allow_extra_fields = struct
+  let should_raise f x = try ignore (f x); false with _ -> true
+  module M1 = struct
+    type t1 =
+      { a : int }
+    [@@deriving sexp]
+
+    type t2 = t1 =
+      { a : int }
+    [@@deriving sexp][@@sexp.allow_extra_fields]
+
+    let sexp = Sexplib.Sexp.of_string "((a 1))"
+    let sexp_extra = Sexplib.Sexp.of_string "((a 1)(b 2))"
+    let%test _ = t2_of_sexp sexp = t2_of_sexp sexp_extra
+    let%test _ = t1_of_sexp sexp = t2_of_sexp sexp
+    let%test _ = should_raise t1_of_sexp sexp_extra
+  end
+  module M2 = struct
+    type t1 =
+      | A of { a : int list }
+    [@@deriving sexp]
+
+    type t2 = t1 =
+      | A of { a : int list } [@sexp.allow_extra_fields]
+    [@@deriving sexp]
+
+    let sexp = Sexplib.Sexp.of_string "(A (a (0)))"
+    let sexp_extra = Sexplib.Sexp.of_string "(A (a (0))(b 2))"
+
+    let%test _ = t2_of_sexp sexp = t2_of_sexp sexp_extra
+    let%test _ = t1_of_sexp sexp = t2_of_sexp sexp
+    let%test _ = should_raise t1_of_sexp sexp_extra
+ end
+end

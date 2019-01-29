@@ -46,7 +46,43 @@ module Attrs = struct
       Attribute.Context.label_declaration
       Ast_pattern.(pstr nil)
       ()
+
+  let allow_extra_fields_td =
+    Attribute.declare "sexp.allow_extra_fields"
+      Attribute.Context.type_declaration
+      Ast_pattern.(pstr nil)
+      ()
+
+  let allow_extra_fields_cd =
+    Attribute.declare "sexp.allow_extra_fields"
+      Attribute.Context.constructor_declaration
+      Ast_pattern.(pstr nil)
+      ()
 end
+
+let fail_if_allow_extra_field_cd ~loc x =
+  if Option.is_some (Attribute.get Attrs.allow_extra_fields_cd x)
+  then
+    Location.raise_errorf ~loc
+      "ppx_sexp_conv: [@@allow_extra_fields] is only allowed on \
+       inline records."
+
+let fail_if_allow_extra_field_td ~loc x =
+  if Option.is_some (Attribute.get Attrs.allow_extra_fields_td x)
+  then
+    match x.ptype_kind with
+     | Ptype_variant cds
+       when List.exists cds
+              ~f:(fun cd -> match cd.pcd_args with Pcstr_record _ -> true | _ -> false)
+       ->
+       Location.raise_errorf ~loc
+         "ppx_sexp_conv: [@@@@allow_extra_fields] only works on records. \
+          For inline records, do: type t = A of { a : int } [@@allow_extra_fields] | B \
+          [@@@@deriving sexp]"
+     | _ ->
+       Location.raise_errorf ~loc
+         "ppx_sexp_conv: [@@@@allow_extra_fields] is only allowed on \
+          records."
 
 module Fun_or_match = struct
   type t =
@@ -1164,7 +1200,7 @@ module Str_generate_of_sexp = struct
         (String.concat ~sep:" " (List.map attributes ~f:snd))
 
   (* Generate code for extracting record fields *)
-  let mk_extract_fields ~typevar_handling (loc,flds) =
+  let mk_extract_fields ~typevar_handling ~allow_extra_fields (loc,flds) =
     let rec loop no_args args = function
       | [] -> no_args,args
       | ld :: more_flds ->
@@ -1203,11 +1239,14 @@ module Str_generate_of_sexp = struct
     in
     let handle_extra =
       [ [%pat? _] -->
-        [%expr if !Ppx_sexp_conv_lib.Conv.record_check_extra_fields then
-                 extra := (field_name :: !extra)
-               else ()]
+        if allow_extra_fields
+        then [%expr ()]
+        else
+          [%expr
+            if !Ppx_sexp_conv_lib.Conv.record_check_extra_fields then
+              extra := (field_name :: !extra)
+            else ()]
       ]
-
     in
     loop handle_extra handle_extra (List.rev flds)
 
@@ -1315,7 +1354,7 @@ module Str_generate_of_sexp = struct
     else pexp_match ~loc expr [ patt --> match_good_expr ]
 
   (* Generate code for converting record fields *)
-  let mk_cnv_fields ~typevar_handling has_poly (loc,flds) ~wrap_expr =
+  let mk_cnv_fields ~typevar_handling ~allow_extra_fields has_poly (loc,flds) ~wrap_expr =
     let field_refs =
       List.map flds ~f:(function
       | {pld_name = {txt=name; loc};
@@ -1326,7 +1365,7 @@ module Str_generate_of_sexp = struct
       )
     in
     let mc_no_args_fields, mc_fields_with_args =
-      mk_extract_fields ~typevar_handling (loc,flds)
+      mk_extract_fields ~typevar_handling ~allow_extra_fields (loc,flds)
     in
     pexp_let ~loc Nonrecursive (field_refs @ [
       value_binding ~loc ~pat:[%pat? duplicates] ~expr:[%expr ref []];
@@ -1367,9 +1406,12 @@ module Str_generate_of_sexp = struct
     | { pld_type = {ptyp_desc = Ptyp_poly _; _ }; _} -> true
     | _ -> false)
 
-  let label_declaration_list_of_sexp ~typevar_handling loc flds ~wrap_expr =
+  let label_declaration_list_of_sexp
+        ~typevar_handling ~allow_extra_fields loc flds ~wrap_expr =
     let has_poly = is_poly (loc,flds) in
-    let cnv_fields = mk_cnv_fields ~typevar_handling has_poly (loc,flds) ~wrap_expr in
+    let cnv_fields =
+      mk_cnv_fields ~typevar_handling ~allow_extra_fields has_poly (loc,flds) ~wrap_expr
+    in
     if has_poly then
       let patt =
         let pats =
@@ -1393,10 +1435,10 @@ module Str_generate_of_sexp = struct
     else cnv_fields
 
   (* Generate matching code for records *)
-  let record_of_sexp ~typevar_handling (loc,flds) : Fun_or_match.t =
+  let record_of_sexp ~typevar_handling ~allow_extra_fields (loc,flds) : Fun_or_match.t =
     Match
       [ [%pat? Ppx_sexp_conv_lib.Sexp.List field_sexps as sexp] -->
-        (label_declaration_list_of_sexp ~typevar_handling loc flds
+        (label_declaration_list_of_sexp ~typevar_handling ~allow_extra_fields loc flds
            ~wrap_expr:(fun x -> x))
       ; [%pat? Ppx_sexp_conv_lib.Sexp.Atom _ as sexp] -->
         [%expr Ppx_sexp_conv_lib.Conv_error.record_list_instead_atom _tp_loc sexp]
@@ -1406,12 +1448,16 @@ module Str_generate_of_sexp = struct
 
   (* Generate matching code for well-formed S-expressions wrt. sum types *)
   let mk_good_sum_matches ~typevar_handling (loc,cds) =
-    List.map cds ~f:(function
-    | { pcd_name = cnstr; pcd_args = Pcstr_record fields; _} ->
+    List.map cds ~f:(fun cd -> match cd with
+      | { pcd_name = cnstr; pcd_args = Pcstr_record fields; _} ->
       let lcstr = pstring ~loc (String.uncapitalize cnstr.txt) in
       let str = pstring ~loc cnstr.txt in
       let expr =
-        label_declaration_list_of_sexp ~typevar_handling loc fields
+        label_declaration_list_of_sexp
+          ~typevar_handling
+          ~allow_extra_fields:(
+            Option.is_some (Attribute.get Attrs.allow_extra_fields_cd cd))
+          loc fields
           ~wrap_expr:(fun e ->
             pexp_construct ~loc (Located.lident ~loc cnstr.txt) (Some e))
       in
@@ -1425,12 +1471,14 @@ module Str_generate_of_sexp = struct
                (Ppx_sexp_conv_lib.Sexp.Atom ([%p lcstr] | [%p str] as _tag) :: field_sexps) as sexp
       ] --> expr
     | { pcd_name = cnstr; pcd_args = Pcstr_tuple []; _} ->
+      fail_if_allow_extra_field_cd ~loc cd;
       let lcstr = pstring ~loc (String.uncapitalize cnstr.txt) in
       let str = pstring ~loc cnstr.txt in
       [%pat? Ppx_sexp_conv_lib.Sexp.Atom ([%p lcstr] | [%p str])] -->
       pexp_construct ~loc (Located.lident ~loc cnstr.txt) None
 
     | { pcd_name = cnstr; pcd_args = Pcstr_tuple (_::_ as tps); _} ->
+      fail_if_allow_extra_field_cd ~loc cd;
       let lcstr = pstring ~loc (String.uncapitalize cnstr.txt) in
       let str = pstring ~loc cnstr.txt in
       [%pat? (Ppx_sexp_conv_lib.Sexp.List
@@ -1502,11 +1550,20 @@ module Str_generate_of_sexp = struct
     let body =
       let body =
         match td.ptype_kind with
-        | Ptype_variant alts -> sum_of_sexp ~typevar_handling (td.ptype_loc, alts)
-        | Ptype_record lbls -> record_of_sexp ~typevar_handling (loc, lbls)
-        | Ptype_open -> Location.raise_errorf ~loc
-                          "ppx_sexp_conv: open types not supported"
+        | Ptype_variant alts ->
+          fail_if_allow_extra_field_td ~loc td;
+          sum_of_sexp ~typevar_handling (td.ptype_loc, alts)
+        | Ptype_record lbls ->
+          record_of_sexp
+            ~typevar_handling
+            ~allow_extra_fields:(
+              Option.is_some (Attribute.get Attrs.allow_extra_fields_td td))
+            (loc, lbls)
+        | Ptype_open ->
+          Location.raise_errorf ~loc
+            "ppx_sexp_conv: open types not supported"
         | Ptype_abstract ->
+          fail_if_allow_extra_field_td ~loc td;
           match td.ptype_manifest with
           | None -> nil_of_sexp td.ptype_loc
           | Some { ptyp_desc = Ptyp_variant (rows, _, _); _ } ->
