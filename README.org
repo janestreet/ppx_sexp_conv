@@ -187,7 +187,9 @@ has value =List []= when reading, and drop the field if it has value
 
 The =@sexp.allow_extra_fields= annotation lets one specify that the
 sexp-converters should silently ignore extra fields, instead of
-raising.
+raising.  This applies only to the record to which the annotation is
+attached, and not to deeper sexp converters that may be called during
+conversion of a sexp to the record.
 
 #+begin_src ocaml
   type t = { a: int } [@@deriving sexp]
