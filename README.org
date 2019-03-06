@@ -165,7 +165,7 @@ constructs, /e.g./:
 #+begin_src ocaml
   type t =
     { a : int [@default 42];
-      b : int [@default 3] [@sexp_drop_default];
+      b : int [@default 3] [@sexp_drop_default (=)];
       c : int [@default 3] [@sexp_drop_if fun x -> x = 3];
       d : int Queue.t [@sexp.omit_nil]
     } [@@deriving sexp]
@@ -175,13 +175,28 @@ The =@default= annotation lets one specify a default value to be
 selected if the field is not specified, when converting from an
 s-expression.  The =@sexp_drop_default= annotation implies that the
 field will be dropped when generating the s-expression if the value
-being serialized is equal to the default according to polymorphic
-equality.  =@sexp_drop_if= is like =@sexp_drop_default=, except that
+being serialized is equal to the default according to the specified equality
+function. =@sexp_drop_if= is like =@sexp_drop_default=, except that
 it lets you specify the condition under which the field is dropped.
 Finally, =@sexp.omit_nil= means to treat a missing field as if it
 has value =List []= when reading, and drop the field if it has value
 =List []= when writing. It is a generalization of =sexp_array= and
 =sexp_list=.
+
+***** Specifying equality for [@sexp_drop_default]
+
+The equality used by [@sexp_drop_default] is customizable. There 
+are several ways to specify the equality function:
+
+#+begin_src ocaml
+  type t =
+    { a : u [@default u0] [@sexp_drop_default (=)]; (* explicit user-provided function *)
+      b : u [@default u0] [@sexp_drop_default.compare]; (* uses [%compare.equal: u] *)
+      c : u [@default u0] [@sexp_drop_default.equal]; (* uses [%equal: u] *)
+      d : u [@default u0] [@sexp_drop_default.sexp]; (* compares sexp representations *)
+      e : u [@default u0] [@sexp_drop_default]; (* deprecated. uses polymorphic equality. *)
+    } [@@deriving sexp]
+#+end_src
 
 **** Allowing extra fields
 

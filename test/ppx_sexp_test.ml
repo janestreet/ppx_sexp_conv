@@ -314,14 +314,62 @@ module Tricky_variants = struct
 end
 
 module Drop_default = struct
+
+  open! Base
+  open Expect_test_helpers_kernel
+
   type t = {
-    a : int [@default 2] [@sexp_drop_default];
-  } [@@deriving sexp]
-  let%test _ = Sexp.(List [List [Atom "a"; Atom "1"]]) = sexp_of_t { a = 1 }
-  let%test _ = Sexp.(List []) = sexp_of_t { a = 2 }
-  let%test _ = t_of_sexp (Sexp.(List [List [Atom "a"; Atom "1"]])) = { a = 1 }
-  let%test _ = t_of_sexp (Sexp.(List [List [Atom "a"; Atom "2"]])) = { a = 2 }
-  let%test _ = t_of_sexp (Sexp.(List [])) = { a = 2 }
+    a : int;
+  } [@@deriving equal]
+  let test ?cr t_of_sexp sexp_of_t =
+    let (=) = Sexp.(=) in
+    require ?cr [%here] (Sexp.(List [List [Atom "a"; Atom "1"]]) = sexp_of_t { a = 1 });
+    require ?cr [%here] (Sexp.(List []) = sexp_of_t { a = 2 });
+    let (=) = equal in
+    require ?cr [%here] (t_of_sexp (Sexp.(List [List [Atom "a"; Atom "1"]])) = { a = 1 });
+    require ?cr [%here] (t_of_sexp (Sexp.(List [List [Atom "a"; Atom "2"]])) = { a = 2 });
+    require ?cr [%here] (t_of_sexp (Sexp.(List [])) = { a = 2 })
+
+  type my_int = int [@@deriving sexp]
+
+  module Poly = struct
+    type nonrec t = t = {
+      a : my_int; [@default 2] [@sexp_drop_default Poly.(=)]
+    } [@@deriving sexp]
+
+    let%test_unit _ =
+      test t_of_sexp sexp_of_t
+  end
+
+  module Equal = struct
+    let equal_my_int = equal_int
+    type nonrec t = t = {
+      a : my_int; [@default 2] [@sexp_drop_default.equal]
+    } [@@deriving sexp]
+
+    let%test_unit _ =
+      test t_of_sexp sexp_of_t
+  end
+
+  module Compare = struct
+    let compare_my_int = compare_int
+    type nonrec t = t = {
+      a : my_int; [@default 2] [@sexp_drop_default.compare]
+    } [@@deriving sexp]
+
+    let%test_unit _ =
+      test t_of_sexp sexp_of_t
+  end
+
+  module Sexp = struct
+    type nonrec t = t = {
+      a : my_int; [@default 2] [@sexp_drop_default.sexp]
+    } [@@deriving sexp]
+
+    let%test_unit _ =
+      test t_of_sexp sexp_of_t
+  end
+
 end
 
 module Drop_if = struct
