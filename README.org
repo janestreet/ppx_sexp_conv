@@ -122,40 +122,36 @@ key-value pair. Each pair consists of the name of the record field
   => ((foo (3 4)) (bar "some string"))
 #+end_src
 
-Type specifications of records allow the use of a special type
-=sexp_option= which indicates that a record field should be
-optional. /e.g./:
+Type specifications of records allow the use of several attributes. The
+attribute =sexp.option= indicates that a record field should be optional.
+/e.g./:
 
 #+begin_src ocaml
   type t =
     { x : int option;
-      y : int sexp_option;
+      y : int option [@sexp.option];
     } [@@deriving sexp]
 #+end_src
 
-The type =sexp_option= is equivalent to ordinary options, but is
-treated specially by the code generator.  The following examples show
-how this works.
+The following examples show how this works.
 
 #+begin_src ocaml
   { x = Some 1; y = Some 2; } => ((x (1)) (y 2))
   { x = None  ; y = None;   } => ((x ()))
 #+end_src
 
-Note that, when present, on optional value is represented as the bare
+Note that, when present, an optional value is represented as the bare
 value, rather than explicitly as an option.
 
-The types =sexp_list= and =sexp_array= can be used in ways similar to
-the type =sexp_option=.  They assume the empty list and empty array
-respectively as default values.
-
-These types need to be already in scope in order to use them. This can be done by
-writing:
+The attribute =sexp.bool= indicates that a boolean record field is shown
+as either present or absent, but not as containing a value.
 
 #+begin_src ocaml
-open Sexplib.Conv
-#+end_src
+  type t = { enabled : bool [@sexp.bool] } [@@deriving sexp]
 
+  { enabled = true } => ((enabled))
+  { enabled = false } => ()
+#+end_src
 
 **** Defaults
 
@@ -180,12 +176,11 @@ function. =@sexp_drop_if= is like =@sexp_drop_default=, except that
 it lets you specify the condition under which the field is dropped.
 Finally, =@sexp.omit_nil= means to treat a missing field as if it
 has value =List []= when reading, and drop the field if it has value
-=List []= when writing. It is a generalization of =sexp_array= and
-=sexp_list=.
+=List []= when writing.
 
 ***** Specifying equality for [@sexp_drop_default]
 
-The equality used by [@sexp_drop_default] is customizable. There 
+The equality used by [@sexp_drop_default] is customizable. There
 are several ways to specify the equality function:
 
 #+begin_src ocaml
@@ -234,6 +229,18 @@ For example:
 #+end_src
 
 The above example also demonstrates recursion in data structures.
+
+Variants support the attribute =sexp.list= when a clause has a single
+list as its argument.
+
+#+begin_src ocaml
+  type t =
+   | A of int list
+   | B of int list [@sexp.list]
+
+  A [1; 2; 3] => (A (1 2 3))
+  B [1; 2; 3] => (B 1 2 3)
+#+end_src
 
 *** Polymorphic variants
 
@@ -305,11 +312,10 @@ conversions.  This may be, because we do not have S-expression
 converters for them, or because we do not want to apply them in a
 particular type context. /e.g./ to hide large, unimportant parts of
 configurations.  To prevent the preprocessor from generating calls to
-converters, simply apply the qualifier =sexp_opaque= as if it were a
-type constructor, /e.g./:
+converters, simply apply the attribute =sexp.opaque= to the type, /e.g./:
 
 #+begin_src ocaml
-  type foo = int * stuff sexp_opaque [@@deriving sexp]
+  type foo = int * (stuff [@sexp.opaque]) [@@deriving sexp]
 #+end_src
 
 Thus, there is no need to specify converters for type =stuff=, and if
@@ -428,3 +434,86 @@ Error: In this `with' constraint, the new definition of t
 
 To workaround that error, simply copy the constraint on the type which has the
 =[@@deriving]= annotation. This will force generating a list of value bindings.
+
+** Deprecated syntax
+
+Originally, ~ppx_sexp_conv~ used special types instead of attributes. Those
+types are now deprecated. Here are the appropriate conversions to update from
+code using now-deprecated types to the newer attributes.
+
+*** Opaque types
+
+Convert uses of ~sexp_opaque~ to uses of ~[@sexp.opaque]~. The ~[@sexp.opaque]~
+attribute usually needs explicit parentheses to clarify what type it annotate.
+
+Before:
+
+#+begin_src ocaml
+type t = int sexp_opaque list
+[@@deriving sexp]
+#+end_src
+
+After:
+
+#+begin_src ocaml
+type t = (int [@sexp.opaque]) list
+[@@deriving sexp]
+#+end_src
+
+*** Record fields
+
+Convert uses of ~sexp_option~, ~sexp_list~, ~sexp_array~, and ~sexp_bool~ to
+uses of ~[@sexp.option]~, ~[@sexp.list]~, ~[@sexp.array]~, and ~[@sexp.bool]~ as
+appropriate. The attribute only specifies the modification, not the type, so you
+will need to use the regular types ~option~, ~list~, ~array~, and/or ~bool~ as
+well. Unlike ~[@sexp.opaque]~, these attributes do not need extra parentheses.
+
+Before:
+
+#+begin_src ocaml
+type t =
+  { a : int sexp_option
+  ; b : int sexp_list
+  ; c : int sexp_array
+  ; d : sexp_bool
+  }
+[@@deriving sexp]
+#+end_src
+
+After:
+
+#+begin_src ocaml
+type t =
+  { a : int option [@sexp.option]
+  ; b : int list [@sexp.list]
+  ; c : int array [@sexp.array]
+  ; d : bool [@sexp.bool]
+  }
+[@@deriving sexp]
+#+end_src
+
+*** Variant constructors
+
+Convert uses of ~sexp_list~ in variants and polymorphic variants to uses of
+~[@sexp.list]~. You need to add the regular type ~list~ as well. Unlike
+~[@sexp.opaque]~, this attribute does not need extra parentheses.
+
+Before:
+
+#+begin_src ocaml
+type t = A of int sexp_list
+[@@deriving sexp]
+
+type u = [`B of int sexp_list]
+[@@deriving sexp]
+#+end_src
+
+After:
+
+#+begin_src ocaml
+type t = A of int list [@sexp.list]
+[@@deriving sexp]
+
+type u = [`B of int list [@sexp.list]]
+[@@deriving sexp]
+#+end_src

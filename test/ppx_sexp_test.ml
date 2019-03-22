@@ -561,6 +561,85 @@ module Nonregular_types = struct
   [@@deriving sexp]
 end
 
+module Opaque = struct
+  type t = (int [@sexp.opaque]) list
+  [@@deriving sexp]
+
+  let sexp = Sexplib.Sexp.of_string "(<opaque> <opaque>)"
+  let t = [1; 2]
+  let%test _ = sexp_of_t t = sexp
+  let%test _ =
+    match t_of_sexp sexp with
+    | _ -> false
+    | exception _ -> true
+end
+
+module Optional = struct
+  type t = { optional : int option [@sexp.option] }
+  [@@deriving sexp]
+
+  let sexp = Sexplib.Sexp.of_string "()"
+  let t = { optional = None }
+  let%test _ = t_of_sexp sexp = t
+  let%test _ = sexp_of_t t = sexp
+
+  let sexp = Sexplib.Sexp.of_string "((optional 5))"
+  let t = { optional = Some 5 }
+  let%test _ = t_of_sexp sexp = t
+  let%test _ = sexp_of_t t = sexp
+end
+
+module Nonempty = struct
+  type t =
+    { list : int list [@sexp.list]
+    ; array : int array [@sexp.array]
+    }
+  [@@deriving sexp]
+
+  let sexp = Sexplib.Sexp.of_string "()"
+  let t = { list = []; array = [||] }
+  let%test _ = t_of_sexp sexp = t
+  let%test _ = sexp_of_t t = sexp
+
+  let sexp = Sexplib.Sexp.of_string "((list (1 2 3)) (array (3 2 1)))"
+  let t = { list = [1;2;3]; array = [|3;2;1|] }
+  let%test _ = t_of_sexp sexp = t
+  let%test _ = sexp_of_t t = sexp
+end
+
+module Boolean = struct
+  type t = { no_arg : bool [@sexp.bool] }
+  [@@deriving sexp]
+
+  let sexp = Sexplib.Sexp.of_string "()"
+  let t = { no_arg = false }
+  let%test _ = t_of_sexp sexp = t
+  let%test _ = sexp_of_t t = sexp
+
+  let sexp = Sexplib.Sexp.of_string "((no_arg))"
+  let t = { no_arg = true }
+  let%test _ = t_of_sexp sexp = t
+  let%test _ = sexp_of_t t = sexp
+end
+
+module Inline = struct
+  type t = A of int list [@sexp.list]
+  [@@deriving sexp]
+
+  let sexp = Sexplib.Sexp.of_string "(A 1 2 3)"
+  let t = A [1; 2; 3]
+  let%test _ = t_of_sexp sexp = t
+  let%test _ = sexp_of_t t = sexp
+
+  type u = [ `A of int list [@sexp.list] ]
+  [@@deriving sexp]
+
+  let sexp = Sexplib.Sexp.of_string "(A 1 2 3)"
+  let u = `A [1; 2; 3]
+  let%test _ = u_of_sexp sexp = u
+  let%test _ = sexp_of_u u = sexp
+end
+
 module Magic_types = struct
   type t =
     { sexp_array : int sexp_array

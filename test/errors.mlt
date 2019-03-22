@@ -95,3 +95,72 @@ Error (Warning 22): [@sexp_drop_default] is deprecated: please use one of:
 - [@sexp_drop_default.equal] if the type supports [%equal]
 - [@sexp_drop_default.sexp] if you want to compare the sexp representations
 |}]
+
+type t = { x : unit [@sexp.opaque] } [@@deriving sexp_of]
+type t = { x : unit [@sexp.opaque] } [@@deriving of_sexp]
+[%%expect{|
+Line _, characters 22-33:
+Error: Attribute `sexp.opaque' was not used.
+Hint: `sexp.opaque' is available for core types but is used here in the
+context of a label declaration.
+Did you put it at the wrong level?
+Line _, characters 22-33:
+Error: Attribute `sexp.opaque' was not used.
+Hint: `sexp.opaque' is available for core types but is used here in the
+context of a label declaration.
+Did you put it at the wrong level?
+|}]
+
+type t = { x : unit [@sexp.option] } [@@deriving sexp_of]
+type t = { x : unit [@sexp.option] } [@@deriving of_sexp]
+[%%expect{|
+Line _, characters 11-12:
+Error: ppx_sexp_conv: [@sexp.option] is only allowed on type [_ option].
+Line _, characters 11-12:
+Error: ppx_sexp_conv: [@sexp.option] is only allowed on type [_ option].
+|}]
+
+type t = { x : unit [@sexp.list] } [@@deriving sexp_of]
+type t = { x : unit [@sexp.list] } [@@deriving of_sexp]
+[%%expect{|
+Line _, characters 11-12:
+Error: ppx_sexp_conv: [@sexp.list] is only allowed on type [_ list].
+Line _, characters 11-12:
+Error: ppx_sexp_conv: [@sexp.list] is only allowed on type [_ list].
+|}]
+
+type t = { x : unit [@sexp.array] } [@@deriving sexp_of]
+type t = { x : unit [@sexp.array] } [@@deriving of_sexp]
+[%%expect{|
+Line _, characters 11-12:
+Error: ppx_sexp_conv: [@sexp.array] is only allowed on type [_ array].
+Line _, characters 11-12:
+Error: ppx_sexp_conv: [@sexp.array] is only allowed on type [_ array].
+|}]
+
+type t = { x : unit [@sexp.bool] } [@@deriving sexp_of]
+type t = { x : unit [@sexp.bool] } [@@deriving of_sexp]
+[%%expect{|
+Line _, characters 11-12:
+Error: ppx_sexp_conv: [@sexp.bool] is only allowed on type [bool].
+Line _, characters 11-12:
+Error: ppx_sexp_conv: [@sexp.bool] is only allowed on type [bool].
+|}]
+
+type t = A of unit [@sexp.list] [@@deriving sexp_of]
+type t = A of unit [@sexp.list] [@@deriving of_sexp]
+[%%expect{|
+Line _, characters 9-31:
+Error: ppx_sexp_conv: [@sexp.list] is only allowed on type [_ list].
+Line _, characters 0-52:
+Error: ppx_sexp_conv: [@sexp.list] is only allowed on type [_ list].
+|}]
+
+type t = [`A of unit [@sexp.list]] [@@deriving sexp_of]
+type t = [`A of unit [@sexp.list]] [@@deriving of_sexp]
+[%%expect{|
+Line _, characters 0-55:
+Error: ppx_sexp_conv: [@sexp.list] is only allowed on type [_ list].
+Line _, characters 16-20:
+Error: ppx_sexp_conv: [@sexp.list] is only allowed on type [_ list].
+|}]
