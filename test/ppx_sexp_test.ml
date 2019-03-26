@@ -483,7 +483,7 @@ module Gadt = struct
   let%test_unit _ = is_eq ([%sexp_of: int s] Packed) "Packed"
 
   (* two kind of existential variables *)
-  type 'a t = Packed : 'a * _ * 'b sexp_opaque -> 'a t [@@deriving sexp_of]
+  type 'a t = Packed : 'a * _ * 'b sexp_opaque -> 'a t [@warning "-3"] [@@deriving sexp_of]
   let%test_unit _ = is_eq ([%sexp_of: int t] (Packed (2, "asd", 1.))) "(Packed 2 _ <opaque>)"
 
   (* plain type with argument *)
@@ -642,10 +642,10 @@ end
 
 module Magic_types = struct
   type t =
-    { sexp_array : int sexp_array
-    ; sexp_list : int sexp_list
-    ; sexp_option : int sexp_option
-    ; sexp_bool : sexp_bool
+    { sexp_array : int sexp_array [@warning "-3"]
+    ; sexp_list : int sexp_list [@warning "-3"]
+    ; sexp_option : int sexp_option [@warning "-3"]
+    ; sexp_bool : sexp_bool [@warning "-3"]
     }
   [@@deriving sexp]
 
@@ -675,10 +675,10 @@ module Magic_types = struct
 
 
   type u =
-    | A of int sexp_list
+    | A of int sexp_list [@warning "-3"]
   [@@deriving sexp]
   type v =
-    [ `A of int sexp_list ]
+    [ `A of int sexp_list ] [@warning "-3"]
   [@@deriving sexp]
   let sexp = Sexplib.Sexp.of_string "(A 1 2 3)"
   let u = A [1; 2; 3]
