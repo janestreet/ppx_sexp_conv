@@ -2,6 +2,8 @@ open Base
 open Ppxlib
 open Ast_builder.Default
 
+module Attrs = Attrs
+
 let ( --> ) lhs rhs = case ~guard:None ~lhs ~rhs
 
 (* Simplifies match cases, for readability of the generated code. It's not obvious we can
@@ -21,140 +23,6 @@ let pexp_match ~loc expr cases =
         pc_rhs
     end
   | _ -> pexp_match ~loc expr cases
-
-module Attrs = struct
-  let default =
-    Attribute.declare "sexp.default"
-      Attribute.Context.label_declaration
-      Ast_pattern.(pstr (pstr_eval __ nil ^:: nil))
-      (fun x -> x)
-
-  let drop_default =
-    Attribute.declare "sexp.sexp_drop_default"
-      Attribute.Context.label_declaration
-      Ast_pattern.(pstr (alt_option (pstr_eval __ nil ^:: nil) nil))
-      (fun x -> x)
-
-  let drop_default_equal =
-    Attribute.declare "sexp.@sexp_drop_default.equal"
-      Attribute.Context.label_declaration
-      Ast_pattern.(pstr nil)
-      ()
-
-  let drop_default_compare =
-    Attribute.declare "sexp.@sexp_drop_default.compare"
-      Attribute.Context.label_declaration
-      Ast_pattern.(pstr nil)
-      ()
-
-  let drop_default_sexp =
-    Attribute.declare "sexp.@sexp_drop_default.sexp"
-      Attribute.Context.label_declaration
-      Ast_pattern.(pstr nil)
-      ()
-
-  let drop_if =
-    Attribute.declare "sexp.sexp_drop_if"
-      Attribute.Context.label_declaration
-      Ast_pattern.(pstr (pstr_eval __ nil ^:: nil))
-      (fun x -> x)
-
-  let opaque =
-    Attribute.declare "sexp.opaque"
-      Attribute.Context.core_type
-      Ast_pattern.(pstr nil)
-      ()
-
-  let omit_nil =
-    Attribute.declare "sexp.omit_nil"
-      Attribute.Context.label_declaration
-      Ast_pattern.(pstr nil)
-      ()
-
-  let option =
-    Attribute.declare "sexp.option"
-      Attribute.Context.label_declaration
-      Ast_pattern.(pstr nil)
-      ()
-
-  let list =
-    Attribute.declare "sexp.list"
-      Attribute.Context.label_declaration
-      Ast_pattern.(pstr nil)
-      ()
-
-  let array =
-    Attribute.declare "sexp.array"
-      Attribute.Context.label_declaration
-      Ast_pattern.(pstr nil)
-      ()
-
-  let bool =
-    Attribute.declare "sexp.bool"
-      Attribute.Context.label_declaration
-      Ast_pattern.(pstr nil)
-      ()
-
-  let list_variant =
-    Attribute.declare "sexp.list"
-      Attribute.Context.constructor_declaration
-      Ast_pattern.(pstr nil)
-      ()
-
-  let list_extension =
-    Attribute.declare "sexp.list"
-      Attribute.Context.extension_constructor
-      Ast_pattern.(pstr nil)
-      ()
-
-  let list_poly =
-    Attribute.declare "sexp.list"
-      Attribute.Context.rtag
-      Ast_pattern.(pstr nil)
-      ()
-
-  let allow_extra_fields_td =
-    Attribute.declare "sexp.allow_extra_fields"
-      Attribute.Context.type_declaration
-      Ast_pattern.(pstr nil)
-      ()
-
-  let allow_extra_fields_cd =
-    Attribute.declare "sexp.allow_extra_fields"
-      Attribute.Context.constructor_declaration
-      Ast_pattern.(pstr nil)
-      ()
-end
-
-let invalid_attribute ~loc attr description =
-  Location.raise_errorf ~loc
-    "ppx_sexp_conv: [@%s] is only allowed on type [%s]."
-    (Attribute.name attr)
-    description
-
-let fail_if_allow_extra_field_cd ~loc x =
-  if Option.is_some (Attribute.get Attrs.allow_extra_fields_cd x)
-  then
-    Location.raise_errorf ~loc
-      "ppx_sexp_conv: [@@allow_extra_fields] is only allowed on \
-       inline records."
-
-let fail_if_allow_extra_field_td ~loc x =
-  if Option.is_some (Attribute.get Attrs.allow_extra_fields_td x)
-  then
-    match x.ptype_kind with
-    | Ptype_variant cds
-      when List.exists cds
-             ~f:(fun cd -> match cd.pcd_args with Pcstr_record _ -> true | _ -> false)
-      ->
-      Location.raise_errorf ~loc
-        "ppx_sexp_conv: [@@@@allow_extra_fields] only works on records. \
-         For inline records, do: type t = A of { a : int } [@@allow_extra_fields] | B \
-         [@@@@deriving sexp]"
-    | _ ->
-      Location.raise_errorf ~loc
-        "ppx_sexp_conv: [@@@@allow_extra_fields] is only allowed on \
-         records."
 
 module Fun_or_match = struct
   type t =
@@ -498,19 +366,19 @@ module Str_generate_sexp_of = struct
            | ty when Option.is_some (Attribute.get Attrs.bool ld) ->
              (match ty with
               | [%type: bool] -> Some (`sexp_bool, "[@sexp.bool]")
-              | _ -> invalid_attribute ~loc Attrs.bool "bool")
+              | _ -> Attrs.invalid_attribute ~loc Attrs.bool "bool")
            | ty when Option.is_some (Attribute.get Attrs.option ld) ->
              (match ty with
               | [%type: [%t? ty] option] -> Some (`sexp_option ty, "[@sexp.option]")
-              | _ -> invalid_attribute ~loc Attrs.option "_ option")
+              | _ -> Attrs.invalid_attribute ~loc Attrs.option "_ option")
            | ty when Option.is_some (Attribute.get Attrs.list ld) ->
              (match ty with
               | [%type: [%t? ty] list] -> Some (`sexp_list ty, "[@sexp.list]")
-              | _ -> invalid_attribute ~loc Attrs.list "_ list")
+              | _ -> Attrs.invalid_attribute ~loc Attrs.list "_ list")
            | ty when Option.is_some (Attribute.get Attrs.array ld) ->
              (match ty with
               | [%type: [%t? ty] array] -> Some (`sexp_array ty, "[@sexp.array]")
-              | _ -> invalid_attribute ~loc Attrs.array "_ array")
+              | _ -> Attrs.invalid_attribute ~loc Attrs.array "_ array")
            | _ -> None)
         ]
     in
@@ -595,7 +463,7 @@ module Str_generate_sexp_of = struct
                  Ppx_sexp_conv_lib.Conv.list_map [%e cnv_expr] l
                )
            ]
-         | _ -> invalid_attribute ~loc Attrs.list_poly "_ list")
+         | _ -> Attrs.invalid_attribute ~loc Attrs.list_poly "_ list")
       | Rtag ({ txt = cnstr; _ },_,_,[ [%type: [%t? tp] sexp_list] ]) ->
         let cnv_expr = Fun_or_match.expr ~loc (sexp_of_type ~typevar_handling tp) in
         ppat_variant ~loc cnstr (Some [%pat? l]) -->
@@ -942,7 +810,7 @@ module Str_generate_sexp_of = struct
                Ppx_sexp_conv_lib.Sexp.List
                  (Ppx_sexp_conv_lib.Sexp.Atom [%e constr_str] ::
                   Ppx_sexp_conv_lib.Conv.list_map [%e cnv_expr] l)]
-           | _ -> invalid_attribute ~loc inline_attr "_ list")
+           | _ -> Attrs.invalid_attribute ~loc inline_attr "_ list")
         | [ [%type: [%t? tp] sexp_list ] ] ->
           let cnv_expr =
             Fun_or_match.expr ~loc
@@ -1281,8 +1149,8 @@ module Str_generate_of_sexp = struct
          cnstr [%expr Ppx_sexp_conv_lib.Conv.list_map ([%e cnv]) sexp_args ]
        | _ ->
          (match row with
-          | `Row _ -> invalid_attribute ~loc Attrs.list_poly "_ list"
-          | `Constructor _ -> invalid_attribute ~loc Attrs.list_variant "_ list"))
+          | `Row _ -> Attrs.invalid_attribute ~loc Attrs.list_poly "_ list"
+          | `Constructor _ -> Attrs.invalid_attribute ~loc Attrs.list_variant "_ list"))
     | [ [%type: [%t? tp] sexp_list ] ] ->
       let cnv = Fun_or_match.expr ~loc (type_of_sexp ~typevar_handling tp) in
       cnstr [%expr Ppx_sexp_conv_lib.Conv.list_map ([%e cnv]) sexp_args ]
@@ -1449,19 +1317,19 @@ module Str_generate_of_sexp = struct
            | ty when Option.is_some (Attribute.get Attrs.bool ld) ->
              (match ty with
               | [%type: bool] -> Some (`sexp_bool, "[@sexp.bool]")
-              | _ -> invalid_attribute ~loc Attrs.bool "bool")
+              | _ -> Attrs.invalid_attribute ~loc Attrs.bool "bool")
            | ty when Option.is_some (Attribute.get Attrs.option ld) ->
              (match ty with
               | [%type: [%t? ty] option] -> Some (`sexp_option ty, "[@sexp.option]")
-              | _ -> invalid_attribute ~loc Attrs.option "_ option")
+              | _ -> Attrs.invalid_attribute ~loc Attrs.option "_ option")
            | ty when Option.is_some (Attribute.get Attrs.list ld) ->
              (match ty with
               | [%type: [%t? ty] list] -> Some (`sexp_list ty, "[@sexp.list]")
-              | _ -> invalid_attribute ~loc Attrs.list "_ list")
+              | _ -> Attrs.invalid_attribute ~loc Attrs.list "_ list")
            | ty when Option.is_some (Attribute.get Attrs.array ld) ->
              (match ty with
               | [%type: [%t? ty] array] -> Some (`sexp_array ty, "[@sexp.array]")
-              | _ -> invalid_attribute ~loc Attrs.array "_ array")
+              | _ -> Attrs.invalid_attribute ~loc Attrs.array "_ array")
            | _ -> None)
         ]
     in
@@ -1747,14 +1615,14 @@ module Str_generate_of_sexp = struct
                (Ppx_sexp_conv_lib.Sexp.Atom ([%p lcstr] | [%p str] as _tag) :: field_sexps) as sexp
         ] --> expr
       | { pcd_name = cnstr; pcd_args = Pcstr_tuple []; _} ->
-        fail_if_allow_extra_field_cd ~loc cd;
+        Attrs.fail_if_allow_extra_field_cd ~loc cd;
         let lcstr = pstring ~loc (String.uncapitalize cnstr.txt) in
         let str = pstring ~loc cnstr.txt in
         [%pat? Ppx_sexp_conv_lib.Sexp.Atom ([%p lcstr] | [%p str])] -->
         pexp_construct ~loc (Located.lident ~loc cnstr.txt) None
 
       | { pcd_name = cnstr; pcd_args = Pcstr_tuple (_::_ as tps); _} ->
-        fail_if_allow_extra_field_cd ~loc cd;
+        Attrs.fail_if_allow_extra_field_cd ~loc cd;
         let lcstr = pstring ~loc (String.uncapitalize cnstr.txt) in
         let str = pstring ~loc cnstr.txt in
         [%pat? (Ppx_sexp_conv_lib.Sexp.List
@@ -1833,7 +1701,7 @@ module Str_generate_of_sexp = struct
       let body =
         match td.ptype_kind with
         | Ptype_variant alts ->
-          fail_if_allow_extra_field_td ~loc td;
+          Attrs.fail_if_allow_extra_field_td ~loc td;
           sum_of_sexp ~typevar_handling (td.ptype_loc, alts)
         | Ptype_record lbls ->
           record_of_sexp
@@ -1845,7 +1713,7 @@ module Str_generate_of_sexp = struct
           Location.raise_errorf ~loc
             "ppx_sexp_conv: open types not supported"
         | Ptype_abstract ->
-          fail_if_allow_extra_field_td ~loc td;
+          Attrs.fail_if_allow_extra_field_td ~loc td;
           match td.ptype_manifest with
           | None -> nil_of_sexp td.ptype_loc
           | Some { ptyp_desc = Ptyp_variant (rows, _, _); _ } ->
