@@ -331,64 +331,6 @@ end
 module Str_generate_sexp_of = struct
   (* Handling of record defaults *)
 
-  type record_field_handler =
-    [ `keep
-    | `drop_default of [ `no_arg | `compare | `equal | `sexp | `func of expression ]
-    | `drop_if of expression
-    | `omit_nil
-    | `sexp_array of core_type
-    | `sexp_bool
-    | `sexp_list of core_type
-    | `sexp_option of core_type
-    ]
-
-  let get_record_field_handler ~loc ld : record_field_handler =
-    let get_attribute attr ~f =
-      Option.map (Attribute.get attr ld) ~f:(fun x -> f x, Attribute.name attr)
-    in
-    let attributes =
-      List.filter_opt
-        [ get_attribute Attrs.drop_default ~f:(function
-            | None -> `drop_default `no_arg
-            | Some e -> `drop_default (`func e))
-        ; get_attribute Attrs.drop_default_equal ~f:(fun () -> `drop_default `equal)
-        ; get_attribute Attrs.drop_default_compare
-            ~f:(fun () -> `drop_default `compare)
-        ; get_attribute Attrs.drop_default_sexp
-            ~f:(fun () -> `drop_default `sexp)
-        ; get_attribute Attrs.drop_if ~f:(fun x -> `drop_if x)
-        ; get_attribute Attrs.omit_nil ~f:(fun () -> `omit_nil)
-        ; (match ld.pld_type with
-           | [%type: sexp_bool ] -> Some (`sexp_bool, "sexp_bool")
-           | [%type: [%t? ty] sexp_option ] -> Some (`sexp_option ty, "sexp_option")
-           | [%type: [%t? ty] sexp_list ] -> Some (`sexp_list ty, "sexp_list")
-           | [%type: [%t? ty] sexp_array ] -> Some (`sexp_array ty, "sexp_array")
-           | ty when Option.is_some (Attribute.get Attrs.bool ld) ->
-             (match ty with
-              | [%type: bool] -> Some (`sexp_bool, "[@sexp.bool]")
-              | _ -> Attrs.invalid_attribute ~loc Attrs.bool "bool")
-           | ty when Option.is_some (Attribute.get Attrs.option ld) ->
-             (match ty with
-              | [%type: [%t? ty] option] -> Some (`sexp_option ty, "[@sexp.option]")
-              | _ -> Attrs.invalid_attribute ~loc Attrs.option "_ option")
-           | ty when Option.is_some (Attribute.get Attrs.list ld) ->
-             (match ty with
-              | [%type: [%t? ty] list] -> Some (`sexp_list ty, "[@sexp.list]")
-              | _ -> Attrs.invalid_attribute ~loc Attrs.list "_ list")
-           | ty when Option.is_some (Attribute.get Attrs.array ld) ->
-             (match ty with
-              | [%type: [%t? ty] array] -> Some (`sexp_array ty, "[@sexp.array]")
-              | _ -> Attrs.invalid_attribute ~loc Attrs.array "_ array")
-           | _ -> None)
-        ]
-    in
-    match attributes with
-    | [] -> `keep
-    | [ (v, _) ] -> v
-    | _ :: _ :: _ ->
-      Location.raise_errorf ~loc "The following elements are mutually exclusive: %s"
-        (String.concat ~sep:" " (List.map attributes ~f:snd))
-
   let sexp_of_type_constr ~loc id args =
     type_constr_conv ~loc id ~f:(fun s -> "sexp_of_" ^ s) args
 
@@ -684,7 +626,7 @@ module Str_generate_sexp_of = struct
     let coll ((patt : (Longident.t loc * pattern) list), expr) ld =
       let name = ld.pld_name.txt in
       let loc = ld.pld_name.loc in
-      match get_record_field_handler ~loc ld with
+      match Attrs.Record_field_handler.Sexp_of.create ~loc ld with
       | `sexp_option tp ->
         let patt = mk_rec_patt loc patt name in
         let vname = [%expr  v ] in
@@ -1299,47 +1241,6 @@ module Str_generate_of_sexp = struct
             (pexp_match ~loc [%expr arg] matchings)
         ]
 
-  (* Record conversions *)
-
-  let get_record_field_handler ~loc ld =
-    let get_attribute attr ~f =
-      Option.map (Attribute.get attr ld) ~f:(fun x -> f x, Attribute.name attr)
-    in
-    let attributes =
-      List.filter_opt
-        [ get_attribute Attrs.default ~f:(fun default -> `default default)
-        ; get_attribute Attrs.omit_nil ~f:(fun () -> `omit_nil)
-        ; (match ld.pld_type with
-           | [%type: sexp_bool ] -> Some (`sexp_bool, "sexp_bool")
-           | [%type: [%t? ty] sexp_option ] -> Some (`sexp_option ty, "sexp_option")
-           | [%type: [%t? ty] sexp_list ] -> Some (`sexp_list ty, "sexp_list")
-           | [%type: [%t? ty] sexp_array ] -> Some (`sexp_array ty, "sexp_array")
-           | ty when Option.is_some (Attribute.get Attrs.bool ld) ->
-             (match ty with
-              | [%type: bool] -> Some (`sexp_bool, "[@sexp.bool]")
-              | _ -> Attrs.invalid_attribute ~loc Attrs.bool "bool")
-           | ty when Option.is_some (Attribute.get Attrs.option ld) ->
-             (match ty with
-              | [%type: [%t? ty] option] -> Some (`sexp_option ty, "[@sexp.option]")
-              | _ -> Attrs.invalid_attribute ~loc Attrs.option "_ option")
-           | ty when Option.is_some (Attribute.get Attrs.list ld) ->
-             (match ty with
-              | [%type: [%t? ty] list] -> Some (`sexp_list ty, "[@sexp.list]")
-              | _ -> Attrs.invalid_attribute ~loc Attrs.list "_ list")
-           | ty when Option.is_some (Attribute.get Attrs.array ld) ->
-             (match ty with
-              | [%type: [%t? ty] array] -> Some (`sexp_array ty, "[@sexp.array]")
-              | _ -> Attrs.invalid_attribute ~loc Attrs.array "_ array")
-           | _ -> None)
-        ]
-    in
-    match attributes with
-    | [] -> None
-    | [ (v, _) ] -> Some v
-    | _ :: _ :: _ ->
-      Location.raise_errorf ~loc "The following elements are mutually exclusive: %s"
-        (String.concat ~sep:" " (List.map attributes ~f:snd))
-
   (* Generate code for extracting record fields *)
   let mk_extract_fields ~typevar_handling ~allow_extra_fields (loc,flds) =
     let rec loop inits no_args args = function
@@ -1347,7 +1248,7 @@ module Str_generate_of_sexp = struct
       | ld :: more_flds ->
         let loc = ld.pld_name.loc in
         let nm = ld.pld_name.txt in
-        match get_record_field_handler ~loc ld, ld.pld_type with
+        match Attrs.Record_field_handler.Of_sexp.create ~loc ld, ld.pld_type with
         | Some `sexp_bool, _ ->
           let inits = [%expr false] :: inits in
           let no_args =
@@ -1409,7 +1310,7 @@ module Str_generate_of_sexp = struct
             bi_lst, [%pat? [%p pvar ~loc (nm ^ "_value")] ] :: good_patts
           in
           let new_bi_lst, new_good_patts =
-            match get_record_field_handler ~loc ld with
+            match Attrs.Record_field_handler.Of_sexp.create ~loc ld with
             | Some (`default _ | `sexp_bool | `sexp_option _ | `sexp_list _
                    | `sexp_array _ | `omit_nil) ->
               mk_default loc
@@ -1444,7 +1345,7 @@ module Str_generate_of_sexp = struct
         let cnvt ld =
           let nm = ld.pld_name.txt in
           let value =
-            match get_record_field_handler ~loc ld with
+            match Attrs.Record_field_handler.Of_sexp.create ~loc ld with
             | Some (`sexp_list _) ->
               [%expr
                 match [%e evar ~loc (nm ^ "_value")] with
