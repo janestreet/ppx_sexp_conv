@@ -572,6 +572,17 @@ module Opaque = struct
     match t_of_sexp sexp with
     | _ -> false
     | exception _ -> true
+
+  type u = [`A of int] [@sexp.opaque]
+  [@@deriving sexp]
+
+  let sexp = Sexplib.Sexp.of_string "<opaque>"
+  let u = `A 1
+  let%test _ = sexp_of_u u = sexp
+  let%test _ =
+    match u_of_sexp sexp with
+    | _ -> false
+    | exception _ -> true
 end
 
 module Optional = struct

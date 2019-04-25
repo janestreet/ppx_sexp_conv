@@ -159,7 +159,7 @@ Error: ppx_sexp_conv: [@sexp.list] is only allowed on type [_ list].
 type t = [`A of unit [@sexp.list]] [@@deriving sexp_of]
 type t = [`A of unit [@sexp.list]] [@@deriving of_sexp]
 [%%expect{|
-Line _, characters 0-55:
+Line _, characters 9-34:
 Error: ppx_sexp_conv: [@sexp.list] is only allowed on type [_ list].
 Line _, characters 16-20:
 Error: ppx_sexp_conv: [@sexp.list] is only allowed on type [_ list].

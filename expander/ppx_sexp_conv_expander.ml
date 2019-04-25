@@ -265,7 +265,7 @@ let really_recursive rec_flag tds =
 
     method! core_type ctype =
       match ctype with
-      | _ when Option.is_some (Attribute.get Attrs.opaque ctype) -> ()
+      | _ when Option.is_some (Attribute.get ~mark_as_seen:false Attrs.opaque ctype) -> ()
       | [%type: [%t? _] sexp_opaque ] -> ()
       | _ -> super#core_type ctype
 
@@ -813,8 +813,6 @@ module Str_generate_sexp_of = struct
         | Ptype_abstract ->
           match td.ptype_manifest with
           | None    -> sexp_of_nil loc
-          | Some { ptyp_desc = Ptyp_variant (row_fields, _, _); _ } ->
-            sexp_of_variant ~typevar_handling:(`ok Renaming.identity) (loc,row_fields)
           | Some ty -> sexp_of_type ~typevar_handling:(`ok Renaming.identity) ty
       in
       let is_private_alias =
@@ -973,7 +971,7 @@ module Str_generate_of_sexp = struct
     )
 
   (* Conversion of types *)
-  let rec type_of_sexp ~typevar_handling ?(internal=false) typ : Fun_or_match.t =
+  let rec type_of_sexp ~typevar_handling ?full_type ?(internal=false) typ : Fun_or_match.t =
     let loc = typ.ptyp_loc in
     match typ with
     | _ when Option.is_some (Attribute.get Attrs.opaque typ) ->
@@ -1007,7 +1005,7 @@ module Str_generate_of_sexp = struct
 
     | { ptyp_desc = Ptyp_arrow (_,_,_); _ } -> Fun [%expr  Ppx_sexp_conv_lib.Conv.fun_of_sexp ]
     | { ptyp_desc = Ptyp_variant (row_fields, _, _); _ } ->
-      variant_of_sexp ~typevar_handling ?full_type:None (loc,row_fields)
+      variant_of_sexp ~typevar_handling ?full_type (loc,row_fields)
     | { ptyp_desc = Ptyp_poly (parms, poly_tp); _ } ->
       poly_of_sexp ~typevar_handling parms poly_tp
     | { ptyp_desc = Ptyp_object (_, _); _ }
@@ -1617,9 +1615,8 @@ module Str_generate_of_sexp = struct
           Attrs.fail_if_allow_extra_field_td ~loc td;
           match td.ptype_manifest with
           | None -> nil_of_sexp td.ptype_loc
-          | Some { ptyp_desc = Ptyp_variant (rows, _, _); _ } ->
-            variant_of_sexp ~typevar_handling ~full_type (loc, rows)
-          | Some ty -> type_of_sexp ~typevar_handling ~internal:create_internal_function ty
+          | Some ty ->
+            type_of_sexp ~full_type ~typevar_handling ~internal:create_internal_function ty
       in
       match body with
       (* Prevent violation of value restriction and problems with
