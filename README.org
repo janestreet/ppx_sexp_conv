@@ -1,5 +1,4 @@
 #+TITLE: ppx_sexp_conv
-#+PARENT: ../README.md
 
 * [@@deriving sexp]
 
