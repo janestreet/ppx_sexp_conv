@@ -1,4 +1,4 @@
-#+TITLE: ppx_sexp_conv
+#+TITLE: ppx\_sexp\_conv
 
 * [@@deriving sexp]
 
