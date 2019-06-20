@@ -112,7 +112,8 @@ module Sexp_in_sig = struct
   ;;
 
   let deriver =
-    Deriving.add "let this be a string that wouldn't parse if put in the source"
+    Deriving.add
+      "ppx_sexp_conv: let this be a string that wouldn't parse if put in the source"
       ~sig_type_decl
 end
 
