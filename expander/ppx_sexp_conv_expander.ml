@@ -389,12 +389,13 @@ module Str_generate_sexp_of = struct
 
   and sexp_of_variant ~typevar_handling ((loc,row_fields):(Location.t * row_field list))
     : Fun_or_match.t =
-    let item = function
-      | Rtag ({ txt = cnstr; _},_,true,[]) ->
+    let item = fun row ->
+      match row.prf_desc with
+      | Rtag ({ txt = cnstr; _},true,[]) ->
         ppat_variant ~loc cnstr None -->
         [%expr Ppx_sexp_conv_lib.Sexp.Atom [%e estring ~loc cnstr]]
-      | Rtag ({ txt = cnstr; _ },_,_,[ tp ]) as rtag
-        when Option.is_some (Attribute.get Attrs.list_poly rtag) ->
+      | Rtag ({ txt = cnstr; _ },_,[ tp ])
+        when Option.is_some (Attribute.get Attrs.list_poly row) ->
         (match tp with
          | [%type: [%t? tp] list] ->
            let cnv_expr = Fun_or_match.expr ~loc (sexp_of_type ~typevar_handling tp) in
@@ -406,7 +407,7 @@ module Str_generate_sexp_of = struct
                )
            ]
          | _ -> Attrs.invalid_attribute ~loc Attrs.list_poly "_ list")
-      | Rtag ({ txt = cnstr; _ },_,_,[ [%type: [%t? tp] sexp_list] ]) ->
+      | Rtag ({ txt = cnstr; _ },_,[ [%type: [%t? tp] sexp_list] ]) ->
         let cnv_expr = Fun_or_match.expr ~loc (sexp_of_type ~typevar_handling tp) in
         ppat_variant ~loc cnstr (Some [%pat? l]) -->
         [%expr
@@ -415,7 +416,7 @@ module Str_generate_sexp_of = struct
               Ppx_sexp_conv_lib.Conv.list_map [%e cnv_expr] l
             )
         ]
-      | Rtag ({ txt = cnstr; _ },_,false,[tp]) ->
+      | Rtag ({ txt = cnstr; _ },false,[tp]) ->
         let cnstr_expr =
           [%expr Ppx_sexp_conv_lib.Sexp.Atom [%e estring ~loc cnstr] ]
         in
@@ -427,8 +428,8 @@ module Str_generate_sexp_of = struct
       | Rinherit { ptyp_desc = Ptyp_constr (id, []); _ } ->
         ppat_alias ~loc (ppat_type ~loc id) (Loc.make "v" ~loc) -->
         sexp_of_type_constr ~loc id [[%expr v]]
-      | Rtag (_,_,true,[_])
-      | Rtag (_,_,_,_::_::_) ->
+      | Rtag (_,true,[_])
+      | Rtag (_,_,_::_::_) ->
         Location.raise_errorf ~loc "unsupported: sexp_of_variant/Rtag/&"
 
       | Rinherit ({ ptyp_desc = Ptyp_constr (id, _::_); _ } as typ) ->
@@ -440,7 +441,7 @@ module Str_generate_sexp_of = struct
         Location.raise_errorf ~loc
           "unsupported: sexp_of_variant/Rinherit/non-id" (* impossible?*)
 
-      | Rtag (_,_,false,[]) ->
+      | Rtag (_,false,[]) ->
         assert false
     in
     Match (List.map ~f:item row_fields)
@@ -872,14 +873,14 @@ module Str_generate_sexp_of = struct
   let sexp_of_exn ~types_being_defined ~loc:_ ~path ec =
     let renaming = Renaming.identity in
     let get_full_cnstr str = path ^ "." ^ str in
-    let loc = ec.pext_name.loc in
+    let loc = ec.ptyexn_loc in
     let expr =
-      match ec with
+      match ec.ptyexn_constructor with
       | {pext_name = cnstr;
          pext_kind = Pext_decl (extension_constructor_kind, None); _;} ->
         let constr_lid = Located.map lident cnstr in
         let converter =
-          branch_sum ec Attrs.list_extension ~types_being_defined renaming ~loc
+          branch_sum ec Attrs.list_exception ~types_being_defined renaming ~loc
             constr_lid
             (estring ~loc (get_full_cnstr cnstr.txt))
             extension_constructor_kind in
@@ -933,8 +934,8 @@ module Str_generate_of_sexp = struct
      structured variants, atomic variants + included variant types,
      and structured variants + included variant types. *)
   let split_row_field ~loc (atoms, structs, ainhs, sinhs) row_field =
-    match row_field with
-    | Rtag ({ txt = cnstr; _ },_,true,[]) ->
+    match row_field.prf_desc with
+    | Rtag ({ txt = cnstr; _ },true,[]) ->
       let tpl = loc, cnstr in
       (
         tpl :: atoms,
@@ -942,7 +943,7 @@ module Str_generate_of_sexp = struct
         `A tpl :: ainhs,
         sinhs
       )
-    | Rtag ({ txt = cnstr; _ },_,false,[tp]) ->
+    | Rtag ({ txt = cnstr; _ },false,[tp]) ->
       let loc = tp.ptyp_loc in
       (
         atoms,
@@ -958,10 +959,10 @@ module Str_generate_of_sexp = struct
         iinh :: ainhs,
         iinh :: sinhs
       )
-    | Rtag (_,_,true,[_])
-    | Rtag (_,_,_,_::_::_) ->
+    | Rtag (_,true,[_])
+    | Rtag (_,_,_::_::_) ->
       Location.raise_errorf ~loc "split_row_field/&"
-    | Rtag (_,_,false,[]) ->
+    | Rtag (_,false,[]) ->
       assert false
 
   let type_constr_of_sexp ?(internal=false) id args =
@@ -1182,7 +1183,7 @@ module Str_generate_of_sexp = struct
     in
     let top_match =
       match row_fields with
-        Rinherit inh :: rest ->
+        { prf_desc = Rinherit inh; _ } :: rest ->
         let rec loop inh row_fields =
           let call =
             [%expr  ([%e
@@ -1194,7 +1195,7 @@ module Str_generate_of_sexp = struct
           | [] -> call
           | h :: t ->
             let expr =
-              match h with
+              match h.prf_desc with
               | Rinherit inh -> loop inh t
               | _ ->
                 let rftag_matches =

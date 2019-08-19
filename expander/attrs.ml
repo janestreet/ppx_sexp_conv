@@ -79,9 +79,9 @@ let list_variant =
     Ast_pattern.(pstr nil)
     ()
 
-let list_extension =
+let list_exception =
   Attribute.declare "sexp.list"
-    Attribute.Context.extension_constructor
+    Attribute.Context.type_exception
     Ast_pattern.(pstr nil)
     ()
 

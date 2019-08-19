@@ -11,7 +11,7 @@ val opaque : (core_type, unit) Attribute.t
 
 val list_variant : (constructor_declaration, unit) Attribute.t
 
-val list_extension : (extension_constructor, unit) Attribute.t
+val list_exception : (type_exception, unit) Attribute.t
 
 val list_poly : (row_field, unit) Attribute.t
 

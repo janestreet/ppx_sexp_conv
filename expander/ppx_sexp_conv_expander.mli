@@ -20,7 +20,7 @@ module Sexp_of : sig
   val sig_exception
     :  loc:Location.t
     -> path:string
-    -> extension_constructor
+    -> type_exception
     -> signature
 
   val str_type_decl
@@ -32,7 +32,7 @@ module Sexp_of : sig
   val str_exception
     :  loc:Location.t
     -> path:string
-    -> extension_constructor
+    -> type_exception
     -> structure
 end
 
