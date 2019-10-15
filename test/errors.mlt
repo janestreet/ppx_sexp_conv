@@ -2,7 +2,7 @@ type t =
   { a : int [@sexp_drop_default] [@sexp.omit_nil] }
 [@@deriving sexp_of]
 [%%expect{|
-Line _, characters 4-5:
+Line _, characters _-_:
 Error: The following elements are mutually exclusive: sexp.sexp_drop_default sexp.omit_nil
 |}]
 
@@ -10,7 +10,7 @@ type t =
   { a : int sexp_list [@sexp.omit_nil] }
 [@@deriving sexp_of]
 [%%expect{|
-Line _, characters 4-5:
+Line _, characters _-_:
 Error: The following elements are mutually exclusive: sexp.omit_nil sexp_list
 |}]
 
@@ -18,14 +18,14 @@ type t =
   { a : int [@default 0] [@sexp.omit_nil] }
 [@@deriving of_sexp]
 [%%expect{|
-Line _, characters 4-5:
+Line _, characters _-_:
 Error: The following elements are mutually exclusive: sexp.default sexp.omit_nil
 |}]
 
 
 type t = int [@@deriving sexp][@@sexp.allow_extra_fields]
 [%%expect {|
-Line _, characters 0-57:
+Line _, characters _-_:
 Error: ppx_sexp_conv: [@@allow_extra_fields] is only allowed on records.
 |}]
 
@@ -33,7 +33,7 @@ Error: ppx_sexp_conv: [@@allow_extra_fields] is only allowed on records.
 type 'a t = 'a option = None | Some of 'a
 [@@deriving sexp][@@sexp.allow_extra_fields]
 [%%expect {|
-Line _, characters 0-86:
+Line _, characters _-_:
 Error: ppx_sexp_conv: [@@allow_extra_fields] is only allowed on records.
 |}]
 
@@ -42,7 +42,7 @@ Error: ppx_sexp_conv: [@@allow_extra_fields] is only allowed on records.
 type 'a t = Some of {a : int}
 [@@deriving sexp] [@@sexp.allow_extra_fields]
 [%%expect {|
-Line _, characters 0-75:
+Line _, characters _-_:
 Error: ppx_sexp_conv: [@@allow_extra_fields] only works on records. For inline records, do: type t = A of { a : int } [@allow_extra_fields] | B [@@deriving sexp]
 |}]
 
@@ -52,7 +52,7 @@ type 'a t =
   | None [@sexp.allow_extra_fields]
 [@@deriving sexp]
 [%%expect {|
-Line _, characters 0-87:
+Line _, characters _-_:
 Error: ppx_sexp_conv: [@allow_extra_fields] is only allowed on inline records.
 |}]
 
@@ -64,7 +64,7 @@ type t =
       }
 [@@deriving sexp]
 [%%expect{|
-Line _, characters 15-16:
+Line _, characters _-_:
 Error: [@sexp_drop_default.equal] was used, but the type of the field contains a type defined in the current recursive block: t.
 This is not supported.
 Consider using [@sexp_drop_if _] or [@sexp_drop_default.sexp] instead.
@@ -76,7 +76,7 @@ type nonrec 'a t =
   }
 [@@deriving sexp]
 [%%expect{|
-Line _, characters 10-19:
+Line _, characters _-_:
 Error: [@sexp_drop_default.equal] was used, but the type of the field contains a type variable: 'a.
 Comparison is not avaiable for type variables.
 Consider using [@sexp_drop_if _] or [@sexp_drop_default.sexp] instead.
@@ -88,7 +88,7 @@ type t =
   { a : int [@default 8] [@sexp_drop_default] }
 [@@deriving sexp_of]
 [%%expect{|
-Line _, characters 8-11:
+Line _, characters _-_:
 Error (warning 22): [@sexp_drop_default] is deprecated: please use one of:
 - [@sexp_drop_default f] and give an explicit equality function ([f = Poly.(=)] corresponds to the old behavior)
 - [@sexp_drop_default.compare] if the type supports [%compare]
@@ -99,12 +99,12 @@ Error (warning 22): [@sexp_drop_default] is deprecated: please use one of:
 type t = { x : unit [@sexp.opaque] } [@@deriving sexp_of]
 type t = { x : unit [@sexp.opaque] } [@@deriving of_sexp]
 [%%expect{|
-Line _, characters 22-33:
+Line _, characters _-_:
 Error: Attribute `sexp.opaque' was not used.
 Hint: `sexp.opaque' is available for core types but is used here in the
 context of a label declaration.
 Did you put it at the wrong level?
-Line _, characters 22-33:
+Line _, characters _-_:
 Error: Attribute `sexp.opaque' was not used.
 Hint: `sexp.opaque' is available for core types but is used here in the
 context of a label declaration.
@@ -114,53 +114,53 @@ Did you put it at the wrong level?
 type t = { x : unit [@sexp.option] } [@@deriving sexp_of]
 type t = { x : unit [@sexp.option] } [@@deriving of_sexp]
 [%%expect{|
-Line _, characters 11-12:
+Line _, characters _-_:
 Error: ppx_sexp_conv: [@sexp.option] is only allowed on type [_ option].
-Line _, characters 11-12:
+Line _, characters _-_:
 Error: ppx_sexp_conv: [@sexp.option] is only allowed on type [_ option].
 |}]
 
 type t = { x : unit [@sexp.list] } [@@deriving sexp_of]
 type t = { x : unit [@sexp.list] } [@@deriving of_sexp]
 [%%expect{|
-Line _, characters 11-12:
+Line _, characters _-_:
 Error: ppx_sexp_conv: [@sexp.list] is only allowed on type [_ list].
-Line _, characters 11-12:
+Line _, characters _-_:
 Error: ppx_sexp_conv: [@sexp.list] is only allowed on type [_ list].
 |}]
 
 type t = { x : unit [@sexp.array] } [@@deriving sexp_of]
 type t = { x : unit [@sexp.array] } [@@deriving of_sexp]
 [%%expect{|
-Line _, characters 11-12:
+Line _, characters _-_:
 Error: ppx_sexp_conv: [@sexp.array] is only allowed on type [_ array].
-Line _, characters 11-12:
+Line _, characters _-_:
 Error: ppx_sexp_conv: [@sexp.array] is only allowed on type [_ array].
 |}]
 
 type t = { x : unit [@sexp.bool] } [@@deriving sexp_of]
 type t = { x : unit [@sexp.bool] } [@@deriving of_sexp]
 [%%expect{|
-Line _, characters 11-12:
+Line _, characters _-_:
 Error: ppx_sexp_conv: [@sexp.bool] is only allowed on type [bool].
-Line _, characters 11-12:
+Line _, characters _-_:
 Error: ppx_sexp_conv: [@sexp.bool] is only allowed on type [bool].
 |}]
 
 type t = A of unit [@sexp.list] [@@deriving sexp_of]
 type t = A of unit [@sexp.list] [@@deriving of_sexp]
 [%%expect{|
-Line _, characters 9-31:
+Line _, characters _-_:
 Error: ppx_sexp_conv: [@sexp.list] is only allowed on type [_ list].
-Line _, characters 0-52:
+Line _, characters _-_:
 Error: ppx_sexp_conv: [@sexp.list] is only allowed on type [_ list].
 |}]
 
 type t = [`A of unit [@sexp.list]] [@@deriving sexp_of]
 type t = [`A of unit [@sexp.list]] [@@deriving of_sexp]
 [%%expect{|
-Line _, characters 9-34:
+Line _, characters _-_:
 Error: ppx_sexp_conv: [@sexp.list] is only allowed on type [_ list].
-Line _, characters 16-20:
+Line _, characters _-_:
 Error: ppx_sexp_conv: [@sexp.list] is only allowed on type [_ list].
 |}]

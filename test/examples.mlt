@@ -14,18 +14,18 @@ Exception:
 
 let _ = [%sexp_of: 'a]
 [%%expect{|
-Line _, characters 19-21:
+Line _, characters _-_:
 Error: Type variables not allowed in [%sexp_of: ]. Please use locally abstract types instead.
 |}]
 
 let _ = [%of_sexp: 'a]
 [%%expect{|
-Line _, characters 19-21:
+Line _, characters _-_:
 Error: Type variables not allowed in [%of_sexp: ]. Please use locally abstract types instead.
 |}]
 
 let _ = [%sexp (() : 'a)]
 [%%expect{|
-Line _, characters 21-23:
+Line _, characters _-_:
 Error: Type variables not allowed in [%sexp_of: ]. Please use locally abstract types instead.
 |}]
