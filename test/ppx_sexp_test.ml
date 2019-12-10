@@ -1,5 +1,6 @@
 open Ppx_sexp_conv_lib
 open Conv
+open! Sexp.Grammar.Builtin
 
 module Sum_and_polymorphic_variants = struct
   type poly =
@@ -8,7 +9,7 @@ module Sum_and_polymorphic_variants = struct
     | `One_tuple of (int * string)
     | `Two_args of int * string
     ]
-  [@@deriving sexp]
+  [@@deriving sexp, sexp_grammar]
 
   let%test_unit _ =
     List.iter (fun (value, sexp) ->
@@ -26,7 +27,7 @@ module Sum_and_polymorphic_variants = struct
     | One_arg of int
     | One_tuple of (int * string)
     | Two_args of int * string
-  [@@deriving sexp]
+  [@@deriving sexp, sexp_grammar]
 
   let%test_unit _ =
     List.iter (fun (value, sexp) ->
@@ -45,7 +46,7 @@ module Records = struct
     { a : int
     ; b : (float * string) list option
     }
-  [@@deriving sexp]
+  [@@deriving sexp, sexp_grammar]
 
   let%test_unit _ =
     let t = { a = 2; b = Some [(1., "a"); (2.3, "b")] } in
@@ -61,7 +62,7 @@ module Inline_records = struct
            ; b : (float * string) list option
            }
     | B of int
-  [@@deriving sexp]
+  [@@deriving sexp, sexp_grammar]
 
   let%test_unit _ =
     let t = A { a = 2; b = Some [(1., "a"); (2.3, "b")] } in
@@ -85,6 +86,7 @@ module User_specified_conversion = struct
 end
 
 module Exceptions : sig
+  (* no sexp_grammars for exceptions, as they can't be parsed *)
   exception E0 [@@deriving sexp]
   exception E1 of string [@@deriving sexp]
   exception E2 of string * int [@@deriving sexp]
@@ -113,15 +115,15 @@ end = struct
 end
 
 module Abstract_types_are_allowed_in_structures : sig
-  type t [@@deriving sexp]
+  type t [@@deriving sexp, sexp_grammar]
 end = struct
-  type t [@@deriving sexp]
+  type t [@@deriving sexp, sexp_grammar]
 end
 
 module Manifest_types = struct
   type a = { t : int }
   type b = a = { t : int }
-  [@@deriving sexp]
+  [@@deriving sexp, sexp_grammar]
 end
 
 module Uses_of_exn = struct
@@ -130,18 +132,18 @@ module Uses_of_exn = struct
 end
 
 module Function_types : sig
-  type t1 = int -> unit [@@deriving sexp]
-  type t2 = label:int -> ?optional:int -> unit -> unit [@@deriving sexp]
+  type t1 = int -> unit [@@deriving sexp, sexp_grammar]
+  type t2 = label:int -> ?optional:int -> unit -> unit [@@deriving sexp, sexp_grammar]
 end = struct
   type t1 = int -> unit
-  [@@deriving sexp]
+  [@@deriving sexp, sexp_grammar]
 
   type t2 = label:int -> ?optional:int -> unit -> unit
-  [@@deriving sexp]
+  [@@deriving sexp, sexp_grammar]
 end
 
 module No_unused_rec = struct
-  type r = { r : int } [@@deriving sexp]
+  type r = { r : int } [@@deriving sexp, sexp_grammar]
 end
 
 module Field_name_should_not_be_rewritten = struct
@@ -152,16 +154,16 @@ end
 
 module Polymorphic_variant_inclusion = struct
   type sub1 = [ `C1 | `C2 ]
-  [@@deriving sexp]
+  [@@deriving sexp, sexp_grammar]
   type 'b sub2 = [ `C4 | `C5 of 'b ]
-  [@@deriving sexp]
+  [@@deriving sexp, sexp_grammar]
 
   type ('a, 'b) t =
     [ sub1
     | `C3 of [ `Nested of 'a ]
     | 'b sub2
     | `C6 ] option
-  [@@deriving sexp]
+  [@@deriving sexp, sexp_grammar]
 
   let%test_unit _ =
     let cases : ((string * string, float) t * _) list =
@@ -182,9 +184,9 @@ module Polymorphic_variant_inclusion = struct
   ;;
 
   type sub1_alias = sub1
-  [@@deriving sexp_poly]
+  [@@deriving sexp_poly, sexp_grammar]
   type u = [ `A | sub1_alias | `D ]
-  [@@deriving sexp]
+  [@@deriving sexp, sexp_grammar]
 
   let%test_unit _ =
     let cases : (u * _) list =
@@ -207,7 +209,7 @@ module Polymorphic_record_field = struct
     { poly : 'a 'b. 'a list
     ; maybe_x : 'x option
     }
-  [@@deriving sexp]
+  [@@deriving sexp, sexp_grammar]
   let%test_unit _ =
     let t x = { poly = []; maybe_x = Some x } in
     let sexp = Sexplib.Sexp.of_string "((poly ())(maybe_x (1)))" in
@@ -218,52 +220,52 @@ end
 
 module No_unused_value_warnings : sig end = struct
   module No_warning : sig
-    type t = [ `A ] [@@deriving sexp]
+    type t = [ `A ] [@@deriving sexp, sexp_grammar]
   end = struct
-    type t = [ `A ] [@@deriving sexp]
+    type t = [ `A ] [@@deriving sexp, sexp_grammar]
   end
   module Empty = struct
   end
-  module No_warning2(X : sig type t [@@deriving sexp] end) = struct
+  module No_warning2(X : sig type t [@@deriving sexp, sexp_grammar] end) = struct
   end
   (* this one can't be handled (what if Empty was a functor, huh?) *)
   (* module No_warning3(X : sig type t with sexp end) = Empty *)
   module type S = sig
-    type t = [ `A ] [@@deriving sexp]
+    type t = [ `A ] [@@deriving sexp, sexp_grammar]
   end
   module No_warning4 : S = struct
-    type t = [ `A ] [@@deriving sexp]
+    type t = [ `A ] [@@deriving sexp, sexp_grammar]
   end
   module No_warning5 : S = ((struct
-    type t = [ `A ] [@@deriving sexp]
-  end : S) : S)
+                             type t = [ `A ] [@@deriving sexp, sexp_grammar]
+                           end : S) : S)
 
   module Nested_functors
-    (M1 : sig type t [@@deriving sexp] end)
-    (M2 : sig type t [@@deriving sexp] end) = struct
+      (M1 : sig type t [@@deriving sexp, sexp_grammar] end)
+      (M2 : sig type t [@@deriving sexp, sexp_grammar] end) = struct
   end
 
   let () =
     let module M : sig
-      type t [@@deriving sexp]
+      type t [@@deriving sexp, sexp_grammar]
     end = struct
-      type t [@@deriving sexp]
+      type t [@@deriving sexp, sexp_grammar]
     end in
     ()
 
   module Include = struct
     include (struct
-      type t = int [@@deriving sexp]
+      type t = int [@@deriving sexp, sexp_grammar]
     end : sig
-      type t [@@deriving sexp]
-    end with type t := int)
+               type t [@@deriving sexp, sexp_grammar]
+             end with type t := int)
   end
 end
 
 module Default = struct
   type t = {
     a : int [@default 2];
-  } [@@deriving sexp]
+  } [@@deriving sexp, sexp_grammar]
   let%test _ = Sexp.(List [List [Atom "a"; Atom "1"]]) = sexp_of_t { a = 1 }
   let%test _ = Sexp.(List [List [Atom "a"; Atom "2"]]) = sexp_of_t { a = 2 }
   let%test _ = t_of_sexp (Sexp.(List [List [Atom "a"; Atom "1"]])) = { a = 1 }
@@ -277,40 +279,40 @@ module Type_alias = struct
   module B : sig
     type a = [ `A ]
     type t = ([`A] as 'a) constraint 'a = a
-    [@@deriving sexp]
+      [@@deriving sexp, sexp_grammar]
   end = struct
-    type a = [ `A ] [@@deriving sexp]
-    type t = [ `A ] [@@deriving sexp]
+    type a = [ `A ] [@@deriving sexp, sexp_grammar]
+    type t = [ `A ] [@@deriving sexp, sexp_grammar]
   end
   let%test _ = Sexp.to_string (B.sexp_of_t `A) = "A"
   let%test _ = `A = B.t_of_sexp (Sexplib.Sexp.of_string "A")
 
   module B2 = struct
-    type t = [ B.t | `B ] [@@deriving sexp]
+    type t = [ B.t | `B ] [@@deriving sexp, sexp_grammar]
   end
 
   module C : sig
     type t = (int as 'a)
-    [@@deriving sexp]
+    [@@deriving sexp, sexp_grammar]
   end = struct
     type t = int
-    [@@deriving sexp]
+    [@@deriving sexp, sexp_grammar]
   end
 
   module D : sig
     type t = 'a constraint 'a = int
-    [@@deriving sexp]
+      [@@deriving sexp, sexp_grammar]
   end = struct
     type t = int
-    [@@deriving sexp]
+    [@@deriving sexp, sexp_grammar]
   end
 end
 
 module Tricky_variants = struct
   (* Checking that the generated code compiles (there used to be a problem with subtyping
      constraints preventing proper generalization). *)
-  type t = [ `a ] [@@deriving sexp]
-  type 'a u = [ t | `b of 'a ] * int [@@deriving sexp]
+  type t = [ `a ] [@@deriving sexp, sexp_grammar]
+  type 'a u = [ t | `b of 'a ] * int [@@deriving sexp, sexp_grammar]
 end
 
 module Drop_default = struct
@@ -330,12 +332,12 @@ module Drop_default = struct
     require ?cr [%here] (t_of_sexp (Sexp.(List [List [Atom "a"; Atom "2"]])) = { a = 2 });
     require ?cr [%here] (t_of_sexp (Sexp.(List [])) = { a = 2 })
 
-  type my_int = int [@@deriving sexp]
+  type my_int = int [@@deriving sexp, sexp_grammar]
 
   module Poly = struct
     type nonrec t = t = {
       a : my_int; [@default 2] [@sexp_drop_default Poly.(=)]
-    } [@@deriving sexp]
+    } [@@deriving sexp, sexp_grammar]
 
     let%test_unit _ =
       test t_of_sexp sexp_of_t
@@ -345,7 +347,7 @@ module Drop_default = struct
     let equal_my_int = equal_int
     type nonrec t = t = {
       a : my_int; [@default 2] [@sexp_drop_default.equal]
-    } [@@deriving sexp]
+    } [@@deriving sexp, sexp_grammar]
 
     let%test_unit _ =
       test t_of_sexp sexp_of_t
@@ -355,7 +357,7 @@ module Drop_default = struct
     let compare_my_int = compare_int
     type nonrec t = t = {
       a : my_int; [@default 2] [@sexp_drop_default.compare]
-    } [@@deriving sexp]
+    } [@@deriving sexp, sexp_grammar]
 
     let%test_unit _ =
       test t_of_sexp sexp_of_t
@@ -364,7 +366,7 @@ module Drop_default = struct
   module Sexp = struct
     type nonrec t = t = {
       a : my_int; [@default 2] [@sexp_drop_default.sexp]
-    } [@@deriving sexp]
+    } [@@deriving sexp, sexp_grammar]
 
     let%test_unit _ =
       test t_of_sexp sexp_of_t
@@ -375,7 +377,7 @@ end
 module Drop_if = struct
   type t = {
     a : int [@default 2] [@sexp_drop_if fun x -> x mod 2 = 0]
-  } [@@deriving sexp]
+  } [@@deriving sexp, sexp_grammar]
   let%test _ = Sexp.(List [List [Atom "a"; Atom "1"]]) = sexp_of_t { a = 1 }
   let%test _ = Sexp.(List []) = sexp_of_t { a = 2 }
   let%test _ = Sexp.(List [List [Atom "a"; Atom "3"]]) = sexp_of_t { a = 3 }
@@ -395,7 +397,7 @@ module Drop_if = struct
       | None -> true
       | Some (x, y) -> x = y
     ]
-  } [@@deriving sexp]
+  } [@@deriving sexp, sexp_grammar]
 end
 
 module Omit_nil = struct
@@ -408,6 +410,9 @@ module Omit_nil = struct
   let natural_option_of_sexp = function
     | Sexp.List [] -> -1
     | sexp -> int_of_sexp sexp
+  ;;
+
+  let natural_option_sexp_grammar : Sexp.Grammar.t = Inline (Union [ List []; Atom Int ])
 
   let check sexp_of_t t_of_sexp str t =
     let sexp = Sexplib.Sexp.of_string str in
@@ -417,13 +422,13 @@ module Omit_nil = struct
 
   type t =
     { a : natural_option [@sexp.omit_nil] }
-  [@@deriving sexp]
+  [@@deriving sexp, sexp_grammar]
   let%test_unit _ = check sexp_of_t t_of_sexp "()" { a = -1 }
   let%test_unit _ = check sexp_of_t t_of_sexp "((a 1))" { a = 1 }
 
   type t2 =
     | A of { a : int list [@sexp.omit_nil] }
-  [@@deriving sexp]
+  [@@deriving sexp, sexp_grammar]
   let%test_unit _ = check sexp_of_t2 t2_of_sexp "(A)" (A { a = [] })
   let%test_unit _ = check sexp_of_t2 t2_of_sexp "(A (a (1)))" (A { a = [ 1 ] })
 
@@ -436,9 +441,9 @@ end
 
 module True_and_false = struct
   type t =
-  | True
-  | False
-  [@@deriving sexp]
+    | True
+    | False
+  [@@deriving sexp, sexp_grammar]
 
   let%test _ = Sexp.to_string (sexp_of_t True) = "True"
   let%test _ = Sexp.to_string (sexp_of_t False) = "False"
@@ -448,9 +453,9 @@ module True_and_false = struct
   let%test _ = False = t_of_sexp (Sexplib.Sexp.of_string "false")
 
   type u =
-  | True of int
-  | False of int
-  [@@deriving sexp]
+    | True of int
+    | False of int
+  [@@deriving sexp, sexp_grammar]
 
   let%test _ = Sexp.to_string (sexp_of_u (True 1)) = "(True 1)"
   let%test _ = Sexp.to_string (sexp_of_u (False 2)) = "(False 2)"
@@ -465,7 +470,7 @@ module True_and_false = struct
   exception False of int [@@deriving sexp]
   let%test _ = "(ppx_sexp_test.ml.True_and_false.False 1)" = Sexp.to_string (sexp_of_exn (False 1))
 
-  type v = [ `True | `False of int ] [@@deriving sexp]
+  type v = [ `True | `False of int ] [@@deriving sexp, sexp_grammar]
   let%test _ = Sexp.to_string (sexp_of_v `True) = "True"
   let%test _ = Sexp.to_string (sexp_of_v (`False 2)) = "(False 2)"
 end
@@ -520,16 +525,16 @@ module Gadt = struct
 end
 
 module Anonymous_variable = struct
-  type _ t = int [@@deriving sexp]
+  type _ t = int [@@deriving sexp, sexp_grammar]
   let%test _ = Sexp.to_string ([%sexp_of: _ t] 2) = "2"
   let%test _ = [%of_sexp: _ t] (Sexplib.Sexp.of_string "2") = 2
 
   (* making sure we don't generate signatures like (_ -> Sexp.t) -> _ t -> Sexp.t which
      are too general *)
   module M : sig
-    type _ t [@@deriving sexp]
+    type _ t [@@deriving sexp, sexp_grammar]
   end = struct
-    type 'a t = 'a [@@deriving sexp]
+    type 'a t = 'a [@@deriving sexp, sexp_grammar]
   end
 end
 
@@ -537,7 +542,7 @@ module Record_field_disambiguation = struct
 
   type a = { fl: float; b : b }
   and b = { fl: int }
-  [@@deriving sexp]
+  [@@deriving sexp, sexp_grammar]
 
 end
 
@@ -553,17 +558,17 @@ module Nonregular_types = struct
   type 'a nonregular =
     | Leaf of 'a
     | Branch of ('a * 'a) nonregular
-  [@@deriving sexp]
+  [@@deriving sexp, sexp_grammar]
 
-  type 'a variant = [ `A of 'a ] [@@deriving sexp]
+  type 'a variant = [ `A of 'a ] [@@deriving sexp, sexp_grammar]
   type ('a, 'b) nonregular_with_variant =
     | Branch of ([ | 'a list variant ], 'b) nonregular_with_variant
-  [@@deriving sexp]
+  [@@deriving sexp, sexp_grammar]
 end
 
 module Opaque = struct
   type t = (int [@sexp.opaque]) list
-  [@@deriving sexp]
+  [@@deriving sexp, sexp_grammar]
 
   let sexp = Sexplib.Sexp.of_string "(<opaque> <opaque>)"
   let t = [1; 2]
@@ -574,7 +579,7 @@ module Opaque = struct
     | exception _ -> true
 
   type u = [`A of int] [@sexp.opaque]
-  [@@deriving sexp]
+  [@@deriving sexp, sexp_grammar]
 
   let sexp = Sexplib.Sexp.of_string "<opaque>"
   let u = `A 1
@@ -587,7 +592,7 @@ end
 
 module Optional = struct
   type t = { optional : int option [@sexp.option] }
-  [@@deriving sexp]
+  [@@deriving sexp, sexp_grammar]
 
   let sexp = Sexplib.Sexp.of_string "()"
   let t = { optional = None }
@@ -605,7 +610,7 @@ module Nonempty = struct
     { list : int list [@sexp.list]
     ; array : int array [@sexp.array]
     }
-  [@@deriving sexp]
+  [@@deriving sexp, sexp_grammar]
 
   let sexp = Sexplib.Sexp.of_string "()"
   let t = { list = []; array = [||] }
@@ -620,7 +625,7 @@ end
 
 module Boolean = struct
   type t = { no_arg : bool [@sexp.bool] }
-  [@@deriving sexp]
+  [@@deriving sexp, sexp_grammar]
 
   let sexp = Sexplib.Sexp.of_string "()"
   let t = { no_arg = false }
@@ -635,7 +640,7 @@ end
 
 module Inline = struct
   type t = A of int list [@sexp.list]
-  [@@deriving sexp]
+  [@@deriving sexp, sexp_grammar]
 
   let sexp = Sexplib.Sexp.of_string "(A 1 2 3)"
   let t = A [1; 2; 3]
@@ -643,7 +648,7 @@ module Inline = struct
   let%test _ = sexp_of_t t = sexp
 
   type u = [ `A of int list [@sexp.list] ]
-  [@@deriving sexp]
+  [@@deriving sexp, sexp_grammar]
 
   let sexp = Sexplib.Sexp.of_string "(A 1 2 3)"
   let u = `A [1; 2; 3]
@@ -658,7 +663,7 @@ module Magic_types = struct
     ; sexp_option : int sexp_option [@warning "-3"]
     ; sexp_bool : sexp_bool [@warning "-3"]
     }
-  [@@deriving sexp]
+  [@@deriving sexp, sexp_grammar]
 
   let sexp = Sexplib.Sexp.of_string "()"
   let t =
@@ -672,9 +677,9 @@ module Magic_types = struct
 
   let sexp =
     Sexplib.Sexp.of_string "((sexp_array (1 2))\
-                     (sexp_list (3 4))\
-                     (sexp_option 5)\
-                     (sexp_bool))"
+                            (sexp_list (3 4))\
+                            (sexp_option 5)\
+                            (sexp_bool))"
   let t =
     { sexp_array = [|1; 2|]
     ; sexp_list = [3; 4]
@@ -687,10 +692,10 @@ module Magic_types = struct
 
   type u =
     | A of int sexp_list [@warning "-3"]
-  [@@deriving sexp]
+  [@@deriving sexp, sexp_grammar]
   type v =
     [ `A of int sexp_list ] [@warning "-3"]
-  [@@deriving sexp]
+  [@@deriving sexp, sexp_grammar]
   let sexp = Sexplib.Sexp.of_string "(A 1 2 3)"
   let u = A [1; 2; 3]
   let v = `A [1; 2; 3]
@@ -701,15 +706,15 @@ module Magic_types = struct
 end
 
 module Variance = struct
-  type (+'a, -'b, 'c, +_, -_, _) t [@@deriving sexp]
+  type (+'a, -'b, 'c, +_, -_, _) t [@@deriving sexp, sexp_grammar]
 end
 
 module Clash = struct
   (* Same name for type-var and type-name; must be careful when introducing rigid type names. *)
-  type 'hey hey = Hey of 'hey [@@deriving sexp]
-  type 'hey rigid_hey = Hey of 'hey [@@deriving sexp]
-  type ('foo,'rigid_foo) foo = Foo of 'foo [@@deriving sexp]
-  type 'rigid_bar rigid_rigid_bar = Bar [@@deriving sexp]
+  type 'hey hey = Hey of 'hey [@@deriving sexp, sexp_grammar]
+  type 'hey rigid_hey = Hey of 'hey [@@deriving sexp, sexp_grammar]
+  type ('foo,'rigid_foo) foo = Foo of 'foo [@@deriving sexp, sexp_grammar]
+  type 'rigid_bar rigid_rigid_bar = Bar [@@deriving sexp, sexp_grammar]
 end
 
 module Applicative_functor_types = struct
@@ -719,24 +724,28 @@ module Applicative_functor_types = struct
       type nonrec t = (K1.t, K2.t) t
     end
     module type Of_sexpable = sig
-      type t [@@deriving of_sexp]
+      type t [@@deriving of_sexp, sexp_grammar]
     end
     let s__t_of_sexp
-          (type k1 k2)
+          (type k1 k2 )
           (module K1 : Of_sexpable with type t = k1)
           (module K2 : Of_sexpable with type t = k2)
           (_ : Sexp.t) : (k1, k2) t = assert false
+
+    (* You would actually have to write this manually for functors. *)
+    let s__t_sexp_grammar = [%sexp_grammar: 'k1 -> 'k2 -> ('k1 * 'k2 ) list]
+
   end
   module Int = struct
-    type t = int [@@deriving of_sexp]
+    type t = int [@@deriving of_sexp, sexp_grammar]
   end
   module String = struct
-    type t = string [@@deriving of_sexp]
+    type t = string [@@deriving of_sexp, sexp_grammar]
   end
   module M : sig
-    type t = Bidirectional_map.S(String)(Int).t [@@deriving of_sexp]
+    type t = Bidirectional_map.S(String)(Int).t [@@deriving of_sexp, sexp_grammar]
   end = struct
-    type t = Bidirectional_map.S(String)(Int).t [@@deriving of_sexp]
+    type t = Bidirectional_map.S(String)(Int).t [@@deriving of_sexp, sexp_grammar]
   end
 end
 
@@ -755,7 +764,7 @@ module Allow_extra_fields = struct
 
     type t2 = t1 =
       { a : int }
-    [@@deriving sexp][@@sexp.allow_extra_fields]
+    [@@deriving sexp, sexp_grammar][@@sexp.allow_extra_fields]
 
     let sexp = Sexplib.Sexp.of_string "((a 1))"
     let sexp_extra = Sexplib.Sexp.of_string "((a 1)(b 2))"
@@ -770,7 +779,7 @@ module Allow_extra_fields = struct
 
     type t2 = t1 =
       | A of { a : int list } [@sexp.allow_extra_fields]
-    [@@deriving sexp]
+    [@@deriving sexp, sexp_grammar]
 
     let sexp = Sexplib.Sexp.of_string "(A (a (0)))"
     let sexp_extra = Sexplib.Sexp.of_string "(A (a (0))(b 2))"
