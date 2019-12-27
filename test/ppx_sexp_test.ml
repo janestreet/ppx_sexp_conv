@@ -789,3 +789,11 @@ module Allow_extra_fields = struct
     let%test _ = should_raise t1_of_sexp sexp_extra
  end
 end
+
+module Default_values_and_polymorphism = struct
+  type t =
+    { a : int list [@sexp.list]
+    ; b : 'b . 'b -> int
+    }
+  [@@deriving of_sexp]
+end

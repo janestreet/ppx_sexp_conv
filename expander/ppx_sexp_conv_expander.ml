@@ -1331,56 +1331,52 @@ module Str_generate_of_sexp = struct
       in
       loop ([], [], []) (List.rev flds)
     in
+    let cnvt_value ld =
+      let nm = ld.pld_name.txt in
+      match Attrs.Record_field_handler.Of_sexp.create ~loc ld with
+      | Some (`sexp_list _) ->
+        [%expr
+          match [%e evar ~loc (nm ^ "_value")] with
+          | None -> []
+          | Some v -> v
+        ]
+      | Some (`sexp_array _) ->
+        [%expr
+          match [%e evar ~loc (nm ^ "_value")] with
+          | None -> [||]
+          | Some v -> v
+        ]
+      | Some (`default default) ->
+        [%expr
+          match [%e evar ~loc (nm ^ "_value")] with
+          | None -> [%e default]
+          | Some v -> v
+        ]
+      | Some (`sexp_bool | `sexp_option _) | None ->
+        evar ~loc (nm ^ "_value")
+      | Some `omit_nil ->
+        [%expr
+          match [%e evar ~loc (nm ^ "_value")] with
+          | Some v -> v
+          | None ->
+            (* We change the exception so it contains a sub-sexp of the
+               initial sexp, otherwise sexplib won't find the source location
+               for the error. *)
+            try
+              [%e Fun_or_match.unroll ~loc [%expr Ppx_sexp_conv_lib.Sexp.List [] ]
+                    (type_of_sexp ~typevar_handling ld.pld_type) ]
+            with Ppx_sexp_conv_lib.Conv_error.Of_sexp_error (e, _sexp) ->
+              raise (Ppx_sexp_conv_lib.Conv_error.Of_sexp_error (e, sexp))
+        ]
+    in
     let match_good_expr =
       if has_poly then
-        let cnvt = function
-          | {pld_name = {txt=nm; _}; _ } ->
-            evar ~loc (nm ^ "_value")
-        in
-        match List.map ~f:cnvt flds with
+        match List.map ~f:cnvt_value flds with
         | [match_good_expr] -> match_good_expr
         | match_good_exprs -> pexp_tuple ~loc match_good_exprs
       else
         let cnvt ld =
-          let nm = ld.pld_name.txt in
-          let value =
-            match Attrs.Record_field_handler.Of_sexp.create ~loc ld with
-            | Some (`sexp_list _) ->
-              [%expr
-                match [%e evar ~loc (nm ^ "_value")] with
-                | None -> []
-                | Some v -> v
-              ]
-            | Some (`sexp_array _) ->
-              [%expr
-                match [%e evar ~loc (nm ^ "_value")] with
-                | None -> [||]
-                | Some v -> v
-              ]
-            | Some (`default default) ->
-              [%expr
-                match [%e evar ~loc (nm ^ "_value")] with
-                | None -> [%e default]
-                | Some v -> v
-              ]
-            | Some (`sexp_bool | `sexp_option _) | None ->
-              evar ~loc (nm ^ "_value")
-            | Some `omit_nil ->
-              [%expr
-                match [%e evar ~loc (nm ^ "_value")] with
-                | Some v -> v
-                | None ->
-                  (* We change the exception so it contains a sub-sexp of the
-                     initial sexp, otherwise sexplib won't find the source location
-                     for the error. *)
-                  try
-                    [%e Fun_or_match.unroll ~loc [%expr Ppx_sexp_conv_lib.Sexp.List [] ]
-                          (type_of_sexp ~typevar_handling ld.pld_type) ]
-                  with Ppx_sexp_conv_lib.Conv_error.Of_sexp_error (e, _sexp) ->
-                    raise (Ppx_sexp_conv_lib.Conv_error.Of_sexp_error (e, sexp))
-              ]
-          in
-          Located.lident ~loc nm, value
+          Located.lident ~loc ld.pld_name.txt, cnvt_value ld
         in
         wrap_expr (pexp_record ~loc (List.map ~f:cnvt flds) None)
     in
