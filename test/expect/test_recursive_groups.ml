@@ -10,11 +10,11 @@ module One_type = struct
   let (t_sexp_grammar : Ppx_sexp_conv_lib.Sexp.Grammar.t) =
     let (_the_generic_group : Ppx_sexp_conv_lib.Sexp.Grammar.generic_group) =
       { implicit_vars = [ "int" ]
-      ; ggid          = "n\221J\012\211t\018|\161\187\170\127~\186wg"
+      ; ggid          = "\243A~\012\241*Zj\026)S&\127Q\231x"
       ; types         =
           [ ( "t"
             , Variant
-                { ignore_capitalization = false
+                { ignore_capitalization = true
                 ; alts                  = [ "T", [ One (Implicit_var 0) ] ]
                 } )
           ]
@@ -53,17 +53,17 @@ module Two_types = struct
     =
     let (_the_generic_group : Ppx_sexp_conv_lib.Sexp.Grammar.generic_group) =
       { implicit_vars = [ "int" ]
-      ; ggid          = "\155\175@s\211\217\158\016\001\0275\166\241\1558\144"
+      ; ggid          = "\241o\231&\242\021\147\249\029+\000\245\187\240\158H"
       ; types         =
           [ ( "t"
             , Variant
-                { ignore_capitalization = false
+                { ignore_capitalization = true
                 ; alts                  =
                     [ "T_int", [ One (Implicit_var 0) ]; "T_u", [ One (Recursive "u") ] ]
                 } )
           ; ( "u"
             , Variant
-                { ignore_capitalization = false
+                { ignore_capitalization = true
                 ; alts                  =
                     [ "U_int", [ One (Implicit_var 0) ]; "U_t", [ One (Recursive "t") ] ]
                 } )

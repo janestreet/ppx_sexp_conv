@@ -46,13 +46,13 @@ struct
     =
     let (_the_generic_group : Ppx_sexp_conv_lib.Sexp.Grammar.generic_group) =
       { implicit_vars = [ "T.t"; "Maybe.t" ]
-      ; ggid          = "[\155\230K\148\023A\141\177\021$[\217h\145 "
+      ; ggid          = "\245\184\243\180\181_5t\027u6u\233p#\158"
       ; types         =
           [ ( "t"
             , Explicit_bind
                 ( [ "a" ]
                 , Variant
-                    { ignore_capitalization = false
+                    { ignore_capitalization = true
                     ; alts                  =
                         [ ( "T"
                           , [ One
@@ -66,7 +66,7 @@ struct
             , Explicit_bind
                 ( [ "a" ]
                 , Variant
-                    { ignore_capitalization = false
+                    { ignore_capitalization = true
                     ; alts                  =
                         [ ( "U"
                           , [ One
@@ -106,13 +106,13 @@ struct
   let (v_sexp_grammar : Ppx_sexp_conv_lib.Sexp.Grammar.t) =
     let (_the_generic_group : Ppx_sexp_conv_lib.Sexp.Grammar.generic_group) =
       { implicit_vars = [ "t" ]
-      ; ggid          = "\192g2\249\202\234j\175\155\165NT1\216\2241"
+      ; ggid          = "W\019\225!\031\181\213k\190\002\145\212\228\251\207#"
       ; types         =
           [ ( "v"
             , Explicit_bind
                 ( [ "a" ]
                 , Variant
-                    { ignore_capitalization = false
+                    { ignore_capitalization = true
                     ; alts = [ "V", [ One (Apply (Implicit_var 0, [ Explicit_var 0 ])) ] ]
                     } ) )
           ]

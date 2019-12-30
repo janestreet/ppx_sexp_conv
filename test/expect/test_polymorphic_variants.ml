@@ -14,12 +14,12 @@ module Nullary = struct
   let (t_sexp_grammar : Ppx_sexp_conv_lib.Sexp.Grammar.t) =
     let (_the_generic_group : Ppx_sexp_conv_lib.Sexp.Grammar.generic_group) =
       { implicit_vars = []
-      ; ggid          = "\239\242\007o\016\222\178\133\218\153\146w\129\255\167\208"
+      ; ggid          = "\133a\241\019; \198\184U\181\220#\191\190\200\b"
       ; types         =
           [ ( "t"
             , Explicit_bind
                 ( [ "a" ]
-                , Variant { ignore_capitalization = true; alts = [ "A", []; "B", [] ] }
+                , Variant { ignore_capitalization = false; alts = [ "A", []; "B", [] ] }
                 ) )
           ]
       }
@@ -59,11 +59,11 @@ module With_arguments = struct
   let (t_sexp_grammar : Ppx_sexp_conv_lib.Sexp.Grammar.t) =
     let (_the_generic_group : Ppx_sexp_conv_lib.Sexp.Grammar.generic_group) =
       { implicit_vars = [ "int"; "string" ]
-      ; ggid          = "\205\129\006\167\021+\210\025\233\169\215\208\133\171\216\022"
+      ; ggid          = "\196t P\169\167\173C\251\132\141N\003n \132"
       ; types         =
           [ ( "t"
             , Variant
-                { ignore_capitalization = true
+                { ignore_capitalization = false
                 ; alts                  =
                     [ "A", [ One (List [ One (Implicit_var 0); One (Implicit_var 0) ]) ]
                     ; "B", [ One (Implicit_var 1) ]
@@ -121,11 +121,11 @@ module Sexp_list = struct
   let (t_sexp_grammar : Ppx_sexp_conv_lib.Sexp.Grammar.t) =
     let (_the_generic_group : Ppx_sexp_conv_lib.Sexp.Grammar.generic_group) =
       { implicit_vars = [ "int"; "list" ]
-      ; ggid          = "\219\014J\247\148Iq\193\248\rk\216J\012\200\152"
+      ; ggid          = "\221\2240I,\229H~\212(;\201\127\159rK"
       ; types         =
           [ ( "t"
             , Variant
-                { ignore_capitalization = true
+                { ignore_capitalization = false
                 ; alts                  =
                     [ "Int"          , [ One (Implicit_var 0) ]
                     ; "List"         , [ One (Apply (Implicit_var 1, [ Implicit_var 0 ])) ]

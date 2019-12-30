@@ -444,7 +444,7 @@ let type_of_core_type env0 type_name ctype =
     let types =
       match alts with
       | []     -> None
-      | _ :: _ -> Some (Variant { ignore_capitalization = true; alts })
+      | _ :: _ -> Some (Variant { ignore_capitalization = false; alts })
     in
     match Option.to_list types @ inherits with
     | []        -> unsupported_builtin ~loc:ctype.ptyp_loc "empty"
@@ -533,7 +533,7 @@ let variant env type_name constructor_declarations =
       | Tuple_sexp_list (label, ctype ) ->
         label, [ Many (type_of_core_type env type_name ctype) ])
   in
-  Variant { ignore_capitalization = false; alts }
+  Variant { ignore_capitalization = true; alts }
 ;;
 
 let type_of_type_declaration env td =

@@ -40,20 +40,20 @@ module Recursive_group = struct
     =
     let (_the_generic_group : Ppx_sexp_conv_lib.Sexp.Grammar.generic_group) =
       { implicit_vars = [ "option" ]
-      ; ggid          = "8ji\128\003\191M\216\210i\174\019\255\149\027\026"
+      ; ggid          = "3\188_G\181s\242\209x\249#\138\249\222\158}"
       ; types         =
           [ ( "t"
             , Explicit_bind
                 ( [ "a" ]
                 , Variant
-                    { ignore_capitalization = false
+                    { ignore_capitalization = true
                     ; alts                  = [ "T", [ One (Explicit_var 0) ] ]
                     } ) )
           ; ( "u"
             , Explicit_bind
                 ( [ "a" ]
                 , Variant
-                    { ignore_capitalization = false
+                    { ignore_capitalization = true
                     ; alts                  =
                         [ ( "U"
                           , [ One

@@ -10,16 +10,16 @@ module Nested_inside_variant = struct
   let (t_sexp_grammar : Ppx_sexp_conv_lib.Sexp.Grammar.t) =
     let (_the_generic_group : Ppx_sexp_conv_lib.Sexp.Grammar.generic_group) =
       { implicit_vars = [ "int" ]
-      ; ggid          = ",M\000\188LV\254\"\1732\027Wm\022m)"
+      ; ggid          = "Z\241\230\155\202\128I6<#U\238\187\226\131,"
       ; types         =
           [ ( "t"
             , Variant
-                { ignore_capitalization = false
+                { ignore_capitalization = true
                 ; alts                  =
                     [ ( "A"
                       , [ One
                             (Variant
-                               { ignore_capitalization = true
+                               { ignore_capitalization = false
                                ; alts                  = [ "A", [ One (Implicit_var 0) ] ]
                                })
                         ] )
@@ -51,7 +51,7 @@ module Nested_inside_record = struct
   let (t_sexp_grammar : Ppx_sexp_conv_lib.Sexp.Grammar.t) =
     let (_the_generic_group : Ppx_sexp_conv_lib.Sexp.Grammar.generic_group) =
       { implicit_vars = [ "int" ]
-      ; ggid          = "*d\228\027a\018k\198mT`\152pg\003\227"
+      ; ggid          = "\001\215\152\002\244\149\139\179d\bwc\181\223W\187"
       ; types         =
           [ ( "t"
             , Record
@@ -62,7 +62,7 @@ module Nested_inside_record = struct
                         ; args     =
                             [ One
                                 (Variant
-                                   { ignore_capitalization = true
+                                   { ignore_capitalization = false
                                    ; alts = [ "A", [ One (Implicit_var 0) ] ]
                                    })
                             ]

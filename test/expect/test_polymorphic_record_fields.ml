@@ -17,7 +17,7 @@ module Records_we_can_handle = struct
   let (t_sexp_grammar : Ppx_sexp_conv_lib.Sexp.Grammar.t) =
     let (_the_generic_group : Ppx_sexp_conv_lib.Sexp.Grammar.generic_group) =
       { implicit_vars = [ "int"; "option" ]
-      ; ggid          = "]A\154\224\t\163q\250\229\230\132e\162*\253\018"
+      ; ggid          = "\018M5`u:\186\223\136?/\182\187\135R\029"
       ; types         =
           [ ( "t"
             , Explicit_bind
@@ -38,7 +38,7 @@ module Records_we_can_handle = struct
                             ; args     =
                                 [ One
                                     (Variant
-                                       { ignore_capitalization = true
+                                       { ignore_capitalization = false
                                        ; alts                  =
                                            [ "A"  , [ One (Union []) ]
                                            ; "B"  , [ One (Explicit_var 1) ]
@@ -111,13 +111,13 @@ module Inline_record = struct
   let (t_sexp_grammar : Ppx_sexp_conv_lib.Sexp.Grammar.t) =
     let (_the_generic_group : Ppx_sexp_conv_lib.Sexp.Grammar.generic_group) =
       { implicit_vars = []
-      ; ggid          = "\158\243Z)v\148N\221\176\223bJW\212\204<"
+      ; ggid          = "\217\0037(\136\214}@\029 \130x\242\146\137\179"
       ; types         =
           [ ( "t"
             , Explicit_bind
                 ( [ "a" ]
                 , Variant
-                    { ignore_capitalization = false
+                    { ignore_capitalization = true
                     ; alts                  =
                         [ ( "Non_poly"
                           , [ Fields

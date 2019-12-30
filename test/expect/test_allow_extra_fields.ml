@@ -77,11 +77,11 @@ module Variant_type = struct
   let (t_sexp_grammar : Ppx_sexp_conv_lib.Sexp.Grammar.t) =
     let (_the_generic_group : Ppx_sexp_conv_lib.Sexp.Grammar.generic_group) =
       { implicit_vars = [ "int" ]
-      ; ggid          = "#\156P\178\244K\247\174D~#\241\000}u%"
+      ; ggid          = "d\241\139\1990f06\b\n\217\001J:\030B"
       ; types         =
           [ ( "t"
             , Variant
-                { ignore_capitalization = false
+                { ignore_capitalization = true
                 ; alts                  =
                     [ ( "Allow_extra_fields"
                       , [ Fields
