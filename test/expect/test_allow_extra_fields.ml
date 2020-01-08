@@ -22,6 +22,7 @@ module Allow_extra_fields = struct
       { gid            = Ppx_sexp_conv_lib.Lazy_group_id.create ()
       ; apply_implicit = [ int_sexp_grammar ]
       ; generic_group  = _the_generic_group
+      ; origin         = "test_allow_extra_fields.ml.Allow_extra_fields"
       }
     in
     let (t_sexp_grammar : Ppx_sexp_conv_lib.Sexp.Grammar.t) = Ref ("t", _the_group) in
@@ -55,6 +56,7 @@ module Forbid_extra_fields = struct
       { gid            = Ppx_sexp_conv_lib.Lazy_group_id.create ()
       ; apply_implicit = [ int_sexp_grammar ]
       ; generic_group  = _the_generic_group
+      ; origin         = "test_allow_extra_fields.ml.Forbid_extra_fields"
       }
     in
     let (t_sexp_grammar : Ppx_sexp_conv_lib.Sexp.Grammar.t) = Ref ("t", _the_group) in
@@ -112,6 +114,7 @@ module Variant_type = struct
       { gid            = Ppx_sexp_conv_lib.Lazy_group_id.create ()
       ; apply_implicit = [ int_sexp_grammar ]
       ; generic_group  = _the_generic_group
+      ; origin         = "test_allow_extra_fields.ml.Variant_type"
       }
     in
     let (t_sexp_grammar : Ppx_sexp_conv_lib.Sexp.Grammar.t) = Ref ("t", _the_group) in

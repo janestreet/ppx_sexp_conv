@@ -13,6 +13,9 @@
 -|                , Variant { ignore_capitalization = true; alts = [ "A", []; "B", [] ] }
 +|                , Variant { ignore_capitalization = false; alts = [ "A", []; "B", [] ] }
 @|============================================================
+-|      ; origin         = "test_regular_variants.ml.Nullary"
++|      ; origin         = "test_polymorphic_variants.ml.Nullary"
+@|============================================================
 -|      | A of int * int
 -|      | B of string
 +|      [ `A of int * int
@@ -35,6 +38,9 @@
 @|============================================================
 -|                    [ "A", [ One (Implicit_var 0); One (Implicit_var 0) ]
 +|                    [ "A", [ One (List [ One (Implicit_var 0); One (Implicit_var 0) ]) ]
+@|============================================================
+-|      ; origin         = "test_regular_variants.ml.With_arguments"
++|      ; origin         = "test_polymorphic_variants.ml.With_arguments"
 @|============================================================
 -|    print_s (With_sexp.sexp_of_t (A (1, 2)));
 -|    print_s (With_sexp.sexp_of_t (B "foo"));
@@ -71,6 +77,9 @@
 @|============================================================
 -|                { ignore_capitalization = true
 +|                { ignore_capitalization = false
+@|============================================================
+-|      ; origin         = "test_regular_variants.ml.Sexp_list"
++|      ; origin         = "test_polymorphic_variants.ml.Sexp_list"
 @|============================================================
 -|    print_s (With_sexp.sexp_of_t (Int 1));
 +|    print_s (With_sexp.sexp_of_t (`Int 1));

@@ -113,7 +113,7 @@ module Sexp_grammar = struct
     Deriving.Generator.make_noarg E.sig_type_decl
   ;;
 
-  let extension ~loc:_ ~path:_ ctype = E.core_type ctype
+  let extension  = E.core_type
 
   let deriver =
     Deriving.add name

@@ -56,6 +56,7 @@ module Records_we_can_handle = struct
       { gid            = Ppx_sexp_conv_lib.Lazy_group_id.create ()
       ; apply_implicit = [ int_sexp_grammar; option_sexp_grammar ]
       ; generic_group  = _the_generic_group
+      ; origin         = "test_polymorphic_record_fields.ml.Records_we_can_handle"
       }
     in
     let (t_sexp_grammar : Ppx_sexp_conv_lib.Sexp.Grammar.t) = Ref ("t", _the_group) in
@@ -89,6 +90,7 @@ module Impossible_record = struct
       { gid            = Ppx_sexp_conv_lib.Lazy_group_id.create ()
       ; apply_implicit = []
       ; generic_group  = _the_generic_group
+      ; origin         = "test_polymorphic_record_fields.ml.Impossible_record"
       }
     in
     let (t_sexp_grammar : Ppx_sexp_conv_lib.Sexp.Grammar.t) = Ref ("t", _the_group) in
@@ -148,6 +150,7 @@ module Inline_record = struct
       { gid            = Ppx_sexp_conv_lib.Lazy_group_id.create ()
       ; apply_implicit = []
       ; generic_group  = _the_generic_group
+      ; origin         = "test_polymorphic_record_fields.ml.Inline_record"
       }
     in
     let (t_sexp_grammar : Ppx_sexp_conv_lib.Sexp.Grammar.t) = Ref ("t", _the_group) in

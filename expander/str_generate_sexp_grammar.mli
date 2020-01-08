@@ -7,4 +7,4 @@ val grammar_of_tds
   -> rec_flag * type_declaration list
   -> structure_item list
 
-val sexp_grammar : loc:Location.t -> core_type -> expression
+val sexp_grammar : loc:Location.t -> path:string -> core_type -> expression

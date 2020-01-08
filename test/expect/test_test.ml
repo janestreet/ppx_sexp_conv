@@ -16,6 +16,7 @@ module Simple_grammar = struct
       { gid            = Ppx_sexp_conv_lib.Lazy_group_id.create ()
       ; apply_implicit = [ int_sexp_grammar ]
       ; generic_group  = _the_generic_group
+      ; origin         = "test_test.ml.Simple_grammar"
       }
     in
     let (t_sexp_grammar : Ppx_sexp_conv_lib.Sexp.Grammar.t) = Ref ("t", _the_group) in
@@ -70,6 +71,7 @@ module Recursive_group = struct
       { gid            = Ppx_sexp_conv_lib.Lazy_group_id.create ()
       ; apply_implicit = [ option_sexp_grammar ]
       ; generic_group  = _the_generic_group
+      ; origin         = "test_test.ml.Recursive_group"
       }
     in
     let (t_sexp_grammar : Ppx_sexp_conv_lib.Sexp.Grammar.t) = Ref ("t", _the_group)
@@ -107,6 +109,7 @@ module Functions = struct
       { gid            = Ppx_sexp_conv_lib.Lazy_group_id.create ()
       ; apply_implicit = []
       ; generic_group  = _the_generic_group
+      ; origin         = "test_test.ml.Functions"
       }
     in
     let (t_sexp_grammar : Ppx_sexp_conv_lib.Sexp.Grammar.t) = Ref ("t", _the_group) in

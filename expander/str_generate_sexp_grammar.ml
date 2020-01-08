@@ -71,6 +71,7 @@ type t =
   ; generic_group : generic_group
   ; group         : group
   ; loc           : Location.t
+  ; module_path   : string
   }
 
 let impossible ~loc s =
@@ -559,7 +560,7 @@ let type_of_type_declaration env td =
   Env.with_explicit_bind ~loc env td.ptype_name.txt type_
 ;;
 
-let create ~loc rec_flag tds : t =
+let create ~loc ~path rec_flag tds : t =
   let env = Env.create rec_flag tds in
   let grammars =
     List.map tds ~f:(fun { ptype_name; _ } -> ptype_name.txt, Ref_same_group ptype_name)
@@ -570,7 +571,7 @@ let create ~loc rec_flag tds : t =
   in
   let generic_group = make_generic_group ~implicit_vars:(Env.implicit_vars env) ~types in
   let group         = { apply_implicit = Env.apply_implicit env }                      in
-  { grammars; generic_group; group; loc }
+  { grammars; generic_group; group; loc; module_path = path }
 ;;
 
 let collect_arguments_of_arrow_type core_type =
@@ -583,7 +584,7 @@ let collect_arguments_of_arrow_type core_type =
   collect core_type []
 ;;
 
-let singleton ~loc core_type : t =
+let singleton ~loc ~path core_type : t =
   let name = { loc; txt = "dummy_type_name_from_sexp_grammar" } in
   let params, core_type =
     let type_variables, core_type = collect_arguments_of_arrow_type core_type in
@@ -606,6 +607,7 @@ let singleton ~loc core_type : t =
   ; generic_group = make_generic_group ~implicit_vars:(Env.implicit_vars env) ~types
   ; group         = { apply_implicit = Env.apply_implicit env }
   ; loc
+  ; module_path   = path
   }
 ;;
 
@@ -656,11 +658,12 @@ module Expression = struct
       }]
   ;;
 
-  let of_group ~loc { apply_implicit } =
+  let of_group ~loc { apply_implicit } ~module_path =
     [%expr
       { gid            = Ppx_sexp_conv_lib.Lazy_group_id.create ()
       ; apply_implicit = [%e list ~loc apply_implicit ~f:of_grammar]
       ; generic_group  = [%e the_generic_group ~loc]
+      ; origin         = [%e estring ~loc module_path]
       }]
   ;;
 end
@@ -669,7 +672,7 @@ let sexp_grammar_name ~loc type_name =
   { loc; txt = Lident (type_name ^ sexp_grammar_suffix) }
 ;;
 
-let to_pat_and_expr { grammars; generic_group; group; loc } =
+let to_pat_and_expr { grammars; generic_group; group; loc; module_path } =
   let bindings =
     Map.to_alist grammars
     |> List.map ~f:(fun (type_name, grammar) ->
@@ -683,7 +686,7 @@ let to_pat_and_expr { grammars; generic_group; group; loc } =
   in
   let pat           = ppat_tuple (List.map bindings ~f:fst) ~loc     in
   let generic_group = Expression.of_generic_group ~loc generic_group in
-  let group         = Expression.of_group ~loc group                 in
+  let group         = Expression.of_group ~loc group ~module_path    in
   let grammars =
     pexp_let
       Nonrecursive
@@ -710,9 +713,11 @@ let to_pat_and_expr { grammars; generic_group; group; loc } =
   pat, expr
 ;;
 
-let grammar_of_tds ~loc ~path:_ (rec_flag, tds) =
-  let pat, expr = create ~loc rec_flag tds |> to_pat_and_expr in
+let grammar_of_tds ~loc ~path (rec_flag, tds) =
+  let pat, expr = create ~loc ~path rec_flag tds |> to_pat_and_expr in
   [%str let [%p pat] = [%e expr]]
 ;;
 
-let sexp_grammar ~loc core_type = singleton ~loc core_type |> to_pat_and_expr |> snd
+let sexp_grammar ~loc ~path core_type =
+  singleton ~loc ~path core_type |> to_pat_and_expr |> snd
+;;

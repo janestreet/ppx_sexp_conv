@@ -24,6 +24,7 @@ module One_type = struct
       { gid            = Ppx_sexp_conv_lib.Lazy_group_id.create ()
       ; apply_implicit = [ int_sexp_grammar ]
       ; generic_group  = _the_generic_group
+      ; origin         = "test_recursive_groups.ml.One_type"
       }
     in
     let (t_sexp_grammar : Ppx_sexp_conv_lib.Sexp.Grammar.t) = Ref ("t", _the_group) in
@@ -74,6 +75,7 @@ module Two_types = struct
       { gid            = Ppx_sexp_conv_lib.Lazy_group_id.create ()
       ; apply_implicit = [ int_sexp_grammar ]
       ; generic_group  = _the_generic_group
+      ; origin         = "test_recursive_groups.ml.Two_types"
       }
     in
     let (t_sexp_grammar : Ppx_sexp_conv_lib.Sexp.Grammar.t) = Ref ("t", _the_group)

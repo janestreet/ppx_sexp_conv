@@ -17,6 +17,7 @@ module Maybe = struct
       { gid            = Ppx_sexp_conv_lib.Lazy_group_id.create ()
       ; apply_implicit = [ option_sexp_grammar ]
       ; generic_group  = _the_generic_group
+      ; origin         = "test_functors.ml.Maybe"
       }
     in
     let (t_sexp_grammar : Ppx_sexp_conv_lib.Sexp.Grammar.t) = Ref ("t", _the_group) in
@@ -87,6 +88,7 @@ struct
       { gid            = Ppx_sexp_conv_lib.Lazy_group_id.create ()
       ; apply_implicit = [ T.t_sexp_grammar; Maybe.t_sexp_grammar ]
       ; generic_group  = _the_generic_group
+      ; origin         = "test_functors.ml.Make"
       }
     in
     let (t_sexp_grammar : Ppx_sexp_conv_lib.Sexp.Grammar.t) = Ref ("t", _the_group)
@@ -122,6 +124,7 @@ struct
       { gid            = Ppx_sexp_conv_lib.Lazy_group_id.create ()
       ; apply_implicit = [ t_sexp_grammar ]
       ; generic_group  = _the_generic_group
+      ; origin         = "test_functors.ml.Make"
       }
     in
     let (v_sexp_grammar : Ppx_sexp_conv_lib.Sexp.Grammar.t) = Ref ("v", _the_group) in
@@ -157,6 +160,7 @@ let (t_sexp_grammar : Ppx_sexp_conv_lib.Sexp.Grammar.t) =
     { gid            = Ppx_sexp_conv_lib.Lazy_group_id.create ()
     ; apply_implicit = [ int_sexp_grammar; T2.t_sexp_grammar; T1.t_sexp_grammar ]
     ; generic_group  = _the_generic_group
+    ; origin         = "test_functors.ml"
     }
   in
   let (t_sexp_grammar : Ppx_sexp_conv_lib.Sexp.Grammar.t) = Ref ("t", _the_group) in

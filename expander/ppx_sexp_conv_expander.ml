@@ -275,6 +275,7 @@ let really_recursive rec_flag tds =
 (* Generates the signature for type conversion to S-expressions *)
 module Sig_generate_sexp_of = struct
   let type_of_sexp_of ~loc t =
+    let loc = { loc with loc_ghost = true } in
     [%type: [%t t] -> Ppx_sexp_conv_lib.Sexp.t]
 
   let mk_type td = combinator_type_of_type_declaration td ~f:type_of_sexp_of
@@ -294,6 +295,7 @@ end
 (* Generates the signature for type conversion from S-expressions *)
 module Sig_generate_of_sexp = struct
   let type_of_of_sexp ~loc t =
+    let loc = { loc with loc_ghost = true } in
     [%type: Ppx_sexp_conv_lib.Sexp.t -> [%t t]]
 
   let mk_type td = combinator_type_of_type_declaration td ~f:type_of_of_sexp
@@ -338,7 +340,7 @@ module Str_generate_sexp_of = struct
   let rec sexp_of_type
             ~(typevar_handling : [`ok of Renaming.t | `disallowed_in_type_expr])
             typ : Fun_or_match.t =
-    let loc = typ.ptyp_loc in
+    let loc = { typ.ptyp_loc with loc_ghost = true } in
     match typ with
     | _ when Option.is_some (Attribute.get Attrs.opaque typ) ->
       Fun [%expr  Ppx_sexp_conv_lib.Conv.sexp_of_opaque ]
@@ -1718,12 +1720,14 @@ module Str_generate_of_sexp = struct
       pstr_value_list ~loc rec_flag bindings
 
   let type_of_sexp ~typevar_handling ~path ctyp =
-    let loc = ctyp.ptyp_loc in
+    let loc = { ctyp.ptyp_loc with loc_ghost = true } in
     let fp = type_of_sexp ~typevar_handling ctyp in
     let body =
-      match fp with
-      | Fun fun_expr    -> [%expr  [%e fun_expr] sexp ]
-      | Match matchings -> pexp_match ~loc [%expr sexp] matchings
+      Merlin_helpers.hide_expression (
+        match fp with
+        | Fun fun_expr    -> [%expr  [%e fun_expr] sexp ]
+        | Match matchings -> pexp_match ~loc [%expr sexp] matchings
+      )
     in
     let full_type_name =
       Printf.sprintf "%s line %i: %s"
@@ -1753,10 +1757,12 @@ module Sig_generate_sexp_grammar = struct
 end
 
 module Sexp_of = struct
-  let type_extension ty = Sig_generate_sexp_of.type_of_sexp_of ~loc:ty.ptyp_loc ty
+  let type_extension ty =
+    Sig_generate_sexp_of.type_of_sexp_of
+      ~loc:{ ty.ptyp_loc with loc_ghost = true } ty
   let core_type ty =
     Str_generate_sexp_of.sexp_of_type ~typevar_handling:`disallowed_in_type_expr ty
-    |> Fun_or_match.expr ~loc:ty.ptyp_loc
+    |> Fun_or_match.expr ~loc:{ ty.ptyp_loc with loc_ghost = true }
   ;;
 
   let sig_type_decl = Sig_generate_sexp_of.mk_sig
@@ -1780,7 +1786,9 @@ module Sexp_grammar = struct
     Sig_generate_sexp_grammar.type_of_sexp_grammar ty ~loc:ty.ptyp_loc
   ;;
 
-  let core_type ty = Str_generate_sexp_grammar.sexp_grammar ~loc:ty.ptyp_loc ty
+  let core_type ~loc ~path ty =
+    Merlin_helpers.hide_expression
+      (Str_generate_sexp_grammar.sexp_grammar ~loc ~path ty)
 
   let sig_type_decl = Sig_generate_sexp_grammar.mk_sig
   let str_type_decl = Str_generate_sexp_grammar.grammar_of_tds

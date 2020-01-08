@@ -16,6 +16,7 @@ open  struct
       { gid            = Ppx_sexp_conv_lib.Lazy_group_id.create ()
       ; apply_implicit = [ int_sexp_grammar ]
       ; generic_group  = _the_generic_group
+      ; origin         = "test_nonrec.ml"
       }
     in
     let (t_sexp_grammar : Ppx_sexp_conv_lib.Sexp.Grammar.t) = Ref ("t", _the_group) in
@@ -42,6 +43,7 @@ let (t_sexp_grammar : Ppx_sexp_conv_lib.Sexp.Grammar.t) =
     { gid            = Ppx_sexp_conv_lib.Lazy_group_id.create ()
     ; apply_implicit = [ t_sexp_grammar ]
     ; generic_group  = _the_generic_group
+    ; origin         = "test_nonrec.ml"
     }
   in
   let (t_sexp_grammar : Ppx_sexp_conv_lib.Sexp.Grammar.t) = Ref ("t", _the_group) in

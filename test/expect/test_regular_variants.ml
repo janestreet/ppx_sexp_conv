@@ -27,6 +27,7 @@ module Nullary = struct
       { gid            = Ppx_sexp_conv_lib.Lazy_group_id.create ()
       ; apply_implicit = []
       ; generic_group  = _the_generic_group
+      ; origin         = "test_regular_variants.ml.Nullary"
       }
     in
     let (t_sexp_grammar : Ppx_sexp_conv_lib.Sexp.Grammar.t) = Ref ("t", _the_group) in
@@ -73,6 +74,7 @@ module With_arguments = struct
       { gid            = Ppx_sexp_conv_lib.Lazy_group_id.create ()
       ; apply_implicit = [ int_sexp_grammar; string_sexp_grammar ]
       ; generic_group  = _the_generic_group
+      ; origin         = "test_regular_variants.ml.With_arguments"
       }
     in
     let (t_sexp_grammar : Ppx_sexp_conv_lib.Sexp.Grammar.t) = Ref ("t", _the_group) in
@@ -135,6 +137,7 @@ module Sexp_list = struct
       { gid            = Ppx_sexp_conv_lib.Lazy_group_id.create ()
       ; apply_implicit = [ int_sexp_grammar; list_sexp_grammar ]
       ; generic_group  = _the_generic_group
+      ; origin         = "test_regular_variants.ml.Sexp_list"
       }
     in
     let (t_sexp_grammar : Ppx_sexp_conv_lib.Sexp.Grammar.t) = Ref ("t", _the_group) in
