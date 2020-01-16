@@ -407,7 +407,7 @@ let type_of_core_type env0 type_name ctype =
     | Not_opaque { ptyp_desc; ptyp_loc = loc; ptyp_attributes = _; ptyp_loc_stack = _ }
       ->
       (match ptyp_desc with
-       | Ptyp_any              -> not_supported ~loc "_ used as variable in type declaration"
+       | Ptyp_any              -> Any
        | Ptyp_var s            -> Env.type_for_var ~loc env type_name s
        | Ptyp_arrow (_, _, _)  -> unsupported_builtin ~loc "fun"
        | Ptyp_tuple core_types ->
