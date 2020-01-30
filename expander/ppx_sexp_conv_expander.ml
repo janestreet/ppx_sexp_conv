@@ -1771,16 +1771,6 @@ module Sexp_of = struct
   let str_exception = Str_generate_sexp_of.sexp_of_exn ~types_being_defined:`Nonrecursive
 end
 
-module Of_sexp = struct
-  let type_extension ty = Sig_generate_of_sexp.type_of_of_sexp ~loc:ty.ptyp_loc ty
-  let core_type =
-    Str_generate_of_sexp.type_of_sexp
-      ~typevar_handling:`disallowed_in_type_expr
-
-  let sig_type_decl = Sig_generate_of_sexp.mk_sig
-  let str_type_decl = Str_generate_of_sexp.tds_of_sexp
-end
-
 module Sexp_grammar = struct
   let type_extension ty =
     Sig_generate_sexp_grammar.type_of_sexp_grammar ty ~loc:ty.ptyp_loc
@@ -1794,10 +1784,27 @@ module Sexp_grammar = struct
   let str_type_decl = Str_generate_sexp_grammar.grammar_of_tds
 end
 
+module Of_sexp = struct
+  let type_extension ty = Sig_generate_of_sexp.type_of_of_sexp ~loc:ty.ptyp_loc ty
+
+  let core_type =
+    Str_generate_of_sexp.type_of_sexp
+      ~typevar_handling:`disallowed_in_type_expr
+
+  let sig_type_decl ~poly ~loc ~path tds =
+    Sig_generate_of_sexp.mk_sig ~poly ~loc ~path tds
+
+  let str_type_decl ~loc ~poly ~path tds =
+    Str_generate_of_sexp.tds_of_sexp ~loc ~poly ~path tds
+
+end
+
 module Sig_sexp = struct
   let mk_sig ~loc ~path decls =
-    Sig_generate_sexp_of.mk_sig ~loc ~path decls
-    @ Sig_generate_of_sexp.mk_sig ~poly:false ~loc ~path decls
+    List.concat
+      [ Sig_generate_sexp_of.mk_sig ~loc ~path decls
+      ; Sig_generate_of_sexp.mk_sig ~poly:false ~loc ~path decls
+      ]
 
   let sig_type_decl ~loc ~path ((_rf, tds) as decls) =
     match
