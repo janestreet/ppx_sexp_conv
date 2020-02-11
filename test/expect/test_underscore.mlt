@@ -1,9 +1,0 @@
-open Base
-
-[@@@warning "-37"]
-
-(* This used to give a compilation error. *)
-let (_ : Sexp.Grammar.t) = [%sexp_grammar: _ list]
-
-[%%expect {|
-|}]

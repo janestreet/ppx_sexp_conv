@@ -407,8 +407,10 @@ let type_of_core_type env0 type_name ctype =
     | Not_opaque { ptyp_desc; ptyp_loc = loc; ptyp_attributes = _; ptyp_loc_stack = _ }
       ->
       (match ptyp_desc with
-       | Ptyp_any              -> Any
-       | Ptyp_var s            -> Env.type_for_var ~loc env type_name s
+       | Ptyp_any              ->
+         (* For consistency with [%of_sexp: _] which treats [_] as unsatisfiable. *)
+         Union []
+       | Ptyp_var s            -> Env.type_for_var    ~loc env type_name s
        | Ptyp_arrow (_, _, _)  -> unsupported_builtin ~loc "fun"
        | Ptyp_tuple core_types ->
          List
