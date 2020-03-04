@@ -1744,7 +1744,7 @@ end
 
 (* Generates the signature for generation of sexp grammar *)
 module Sig_generate_sexp_grammar = struct
-  let type_of_sexp_grammar ~loc _ = [%type: Ppx_sexp_conv_lib.Sexp.Grammar.t]
+  let type_of_sexp_grammar ~loc _ = [%type: Ppx_sexp_conv_lib.Sexp.Raw_grammar.t]
 
   let mk_sig ~loc:_ ~path:_ (_rf, tds) =
     List.map tds ~f:(fun td ->

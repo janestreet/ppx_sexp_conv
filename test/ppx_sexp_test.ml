@@ -1,6 +1,6 @@
 open Ppx_sexp_conv_lib
 open Conv
-open! Sexp.Grammar.Builtin
+open! Sexp.Raw_grammar.Builtin
 
 module Sum_and_polymorphic_variants = struct
   type poly =
@@ -412,7 +412,8 @@ module Omit_nil = struct
     | sexp -> int_of_sexp sexp
   ;;
 
-  let natural_option_sexp_grammar : Sexp.Grammar.t = Inline (Union [ List []; Atom Int ])
+  let natural_option_sexp_grammar : Sexp.Raw_grammar.t =
+    Inline (Union [ List []; Atom Int ])
 
   let check sexp_of_t t_of_sexp str t =
     let sexp = Sexplib.Sexp.of_string str in

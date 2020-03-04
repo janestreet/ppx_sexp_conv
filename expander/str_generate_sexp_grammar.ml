@@ -1,7 +1,7 @@
 open! Base
 open! Ppxlib
 open! Ast_builder.Default
-open! Sexp.Grammar
+open! Sexp.Raw_grammar
 module Var_name  = String
 module Type_name = String
 
@@ -14,7 +14,7 @@ let _ = debug_s
 (* [grammar] and [generic_group] form the generic part of grammar: it's the information
    we can compute statically  from the AST *)
 type grammar =
-  | Inline          of grammar Sexp.Grammar.type_ loc
+  | Inline          of grammar Sexp.Raw_grammar.type_ loc
   (* E.g.,[Ref_same_group "t"] vs [Ref_other_group (Ldot (Lident "t", "Foo"))]. *)
   | Ref_same_group  of Type_name.t loc
   | Ref_other_group of Longident.t loc
@@ -51,7 +51,7 @@ let id_mapper =
   end
 ;;
 
-let erase_locs : grammar Sexp.Grammar.type_ -> grammar Sexp.Grammar.type_ =
+let erase_locs : grammar Sexp.Raw_grammar.type_ -> grammar Sexp.Raw_grammar.type_ =
   id_mapper#type_ (function
     | Inline          x -> Inline          { x with loc = Location.none }
     | Ref_same_group  x -> Ref_same_group  { x with loc = Location.none }
@@ -397,7 +397,9 @@ let unsupported_builtin ~loc type_name =
   let ( +.+ ) a b = Ldot (a, b) in
   Grammar
     (Ref_other_group
-       { loc; txt = Lident "Ppx_sexp_conv_lib" +.+ "Sexp" +.+ "Grammar" +.+ type_name })
+       { loc
+       ; txt = Lident "Ppx_sexp_conv_lib" +.+ "Sexp" +.+ "Raw_grammar" +.+ type_name
+       })
 ;;
 
 let type_of_core_type env0 type_name ctype =
@@ -681,7 +683,7 @@ let to_pat_and_expr { grammars; generic_group; group; loc; module_path } =
       let pat =
         [%pat?
                ([%p ppat_var ~loc { loc; txt = type_name ^ sexp_grammar_suffix }] :
-                  Ppx_sexp_conv_lib.Sexp.Grammar.t)]
+                  Ppx_sexp_conv_lib.Sexp.Raw_grammar.t)]
       in
       let expr = Expression.of_grammar ~loc grammar in
       pat, expr)
@@ -703,11 +705,11 @@ let to_pat_and_expr { grammars; generic_group; group; loc; module_path } =
   let expr =
     [%expr
       let ([%p Pattern.the_generic_group ~loc]
-           : Ppx_sexp_conv_lib.Sexp.Grammar.generic_group)
+           : Ppx_sexp_conv_lib.Sexp.Raw_grammar.generic_group)
         =
         [%e generic_group]
       in
-      let ([%p Pattern.the_group ~loc] : Ppx_sexp_conv_lib.Sexp.Grammar.group) =
+      let ([%p Pattern.the_group ~loc] : Ppx_sexp_conv_lib.Sexp.Raw_grammar.group) =
         [%e group]
       in
       [%e grammars]]

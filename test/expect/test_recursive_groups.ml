@@ -7,8 +7,8 @@ module One_type = struct
 
   let _ = fun (_ : t) -> ()
 
-  let (t_sexp_grammar : Ppx_sexp_conv_lib.Sexp.Grammar.t) =
-    let (_the_generic_group : Ppx_sexp_conv_lib.Sexp.Grammar.generic_group) =
+  let (t_sexp_grammar : Ppx_sexp_conv_lib.Sexp.Raw_grammar.t) =
+    let (_the_generic_group : Ppx_sexp_conv_lib.Sexp.Raw_grammar.generic_group) =
       { implicit_vars = [ "int" ]
       ; ggid          = "\243A~\012\241*Zj\026)S&\127Q\231x"
       ; types         =
@@ -20,14 +20,16 @@ module One_type = struct
           ]
       }
     in
-    let (_the_group : Ppx_sexp_conv_lib.Sexp.Grammar.group) =
+    let (_the_group : Ppx_sexp_conv_lib.Sexp.Raw_grammar.group) =
       { gid            = Ppx_sexp_conv_lib.Lazy_group_id.create ()
       ; apply_implicit = [ int_sexp_grammar ]
       ; generic_group  = _the_generic_group
       ; origin         = "test_recursive_groups.ml.One_type"
       }
     in
-    let (t_sexp_grammar : Ppx_sexp_conv_lib.Sexp.Grammar.t) = Ref ("t", _the_group) in
+    let (t_sexp_grammar : Ppx_sexp_conv_lib.Sexp.Raw_grammar.t) =
+      Ref ("t", _the_group)
+    in
     t_sexp_grammar
   ;;
 
@@ -49,10 +51,10 @@ module Two_types = struct
   let _ = fun (_ : t) -> ()
   let _ = fun (_ : u) -> ()
 
-  let ( (t_sexp_grammar : Ppx_sexp_conv_lib.Sexp.Grammar.t)
-      , (u_sexp_grammar : Ppx_sexp_conv_lib.Sexp.Grammar.t) )
+  let ( (t_sexp_grammar : Ppx_sexp_conv_lib.Sexp.Raw_grammar.t)
+      , (u_sexp_grammar : Ppx_sexp_conv_lib.Sexp.Raw_grammar.t) )
     =
-    let (_the_generic_group : Ppx_sexp_conv_lib.Sexp.Grammar.generic_group) =
+    let (_the_generic_group : Ppx_sexp_conv_lib.Sexp.Raw_grammar.generic_group) =
       { implicit_vars = [ "int" ]
       ; ggid          = "\241o\231&\242\021\147\249\029+\000\245\187\240\158H"
       ; types         =
@@ -71,15 +73,17 @@ module Two_types = struct
           ]
       }
     in
-    let (_the_group : Ppx_sexp_conv_lib.Sexp.Grammar.group) =
+    let (_the_group : Ppx_sexp_conv_lib.Sexp.Raw_grammar.group) =
       { gid            = Ppx_sexp_conv_lib.Lazy_group_id.create ()
       ; apply_implicit = [ int_sexp_grammar ]
       ; generic_group  = _the_generic_group
       ; origin         = "test_recursive_groups.ml.Two_types"
       }
     in
-    let (t_sexp_grammar : Ppx_sexp_conv_lib.Sexp.Grammar.t) = Ref ("t", _the_group)
-    and (u_sexp_grammar : Ppx_sexp_conv_lib.Sexp.Grammar.t) = Ref ("u", _the_group) in
+    let (t_sexp_grammar : Ppx_sexp_conv_lib.Sexp.Raw_grammar.t) = Ref ("t", _the_group)
+    and (u_sexp_grammar : Ppx_sexp_conv_lib.Sexp.Raw_grammar.t) =
+      Ref ("u", _the_group)
+    in
     t_sexp_grammar, u_sexp_grammar
   ;;
 

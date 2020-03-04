@@ -7,13 +7,13 @@ module type S = sig
 end
 
 module F (M : S) : sig
-  val t_sexp_grammar : Sexplib0.Grammar.t [@@warning "-32"]
+  val t_sexp_grammar : Sexplib0.Raw_grammar.t [@@warning "-32"]
 end =
   M
 
 (* The grammar is illegible, so just make sure it builds. *)
 
-let (_ : Sexp.Grammar.t) = [%sexp_grammar: int Map.M(String).t]
+let (_ : Sexp.Raw_grammar.t) = [%sexp_grammar: int Map.M(String).t]
 
 (* This used to give a compilation error. *)
-let (_ : Sexp.Grammar.t) = [%sexp_grammar: _ list]
+let (_ : Sexp.Raw_grammar.t) = [%sexp_grammar: _ list]
