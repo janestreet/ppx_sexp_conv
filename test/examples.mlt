@@ -29,3 +29,9 @@ let _ = [%sexp (() : 'a)]
 Line _, characters _-_:
 Error: Type variables not allowed in [%sexp_of: ]. Please use locally abstract types instead.
 |}]
+
+type 'a t =
+  | None
+  | Something_else of { value : 'a }
+[@@deriving sexp]
+[%%expect{||}]

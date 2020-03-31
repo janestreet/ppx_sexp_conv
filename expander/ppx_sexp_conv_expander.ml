@@ -641,8 +641,8 @@ module Str_generate_sexp_of = struct
           [%expr
             let bnds =
               match [%e evar ~loc ("v_" ^ name)] with
-              | None -> bnds
-              | Some v ->
+              | Ppx_sexp_conv_lib.Option.None -> bnds
+              | Ppx_sexp_conv_lib.Option.Some v ->
                 let arg = [%e cnv_expr] in
                 let bnd =
                   Ppx_sexp_conv_lib.Sexp.List [Ppx_sexp_conv_lib.Sexp.Atom [%e estring ~loc name]; arg]
@@ -983,7 +983,7 @@ module Str_generate_of_sexp = struct
     | [%type: _ ] ->
       Fun [%expr  Ppx_sexp_conv_lib.Conv.opaque_of_sexp ]
     (*| [%type: sexp_option ] -> (* will never match surely! *)
-      Fun [%expr  fun a_of_sexp v -> Some (a_of_sexp v) ]*)
+      Fun [%expr  fun a_of_sexp v -> Ppx_sexp_conv_lib.Option.Some (a_of_sexp v) ]*)
     | [%type: [%t? ty1] sexp_list ] ->
       let arg1 = Fun_or_match.expr ~loc (type_of_sexp ~typevar_handling ty1) in
       Fun [%expr (fun a_of_sexp v -> Ppx_sexp_conv_lib.Conv.list_of_sexp  a_of_sexp v) [%e arg1]]
@@ -1269,7 +1269,7 @@ module Str_generate_of_sexp = struct
                  | `sexp_array _
                  | `sexp_list _)),
           tp ->
-          let inits = [%expr None] :: inits in
+          let inits = [%expr Ppx_sexp_conv_lib.Option.None] :: inits in
           let unrolled =
             Fun_or_match.unroll ~loc [%expr  _field_sexp ]
               (type_of_sexp ~typevar_handling tp)
@@ -1278,10 +1278,10 @@ module Str_generate_of_sexp = struct
             (pstring ~loc nm -->
              [%expr
                match ! [%e evar ~loc (nm ^ "_field")] with
-               | None ->
+               | Ppx_sexp_conv_lib.Option.None ->
                  let fvalue = [%e unrolled] in
-                 [%e evar ~loc (nm ^ "_field")] := Some fvalue
-               | Some _ ->
+                 [%e evar ~loc (nm ^ "_field")] := Ppx_sexp_conv_lib.Option.Some fvalue
+               | Ppx_sexp_conv_lib.Option.Some _ ->
                  duplicates := (field_name :: ! duplicates) ]
             ) :: args
           in
@@ -1319,8 +1319,8 @@ module Str_generate_of_sexp = struct
               has_nonopt_fields := true;
               (
                 [%expr
-                  (Ppx_sexp_conv_lib.Conv.(=) [%e fld] None, [%e estring ~loc nm]) ] :: bi_lst,
-                [%pat? Some [%p pvar ~loc (nm ^ "_value")] ] :: good_patts
+                  (Ppx_sexp_conv_lib.Conv.(=) [%e fld] Ppx_sexp_conv_lib.Option.None, [%e estring ~loc nm]) ] :: bi_lst,
+                [%pat? Ppx_sexp_conv_lib.Option.Some [%p pvar ~loc (nm ^ "_value")] ] :: good_patts
               )
           in
           let acc =(
@@ -1339,28 +1339,28 @@ module Str_generate_of_sexp = struct
       | Some (`sexp_list _) ->
         [%expr
           match [%e evar ~loc (nm ^ "_value")] with
-          | None -> []
-          | Some v -> v
+          | Ppx_sexp_conv_lib.Option.None -> []
+          | Ppx_sexp_conv_lib.Option.Some v -> v
         ]
       | Some (`sexp_array _) ->
         [%expr
           match [%e evar ~loc (nm ^ "_value")] with
-          | None -> [||]
-          | Some v -> v
+          | Ppx_sexp_conv_lib.Option.None -> [||]
+          | Ppx_sexp_conv_lib.Option.Some v -> v
         ]
       | Some (`default default) ->
         [%expr
           match [%e evar ~loc (nm ^ "_value")] with
-          | None -> [%e default]
-          | Some v -> v
+          | Ppx_sexp_conv_lib.Option.None -> [%e default]
+          | Ppx_sexp_conv_lib.Option.Some v -> v
         ]
       | Some (`sexp_bool | `sexp_option _) | None ->
         evar ~loc (nm ^ "_value")
       | Some `omit_nil ->
         [%expr
           match [%e evar ~loc (nm ^ "_value")] with
-          | Some v -> v
-          | None ->
+          | Ppx_sexp_conv_lib.Option.Some v -> v
+          | Ppx_sexp_conv_lib.Option.None ->
             (* We change the exception so it contains a sub-sexp of the
                initial sexp, otherwise sexplib won't find the source location
                for the error. *)
