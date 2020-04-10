@@ -11,8 +11,8 @@ module Nullary = struct
 
   let _ = fun (_ : 'a t) -> ()
 
-  let (t_sexp_grammar : Ppx_sexp_conv_lib.Sexp.Raw_grammar.t) =
-    let (_the_generic_group : Ppx_sexp_conv_lib.Sexp.Raw_grammar.generic_group) =
+  let (t_sexp_grammar : Ppx_sexp_conv_lib.Sexp.Private.Raw_grammar.t) =
+    let (_the_generic_group : Ppx_sexp_conv_lib.Sexp.Private.Raw_grammar.generic_group) =
       { implicit_vars = []
       ; ggid          = "\133a\241\019; \198\184U\181\220#\191\190\200\b"
       ; types         =
@@ -24,14 +24,14 @@ module Nullary = struct
           ]
       }
     in
-    let (_the_group : Ppx_sexp_conv_lib.Sexp.Raw_grammar.group) =
+    let (_the_group : Ppx_sexp_conv_lib.Sexp.Private.Raw_grammar.group) =
       { gid            = Ppx_sexp_conv_lib.Lazy_group_id.create ()
       ; apply_implicit = []
       ; generic_group  = _the_generic_group
       ; origin         = "test_polymorphic_variants.ml.Nullary"
       }
     in
-    let (t_sexp_grammar : Ppx_sexp_conv_lib.Sexp.Raw_grammar.t) =
+    let (t_sexp_grammar : Ppx_sexp_conv_lib.Sexp.Private.Raw_grammar.t) =
       Ref ("t", _the_group)
     in
     t_sexp_grammar
@@ -59,8 +59,8 @@ module With_arguments = struct
 
   let _ = fun (_ : t) -> ()
 
-  let (t_sexp_grammar : Ppx_sexp_conv_lib.Sexp.Raw_grammar.t) =
-    let (_the_generic_group : Ppx_sexp_conv_lib.Sexp.Raw_grammar.generic_group) =
+  let (t_sexp_grammar : Ppx_sexp_conv_lib.Sexp.Private.Raw_grammar.t) =
+    let (_the_generic_group : Ppx_sexp_conv_lib.Sexp.Private.Raw_grammar.generic_group) =
       { implicit_vars = [ "int"; "string" ]
       ; ggid          = "\196t P\169\167\173C\251\132\141N\003n \132"
       ; types         =
@@ -75,14 +75,14 @@ module With_arguments = struct
           ]
       }
     in
-    let (_the_group : Ppx_sexp_conv_lib.Sexp.Raw_grammar.group) =
+    let (_the_group : Ppx_sexp_conv_lib.Sexp.Private.Raw_grammar.group) =
       { gid            = Ppx_sexp_conv_lib.Lazy_group_id.create ()
       ; apply_implicit = [ int_sexp_grammar; string_sexp_grammar ]
       ; generic_group  = _the_generic_group
       ; origin         = "test_polymorphic_variants.ml.With_arguments"
       }
     in
-    let (t_sexp_grammar : Ppx_sexp_conv_lib.Sexp.Raw_grammar.t) =
+    let (t_sexp_grammar : Ppx_sexp_conv_lib.Sexp.Private.Raw_grammar.t) =
       Ref ("t", _the_group)
     in
     t_sexp_grammar
@@ -124,8 +124,8 @@ module Sexp_list = struct
 
   let _ = fun (_ : t) -> ()
 
-  let (t_sexp_grammar : Ppx_sexp_conv_lib.Sexp.Raw_grammar.t) =
-    let (_the_generic_group : Ppx_sexp_conv_lib.Sexp.Raw_grammar.generic_group) =
+  let (t_sexp_grammar : Ppx_sexp_conv_lib.Sexp.Private.Raw_grammar.t) =
+    let (_the_generic_group : Ppx_sexp_conv_lib.Sexp.Private.Raw_grammar.generic_group) =
       { implicit_vars = [ "int"; "list" ]
       ; ggid          = "\221\2240I,\229H~\212(;\201\127\159rK"
       ; types         =
@@ -142,14 +142,14 @@ module Sexp_list = struct
           ]
       }
     in
-    let (_the_group : Ppx_sexp_conv_lib.Sexp.Raw_grammar.group) =
+    let (_the_group : Ppx_sexp_conv_lib.Sexp.Private.Raw_grammar.group) =
       { gid            = Ppx_sexp_conv_lib.Lazy_group_id.create ()
       ; apply_implicit = [ int_sexp_grammar; list_sexp_grammar ]
       ; generic_group  = _the_generic_group
       ; origin         = "test_polymorphic_variants.ml.Sexp_list"
       }
     in
-    let (t_sexp_grammar : Ppx_sexp_conv_lib.Sexp.Raw_grammar.t) =
+    let (t_sexp_grammar : Ppx_sexp_conv_lib.Sexp.Private.Raw_grammar.t) =
       Ref ("t", _the_group)
     in
     t_sexp_grammar

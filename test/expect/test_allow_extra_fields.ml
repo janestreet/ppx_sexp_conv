@@ -5,8 +5,8 @@ module Allow_extra_fields = struct
 
   let _ = fun (_ : t) -> ()
 
-  let (t_sexp_grammar : Ppx_sexp_conv_lib.Sexp.Raw_grammar.t) =
-    let (_the_generic_group : Ppx_sexp_conv_lib.Sexp.Raw_grammar.generic_group) =
+  let (t_sexp_grammar : Ppx_sexp_conv_lib.Sexp.Private.Raw_grammar.t) =
+    let (_the_generic_group : Ppx_sexp_conv_lib.Sexp.Private.Raw_grammar.generic_group) =
       { implicit_vars = [ "int" ]
       ; ggid          = "\024\018\219\231,\176\148\206Y\195\132\0042H\\U"
       ; types         =
@@ -18,14 +18,14 @@ module Allow_extra_fields = struct
           ]
       }
     in
-    let (_the_group : Ppx_sexp_conv_lib.Sexp.Raw_grammar.group) =
+    let (_the_group : Ppx_sexp_conv_lib.Sexp.Private.Raw_grammar.group) =
       { gid            = Ppx_sexp_conv_lib.Lazy_group_id.create ()
       ; apply_implicit = [ int_sexp_grammar ]
       ; generic_group  = _the_generic_group
       ; origin         = "test_allow_extra_fields.ml.Allow_extra_fields"
       }
     in
-    let (t_sexp_grammar : Ppx_sexp_conv_lib.Sexp.Raw_grammar.t) =
+    let (t_sexp_grammar : Ppx_sexp_conv_lib.Sexp.Private.Raw_grammar.t) =
       Ref ("t", _the_group)
     in
     t_sexp_grammar
@@ -41,8 +41,8 @@ module Forbid_extra_fields = struct
 
   let _ = fun (_ : t) -> ()
 
-  let (t_sexp_grammar : Ppx_sexp_conv_lib.Sexp.Raw_grammar.t) =
-    let (_the_generic_group : Ppx_sexp_conv_lib.Sexp.Raw_grammar.generic_group) =
+  let (t_sexp_grammar : Ppx_sexp_conv_lib.Sexp.Private.Raw_grammar.t) =
+    let (_the_generic_group : Ppx_sexp_conv_lib.Sexp.Private.Raw_grammar.generic_group) =
       { implicit_vars = [ "int" ]
       ; ggid          = "\142\248\194uE\0077q\014\151\186\131R\n\213$"
       ; types         =
@@ -54,14 +54,14 @@ module Forbid_extra_fields = struct
           ]
       }
     in
-    let (_the_group : Ppx_sexp_conv_lib.Sexp.Raw_grammar.group) =
+    let (_the_group : Ppx_sexp_conv_lib.Sexp.Private.Raw_grammar.group) =
       { gid            = Ppx_sexp_conv_lib.Lazy_group_id.create ()
       ; apply_implicit = [ int_sexp_grammar ]
       ; generic_group  = _the_generic_group
       ; origin         = "test_allow_extra_fields.ml.Forbid_extra_fields"
       }
     in
-    let (t_sexp_grammar : Ppx_sexp_conv_lib.Sexp.Raw_grammar.t) =
+    let (t_sexp_grammar : Ppx_sexp_conv_lib.Sexp.Private.Raw_grammar.t) =
       Ref ("t", _the_group)
     in
     t_sexp_grammar
@@ -80,8 +80,8 @@ module Variant_type = struct
 
   let _ = fun (_ : t) -> ()
 
-  let (t_sexp_grammar : Ppx_sexp_conv_lib.Sexp.Raw_grammar.t) =
-    let (_the_generic_group : Ppx_sexp_conv_lib.Sexp.Raw_grammar.generic_group) =
+  let (t_sexp_grammar : Ppx_sexp_conv_lib.Sexp.Private.Raw_grammar.t) =
+    let (_the_generic_group : Ppx_sexp_conv_lib.Sexp.Private.Raw_grammar.generic_group) =
       { implicit_vars = [ "int" ]
       ; ggid          = "d\241\139\1990f06\b\n\217\001J:\030B"
       ; types         =
@@ -114,14 +114,14 @@ module Variant_type = struct
           ]
       }
     in
-    let (_the_group : Ppx_sexp_conv_lib.Sexp.Raw_grammar.group) =
+    let (_the_group : Ppx_sexp_conv_lib.Sexp.Private.Raw_grammar.group) =
       { gid            = Ppx_sexp_conv_lib.Lazy_group_id.create ()
       ; apply_implicit = [ int_sexp_grammar ]
       ; generic_group  = _the_generic_group
       ; origin         = "test_allow_extra_fields.ml.Variant_type"
       }
     in
-    let (t_sexp_grammar : Ppx_sexp_conv_lib.Sexp.Raw_grammar.t) =
+    let (t_sexp_grammar : Ppx_sexp_conv_lib.Sexp.Private.Raw_grammar.t) =
       Ref ("t", _the_group)
     in
     t_sexp_grammar

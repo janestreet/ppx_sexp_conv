@@ -2,8 +2,8 @@ open! Base
 open! Expect_test_helpers_base
 
 let test = function
-  | Sexp.Raw_grammar.Ref (_, group) -> print_endline group.origin
-  | Inline _                        -> print_cr [%here] (Atom "Unexpected [Inline]")
+  | Sexp.Private.Raw_grammar.Ref (_, group) -> print_endline group.origin
+  | Inline _                                -> print_cr [%here] (Atom "Unexpected [Inline]")
 ;;
 
 type t = unit [@@deriving sexp_grammar]

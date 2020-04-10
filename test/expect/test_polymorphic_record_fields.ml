@@ -14,8 +14,8 @@ module Records_we_can_handle = struct
 
   let _ = fun (_ : ('a, 'b) t) -> ()
 
-  let (t_sexp_grammar : Ppx_sexp_conv_lib.Sexp.Raw_grammar.t) =
-    let (_the_generic_group : Ppx_sexp_conv_lib.Sexp.Raw_grammar.generic_group) =
+  let (t_sexp_grammar : Ppx_sexp_conv_lib.Sexp.Private.Raw_grammar.t) =
+    let (_the_generic_group : Ppx_sexp_conv_lib.Sexp.Private.Raw_grammar.generic_group) =
       { implicit_vars = [ "int"; "option" ]
       ; ggid          = "\018M5`u:\186\223\136?/\182\187\135R\029"
       ; types         =
@@ -52,14 +52,14 @@ module Records_we_can_handle = struct
           ]
       }
     in
-    let (_the_group : Ppx_sexp_conv_lib.Sexp.Raw_grammar.group) =
+    let (_the_group : Ppx_sexp_conv_lib.Sexp.Private.Raw_grammar.group) =
       { gid            = Ppx_sexp_conv_lib.Lazy_group_id.create ()
       ; apply_implicit = [ int_sexp_grammar; option_sexp_grammar ]
       ; generic_group  = _the_generic_group
       ; origin         = "test_polymorphic_record_fields.ml.Records_we_can_handle"
       }
     in
-    let (t_sexp_grammar : Ppx_sexp_conv_lib.Sexp.Raw_grammar.t) =
+    let (t_sexp_grammar : Ppx_sexp_conv_lib.Sexp.Private.Raw_grammar.t) =
       Ref ("t", _the_group)
     in
     t_sexp_grammar
@@ -75,8 +75,8 @@ module Impossible_record = struct
 
   let _ = fun (_ : t) -> ()
 
-  let (t_sexp_grammar : Ppx_sexp_conv_lib.Sexp.Raw_grammar.t) =
-    let (_the_generic_group : Ppx_sexp_conv_lib.Sexp.Raw_grammar.generic_group) =
+  let (t_sexp_grammar : Ppx_sexp_conv_lib.Sexp.Private.Raw_grammar.t) =
+    let (_the_generic_group : Ppx_sexp_conv_lib.Sexp.Private.Raw_grammar.generic_group) =
       { implicit_vars = []
       ; ggid          = "&\224\178\151\b>\2179\022\203\130~i\190G\245"
       ; types         =
@@ -88,14 +88,14 @@ module Impossible_record = struct
           ]
       }
     in
-    let (_the_group : Ppx_sexp_conv_lib.Sexp.Raw_grammar.group) =
+    let (_the_group : Ppx_sexp_conv_lib.Sexp.Private.Raw_grammar.group) =
       { gid            = Ppx_sexp_conv_lib.Lazy_group_id.create ()
       ; apply_implicit = []
       ; generic_group  = _the_generic_group
       ; origin         = "test_polymorphic_record_fields.ml.Impossible_record"
       }
     in
-    let (t_sexp_grammar : Ppx_sexp_conv_lib.Sexp.Raw_grammar.t) =
+    let (t_sexp_grammar : Ppx_sexp_conv_lib.Sexp.Private.Raw_grammar.t) =
       Ref ("t", _the_group)
     in
     t_sexp_grammar
@@ -114,8 +114,8 @@ module Inline_record = struct
 
   let _ = fun (_ : 'a t) -> ()
 
-  let (t_sexp_grammar : Ppx_sexp_conv_lib.Sexp.Raw_grammar.t) =
-    let (_the_generic_group : Ppx_sexp_conv_lib.Sexp.Raw_grammar.generic_group) =
+  let (t_sexp_grammar : Ppx_sexp_conv_lib.Sexp.Private.Raw_grammar.t) =
+    let (_the_generic_group : Ppx_sexp_conv_lib.Sexp.Private.Raw_grammar.generic_group) =
       { implicit_vars = []
       ; ggid          = "\217\0037(\136\214}@\029 \130x\242\146\137\179"
       ; types         =
@@ -150,14 +150,14 @@ module Inline_record = struct
           ]
       }
     in
-    let (_the_group : Ppx_sexp_conv_lib.Sexp.Raw_grammar.group) =
+    let (_the_group : Ppx_sexp_conv_lib.Sexp.Private.Raw_grammar.group) =
       { gid            = Ppx_sexp_conv_lib.Lazy_group_id.create ()
       ; apply_implicit = []
       ; generic_group  = _the_generic_group
       ; origin         = "test_polymorphic_record_fields.ml.Inline_record"
       }
     in
-    let (t_sexp_grammar : Ppx_sexp_conv_lib.Sexp.Raw_grammar.t) =
+    let (t_sexp_grammar : Ppx_sexp_conv_lib.Sexp.Private.Raw_grammar.t) =
       Ref ("t", _the_group)
     in
     t_sexp_grammar

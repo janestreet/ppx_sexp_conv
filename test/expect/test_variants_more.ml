@@ -7,8 +7,8 @@ module Nested_inside_variant = struct
 
   let _ = fun (_ : t) -> ()
 
-  let (t_sexp_grammar : Ppx_sexp_conv_lib.Sexp.Raw_grammar.t) =
-    let (_the_generic_group : Ppx_sexp_conv_lib.Sexp.Raw_grammar.generic_group) =
+  let (t_sexp_grammar : Ppx_sexp_conv_lib.Sexp.Private.Raw_grammar.t) =
+    let (_the_generic_group : Ppx_sexp_conv_lib.Sexp.Private.Raw_grammar.generic_group) =
       { implicit_vars = [ "int" ]
       ; ggid          = "Z\241\230\155\202\128I6<#U\238\187\226\131,"
       ; types         =
@@ -28,14 +28,14 @@ module Nested_inside_variant = struct
           ]
       }
     in
-    let (_the_group : Ppx_sexp_conv_lib.Sexp.Raw_grammar.group) =
+    let (_the_group : Ppx_sexp_conv_lib.Sexp.Private.Raw_grammar.group) =
       { gid            = Ppx_sexp_conv_lib.Lazy_group_id.create ()
       ; apply_implicit = [ int_sexp_grammar ]
       ; generic_group  = _the_generic_group
       ; origin         = "test_variants_more.ml.Nested_inside_variant"
       }
     in
-    let (t_sexp_grammar : Ppx_sexp_conv_lib.Sexp.Raw_grammar.t) =
+    let (t_sexp_grammar : Ppx_sexp_conv_lib.Sexp.Private.Raw_grammar.t) =
       Ref ("t", _the_group)
     in
     t_sexp_grammar
@@ -51,8 +51,8 @@ module Nested_inside_record = struct
 
   let _ = fun (_ : t) -> ()
 
-  let (t_sexp_grammar : Ppx_sexp_conv_lib.Sexp.Raw_grammar.t) =
-    let (_the_generic_group : Ppx_sexp_conv_lib.Sexp.Raw_grammar.generic_group) =
+  let (t_sexp_grammar : Ppx_sexp_conv_lib.Sexp.Private.Raw_grammar.t) =
+    let (_the_generic_group : Ppx_sexp_conv_lib.Sexp.Private.Raw_grammar.generic_group) =
       { implicit_vars = [ "int" ]
       ; ggid          = "\001\215\152\002\244\149\139\179d\bwc\181\223W\187"
       ; types         =
@@ -75,14 +75,14 @@ module Nested_inside_record = struct
           ]
       }
     in
-    let (_the_group : Ppx_sexp_conv_lib.Sexp.Raw_grammar.group) =
+    let (_the_group : Ppx_sexp_conv_lib.Sexp.Private.Raw_grammar.group) =
       { gid            = Ppx_sexp_conv_lib.Lazy_group_id.create ()
       ; apply_implicit = [ int_sexp_grammar ]
       ; generic_group  = _the_generic_group
       ; origin         = "test_variants_more.ml.Nested_inside_record"
       }
     in
-    let (t_sexp_grammar : Ppx_sexp_conv_lib.Sexp.Raw_grammar.t) =
+    let (t_sexp_grammar : Ppx_sexp_conv_lib.Sexp.Private.Raw_grammar.t) =
       Ref ("t", _the_group)
     in
     t_sexp_grammar
