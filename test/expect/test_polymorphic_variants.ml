@@ -92,7 +92,7 @@ module With_arguments = struct
 
   [@@@end]
 
-  open Expect_test_helpers_kernel
+  open Expect_test_helpers_core
 
   let%expect_test _ =
     print_s (With_sexp.sexp_of_t (`A (1, 2)));
@@ -161,7 +161,7 @@ module Sexp_list = struct
 
   let (T : (With_sexp.t, t) Type_equal.t) = T
 
-  open Expect_test_helpers_kernel
+  open Expect_test_helpers_core
 
   let%expect_test _ =
     print_s (With_sexp.sexp_of_t (`Int 1));

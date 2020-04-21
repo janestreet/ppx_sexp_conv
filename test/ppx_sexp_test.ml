@@ -54,6 +54,44 @@ module Records = struct
     assert (t_of_sexp sexp = t);
     assert (sexp_of_t t = sexp);
   ;;
+
+  let%expect_test _ =
+    let sexp = Sexplib.Sexp.of_string "((a)(b ()))" in
+    Expect_test_helpers_core.show_raise (fun () -> t_of_sexp sexp);
+    [%expect {|
+      (raised (
+        Of_sexp_error
+        "ppx_sexp_test.ml.Records.t_of_sexp: record conversion: only pairs expected, their first element must be an atom"
+        (invalid_sexp ((a) (b ()))))) |}]
+
+  let%expect_test _ =
+    let sexp = Sexplib.Sexp.of_string "((a 1)(a))" in
+    Expect_test_helpers_core.show_raise (fun () -> t_of_sexp sexp);
+    [%expect {|
+      (raised (
+        Of_sexp_error
+        "ppx_sexp_test.ml.Records.t_of_sexp: duplicate fields: a"
+        (invalid_sexp ((a 1) (a))))) |}]
+
+
+  let%expect_test _ =
+    let sexp = Sexplib.Sexp.of_string "((a 3 4))" in
+    Expect_test_helpers_core.show_raise (fun () -> t_of_sexp sexp);
+    [%expect {|
+      (raised (
+        Of_sexp_error
+        "ppx_sexp_test.ml.Records.t_of_sexp: record conversion: only pairs expected, their first element must be an atom"
+        (invalid_sexp (a 3 4)))) |}]
+
+  let%expect_test _ =
+    let sexp = Sexplib.Sexp.of_string "((c 3))" in
+    Expect_test_helpers_core.show_raise (fun () -> t_of_sexp sexp);
+    [%expect {|
+      (raised (
+        Of_sexp_error
+        "ppx_sexp_test.ml.Records.t_of_sexp: extra fields: c"
+        (invalid_sexp ((c 3))))) |}]
+
 end
 
 module Inline_records = struct
@@ -318,7 +356,7 @@ end
 module Drop_default = struct
 
   open! Base
-  open Expect_test_helpers_kernel
+  open Expect_test_helpers_core
 
   type t = {
     a : int;
@@ -637,6 +675,21 @@ module Boolean = struct
   let t = { no_arg = true }
   let%test _ = t_of_sexp sexp = t
   let%test _ = sexp_of_t t = sexp
+
+  type t_allow_extra_fields = { no_arg : bool [@sexp.bool] }
+  [@@deriving sexp, sexp_grammar][@@sexp.allow_extra_fields]
+
+  let%expect_test _ =
+    Expect_test_helpers_core.require_does_raise ~cr:CR_soon
+      [%here] (fun () ->
+        let r = t_allow_extra_fields_of_sexp (Sexplib.Sexp.of_string "((no_arg true))") in
+        print_endline (Bool.to_string r.no_arg)
+      );
+    [%expect {|
+      (Of_sexp_error
+       "ppx_sexp_test.ml.Boolean.t_allow_extra_fields_of_sexp: record conversion: a [sexp.bool] field was given a payload."
+       (invalid_sexp ((no_arg true)))) |}]
+
 end
 
 module Inline = struct
@@ -772,6 +825,14 @@ module Allow_extra_fields = struct
     let%test _ = t2_of_sexp sexp = t2_of_sexp sexp_extra
     let%test _ = t1_of_sexp sexp = t2_of_sexp sexp
     let%test _ = should_raise t1_of_sexp sexp_extra
+
+    let%expect_test _ =
+      Expect_test_helpers_core.require_does_raise ~cr:CR_soon
+        [%here] (fun () -> t2_of_sexp (Sexplib.Sexp.of_string "((a 1)(a))"));
+      [%expect {|
+        (Of_sexp_error
+         "ppx_sexp_test.ml.Allow_extra_fields.M1.t2_of_sexp: duplicate fields: a"
+         (invalid_sexp ((a 1) (a)))) |}]
   end
   module M2 = struct
     type t1 =

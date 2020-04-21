@@ -1244,24 +1244,29 @@ module Str_generate_of_sexp = struct
 
   (* Generate code for extracting record fields *)
   let mk_extract_fields ~typevar_handling ~allow_extra_fields (loc,flds) =
-    let rec loop inits no_args args = function
-      | [] -> inits,no_args,args
+    let rec loop inits cases = function
+      | [] -> inits,cases
       | ld :: more_flds ->
         let loc = ld.pld_name.loc in
         let nm = ld.pld_name.txt in
         match Attrs.Record_field_handler.Of_sexp.create ~loc ld, ld.pld_type with
         | Some `sexp_bool, _ ->
           let inits = [%expr false] :: inits in
-          let no_args =
+          let cases =
             (pstring ~loc nm -->
              [%expr
                if ! [%e evar ~loc (nm ^ "_field")] then
                  duplicates := ( field_name :: !duplicates )
-               else [%e evar ~loc (nm ^ "_field")] := true
+               else
+                 (match _field_sexps with
+                  | [] ->
+                    [%e evar ~loc (nm ^ "_field")] := true
+                  | _ :: _ ->
+                    Ppx_sexp_conv_lib.Conv_error.record_sexp_bool_with_payload _tp_loc sexp)
              ]
-            ) :: no_args
+            ) :: cases
           in
-          loop inits no_args args more_flds
+          loop inits cases more_flds
         | Some (`sexp_option tp), _
         | (None
           | Some (`default _
@@ -1274,18 +1279,19 @@ module Str_generate_of_sexp = struct
             Fun_or_match.unroll ~loc [%expr  _field_sexp ]
               (type_of_sexp ~typevar_handling tp)
           in
-          let args =
+          let cases =
             (pstring ~loc nm -->
              [%expr
                match ! [%e evar ~loc (nm ^ "_field")] with
                | Ppx_sexp_conv_lib.Option.None ->
+                 let _field_sexp = _field_sexp () in
                  let fvalue = [%e unrolled] in
                  [%e evar ~loc (nm ^ "_field")] := Ppx_sexp_conv_lib.Option.Some fvalue
                | Ppx_sexp_conv_lib.Option.Some _ ->
                  duplicates := (field_name :: ! duplicates) ]
-            ) :: args
+            ) :: cases
           in
-          loop inits no_args args more_flds
+          loop inits cases more_flds
     in
     let handle_extra =
       [ [%pat? _] -->
@@ -1298,7 +1304,7 @@ module Str_generate_of_sexp = struct
             else ()]
       ]
     in
-    loop [] handle_extra handle_extra (List.rev flds)
+    loop [] handle_extra (List.rev flds)
 
   (* Generate code for handling the result of matching record fields *)
   let mk_handle_record_match_result ~typevar_handling has_poly (loc,flds) ~wrap_expr =
@@ -1402,7 +1408,7 @@ module Str_generate_of_sexp = struct
 
   (* Generate code for converting record fields *)
   let mk_cnv_fields ~typevar_handling ~allow_extra_fields has_poly (loc,flds) ~wrap_expr =
-    let expr_ref_inits, mc_no_args_fields, mc_fields_with_args =
+    let expr_ref_inits, mc_fields =
       mk_extract_fields ~typevar_handling ~allow_extra_fields (loc,flds)
     in
     let field_refs =
@@ -1417,12 +1423,18 @@ module Str_generate_of_sexp = struct
         [%e pexp_function ~loc
               [ [%pat?
                        Ppx_sexp_conv_lib.Sexp.List
-                       [(Ppx_sexp_conv_lib.Sexp.Atom field_name); _field_sexp] ::
+                       ((Ppx_sexp_conv_lib.Sexp.Atom field_name) ::
+                        (([] | [ _ ]) as _field_sexps)) ::
                      tail] -->
-                [%expr [%e pexp_match ~loc [%expr field_name] mc_fields_with_args];
-                  iter tail]
-              ; [%pat? Ppx_sexp_conv_lib.Sexp.List [(Ppx_sexp_conv_lib.Sexp.Atom field_name)] :: tail] -->
-                [%expr [%e pexp_match ~loc [%expr field_name] mc_no_args_fields];
+                [%expr
+                  let _field_sexp () =
+                    ((match _field_sexps with
+                       | [ x ] -> x
+                       | [] ->
+                         Ppx_sexp_conv_lib.Conv_error.record_only_pairs_expected _tp_loc sexp
+                       | _ -> assert false))
+                  in
+                  [%e pexp_match ~loc [%expr field_name] mc_fields];
                   iter tail]
               ; [%pat? ((Ppx_sexp_conv_lib.Sexp.Atom _ | Ppx_sexp_conv_lib.Sexp.List _) as sexp) :: _] -->
                 [%expr Ppx_sexp_conv_lib.Conv_error.record_only_pairs_expected _tp_loc sexp]
