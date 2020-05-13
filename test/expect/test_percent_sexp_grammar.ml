@@ -8,7 +8,7 @@ let test raw_grammar =
 ;;
 
 let%expect_test "polymorphic" =
-  test [%sexp_grammar: 'k -> 'v -> ('k * 'v) list];
+  test [%sexp_grammar: < for_all : 'k 'v. ('k * 'v) list > ];
   [%expect
     {|
     ((generic_groups
@@ -109,4 +109,20 @@ let%expect_test "application of polymorphic type constructor" =
          (origin test_percent_sexp_grammar.ml)
          (apply_implicit ((Ref int 4) (Ref list 1)))))))
      (start (Ref dummy_type_name_from_sexp_grammar 6))) |}]
+;;
+
+let%expect_test "arrow type / original polymorphic type syntax" =
+  test [%sexp_grammar: 'k -> 'v -> ('k * 'v) list];
+  [%expect
+    {|
+    ((generic_groups
+      (("\221\197\"r.\180O2\197U\148\226\208,\131\182"
+        ((implicit_vars ())
+         (types
+          ((dummy_type_name_from_sexp_grammar (Grammar (Inline (Union ()))))))))))
+     (groups
+      ((7
+        ((generic_group "\221\197\"r.\180O2\197U\148\226\208,\131\182")
+         (origin test_percent_sexp_grammar.ml) (apply_implicit ())))))
+     (start (Ref dummy_type_name_from_sexp_grammar 7))) |}]
 ;;

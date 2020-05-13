@@ -78,18 +78,12 @@ It is possible to construct sexp grammars directly from type expressions, e.g.,
 The syntax for grammars of polymorphic types is nonstandard:
 
 #+BEGIN_SRC ocaml
-[%sexp_grammar: 'a -> 'b -> ('a, 'b) Either.t]
+[%sexp_grammar: < for_all : 'a 'b . ('a, 'b) Either.t > ]
 #+END_SRC
 
-We represent polymorphic types as arrow types because explicitly polymorphic
-variables are not allowed as the payload of extension nodes:
-
-#+BEGIN_SRC ocaml
-[%sexp_grammar: 'a 'b . ('a, 'b) Either.t]  (* Syntax error *)
-#+END_SRC
-
-Meanwhile, the grammar of functions is uninteresting, because they cannot be
-deserialized.
+We represent polymorphic types as object types because we cannot
+deserialize objects from sexps, and object method types are one of the
+few places we can use OCaml's syntax for explicit type variables.
 
 ** Conversion rules
 

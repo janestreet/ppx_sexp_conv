@@ -585,20 +585,25 @@ let create ~loc ~path rec_flag tds : t =
   { grammars; generic_group; group; loc; module_path = path }
 ;;
 
-let collect_arguments_of_arrow_type core_type =
-  let rec collect core_type acc =
-    match core_type.ptyp_desc with
-    | Ptyp_arrow (Nolabel, { ptyp_desc = Ptyp_var var_name; _ }, core_type) ->
-      collect core_type (var_name :: acc)
-    | _ -> List.rev acc, core_type
-  in
-  collect core_type []
+let collect_type_variables_of_polymorphic_grammar core_type =
+  match core_type with
+  | [%type: < for_all : [%t? { ptyp_desc = Ptyp_poly (variables, core_type); _ }] > ] ->
+    let var_names = List.map variables ~f:(fun { txt; loc = _ } -> txt) in
+    var_names, core_type
+  | { ptyp_desc = Ptyp_object _; _ } ->
+    not_supported
+      ~loc:core_type.ptyp_loc
+      "objects, except the syntax [%sexp_grammar: < for_all : 'a 'b . ... >] to \
+       generate grammars of polymorphic types"
+  | _ -> [], core_type
 ;;
 
 let singleton ~loc ~path core_type : t =
   let name = { loc; txt = "dummy_type_name_from_sexp_grammar" } in
   let params, core_type =
-    let type_variables, core_type = collect_arguments_of_arrow_type core_type in
+    let type_variables, core_type =
+      collect_type_variables_of_polymorphic_grammar core_type
+    in
     ( List.map type_variables ~f:(fun var_name -> ptyp_var ~loc var_name, Invariant)
     , core_type )
   in

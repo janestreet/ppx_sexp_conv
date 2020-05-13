@@ -188,3 +188,29 @@ Error: ppx_sexp_conv: [@sexp.list] is only allowed on type [_ list].
 Line _, characters _-_:
 Error: ppx_sexp_conv: [@sexp.list] is only allowed on type [_ list].
 |}]
+
+let (_ : _) = [%sexp_grammar: 'k -> 'v -> ('k * 'v) list]
+[%%expect{|
+|}]
+
+let (_ : _) = [%sexp_grammar: < for_all : 'k 'v . ('k * 'v) list > ]
+[%%expect{|
+|}]
+
+let (_ : _) = [%sexp_grammar: < other : 'k 'v . ('k * 'v) list > ]
+[%%expect{|
+Line _, characters _-_:
+Error: ppx_sexp_conv: sexp_grammar doesn't support objects, except the syntax [%sexp_grammar: < for_all : 'a 'b . ... >] to generate grammars of polymorphic types
+|}]
+
+type t = < for_all : 'k 'v . ('k * 'v) list >  [@@deriving sexp_grammar]
+[%%expect{|
+Line _, characters _-_:
+Error: ppx_sexp_conv: sexp_grammar doesn't support objects
+|}]
+
+type t = < other : 'k 'v . ('k * 'v) list >  [@@deriving sexp_grammar]
+[%%expect{|
+Line _, characters _-_:
+Error: ppx_sexp_conv: sexp_grammar doesn't support objects
+|}]

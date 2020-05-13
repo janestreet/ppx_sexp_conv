@@ -11,7 +11,7 @@ module Pair = struct
     type 'b t = A.t * 'b
   end
 
-  let m__t_sexp_grammar = [%sexp_grammar: a -> b -> (a, b) t]
+  let m__t_sexp_grammar = [%sexp_grammar: < for_all : 'a 'b. ('a, 'b) t > ]
 end
 
 type t = string Pair.M(Key).t [@@deriving_inline sexp_grammar]

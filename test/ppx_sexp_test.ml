@@ -787,7 +787,7 @@ module Applicative_functor_types = struct
           (_ : Sexp.t) : (k1, k2) t = assert false
 
     (* You would actually have to write this manually for functors. *)
-    let s__t_sexp_grammar = [%sexp_grammar: 'k1 -> 'k2 -> ('k1 * 'k2 ) list]
+    let s__t_sexp_grammar = [%sexp_grammar: < for_all : 'k1 'k2 . ('k1 * 'k2) list > ]
 
   end
   module Int = struct
@@ -859,3 +859,5 @@ module Default_values_and_polymorphism = struct
     }
   [@@deriving of_sexp]
 end
+
+let (_ : Sexplib.Sexp.Raw_grammar.t) = [%sexp_grammar: < for_all : 'k 'v . ('k * 'v) list > ]
