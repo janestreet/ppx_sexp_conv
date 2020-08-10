@@ -5,6 +5,11 @@ open! Sexp.Private.Raw_grammar
 module Var_name  = String
 module Type_name = String
 
+module Longident = struct
+  include Longident
+  include (val Comparator.make ~compare ~sexp_of_t)
+end
+
 let debug_s message values =
   Caml.prerr_endline (Sexp.to_string_hum (Sexp.message message values))
 ;;
@@ -214,8 +219,7 @@ end = struct
   let create rec_flag tds : t =
     Init
       { explicit =
-          List.map tds ~f:(fun td ->
-            td.ptype_name.txt, Explicit_type_variables.create td)
+          List.map tds ~f:(fun td -> td.ptype_name.txt, Explicit_type_variables.create td)
           |> Map.of_alist_exn (module Type_name)
       ; implicit = Map.empty (module Longident)
       ; rec_flag
@@ -413,8 +417,7 @@ let type_of_core_type env0 type_name ctype =
   let rec type_of_core_type env ctype =
     match Opaque.create ctype with
     | Opaque -> unsupported_builtin ~loc:ctype.ptyp_loc "opaque"
-    | Not_opaque { ptyp_desc; ptyp_loc = loc; ptyp_attributes = _; ptyp_loc_stack = _ }
-      ->
+    | Not_opaque { ptyp_desc; ptyp_loc = loc; ptyp_attributes = _; ptyp_loc_stack = _ } ->
       (match ptyp_desc with
        | Ptyp_any              ->
          (* For consistency with [%of_sexp: _] which treats [_] as unsatisfiable. *)
@@ -423,8 +426,7 @@ let type_of_core_type env0 type_name ctype =
        | Ptyp_arrow (_, _, _)  -> unsupported_builtin ~loc "fun"
        | Ptyp_tuple core_types ->
          List
-           (List.map core_types ~f:(fun core_type ->
-              One (type_of_core_type env core_type)))
+           (List.map core_types ~f:(fun core_type -> One (type_of_core_type env core_type)))
        | Ptyp_constr (ident, args) ->
          type_of_type_constructor
            ~loc
@@ -470,9 +472,7 @@ let record_type_of_label_declarations env type_name lds ~allow_extra_fields =
   { allow_extra_fields
   ; fields =
       List.map lds ~f:(fun ld ->
-        let { pld_name; pld_mutable = _; pld_type; pld_loc; pld_attributes = _ } =
-          ld
-        in
+        let { pld_name; pld_mutable = _; pld_type; pld_loc; pld_attributes = _ } = ld in
         let field =
           match Attrs.Record_field_handler.Of_sexp.create ~loc:pld_loc ld with
           | None ->
@@ -593,8 +593,8 @@ let collect_type_variables_of_polymorphic_grammar core_type =
   | { ptyp_desc = Ptyp_object _; _ } ->
     not_supported
       ~loc:core_type.ptyp_loc
-      "objects, except the syntax [%sexp_grammar: < for_all : 'a 'b . ... >] to \
-       generate grammars of polymorphic types"
+      "objects, except the syntax [%sexp_grammar: < for_all : 'a 'b . ... >] to generate \
+       grammars of polymorphic types"
   | _ -> [], core_type
 ;;
 
@@ -721,8 +721,7 @@ let to_pat_and_expr { grammars; generic_group; group; loc; module_path } =
         =
         [%e generic_group]
       in
-      let ([%p Pattern.the_group ~loc]
-           : Ppx_sexp_conv_lib.Sexp.Private.Raw_grammar.group)
+      let ([%p Pattern.the_group ~loc] : Ppx_sexp_conv_lib.Sexp.Private.Raw_grammar.group)
         =
         [%e group]
       in

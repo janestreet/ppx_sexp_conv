@@ -108,8 +108,8 @@ module Sexp_list = struct
     type t =
       [ `Int           of int
       | `List          of int list
-      | `Sexp_dot_list of int list[@sexp.list]
-      | `Sexp_list     of int sexp_list[@warning "-3"]
+      | `Sexp_dot_list of int list [@sexp.list]
+      | `Sexp_list     of int sexp_list [@warning "-3"]
       ]
     [@@deriving sexp]
   end
@@ -117,8 +117,8 @@ module Sexp_list = struct
   type t =
     [ `Int           of int
     | `List          of int list
-    | `Sexp_dot_list of int list[@sexp.list]
-    | `Sexp_list     of int sexp_list[@warning "-3"]
+    | `Sexp_dot_list of int list [@sexp.list]
+    | `Sexp_list     of int sexp_list [@warning "-3"]
     ]
   [@@deriving_inline sexp_grammar]
 

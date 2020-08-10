@@ -140,8 +140,7 @@ module Inline_record = struct
                           , [ Fields
                                 { allow_extra_fields = false
                                 ; fields             =
-                                    [ ( "a"
-                                      , { optional = false; args = [ One (Union []) ] } )
+                                    [ "a", { optional = false; args = [ One (Union []) ] }
                                     ]
                                 }
                             ] )

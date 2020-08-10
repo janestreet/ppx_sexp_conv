@@ -18,8 +18,8 @@ module Nullary = struct
           [ ( "t"
             , Explicit_bind
                 ( [ "a" ]
-                , Variant { ignore_capitalization = true; alts = [ "A", []; "B", [] ] }
-                ) )
+                , Variant { ignore_capitalization = true; alts = [ "A", []; "B", [] ] } )
+            )
           ]
       }
     in

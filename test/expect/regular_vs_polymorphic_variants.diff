@@ -10,8 +10,10 @@
 -|      ; ggid          = "\239\242\007o\016\222\178\133\218\153\146w\129\255\167\208"
 +|      ; ggid          = "\133a\241\019; \198\184U\181\220#\191\190\200\b"
 @|============================================================
--|                , Variant { ignore_capitalization = true; alts = [ "A", []; "B", [] ] }
+-|                , Variant { ignore_capitalization = true; alts = [ "A", []; "B", [] ] } )
+-|            )
 +|                , Variant { ignore_capitalization = false; alts = [ "A", []; "B", [] ] }
++|                ) )
 @|============================================================
 -|      ; origin         = "test_regular_variants.ml.Nullary"
 +|      ; origin         = "test_polymorphic_variants.ml.Nullary"
@@ -56,8 +58,8 @@
 -|      | Sexp_list     of int sexp_list [@warning "-3"]
 +|      [ `Int           of int
 +|      | `List          of int list
-+|      | `Sexp_dot_list of int list[@sexp.list]
-+|      | `Sexp_list     of int sexp_list[@warning "-3"]
++|      | `Sexp_dot_list of int list [@sexp.list]
++|      | `Sexp_list     of int sexp_list [@warning "-3"]
 +|      ]
 @|============================================================
 -|  type t = With_sexp.t =
@@ -68,8 +70,8 @@
 +|  type t =
 +|    [ `Int           of int
 +|    | `List          of int list
-+|    | `Sexp_dot_list of int list[@sexp.list]
-+|    | `Sexp_list     of int sexp_list[@warning "-3"]
++|    | `Sexp_dot_list of int list [@sexp.list]
++|    | `Sexp_list     of int sexp_list [@warning "-3"]
 +|    ]
 @|============================================================
 -|      ; ggid          = "\219\014J\247\148Iq\193\248\rk\216J\012\200\152"
