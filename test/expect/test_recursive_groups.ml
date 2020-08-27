@@ -14,9 +14,8 @@ module One_type = struct
       ; types         =
           [ ( "t"
             , Variant
-                { ignore_capitalization = true
-                ; alts                  = [ "T", [ One (Implicit_var 0) ] ]
-                } )
+                { ignore_capitalization = true; alts = [ "T", [ One (Implicit_var 0) ] ] }
+            )
           ]
       }
     in

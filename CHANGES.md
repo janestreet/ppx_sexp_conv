@@ -1,3 +1,7 @@
+## v0.14.1
+
+- Depend on ppxlib >= v0.15.0.
+
 ## v0.11
 
 - Depend on ppxlib instead of (now deprecated) ppx\_core, ppx\_driver and
