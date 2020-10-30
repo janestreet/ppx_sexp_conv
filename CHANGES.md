@@ -1,3 +1,7 @@
+## v0.14.2
+
+- Upgrade to ppxlib 0.18.0
+
 ## v0.14.1
 
 - Depend on ppxlib >= v0.15.0.

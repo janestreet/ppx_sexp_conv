@@ -28,7 +28,7 @@ type atom      = Atom.t
 type var_name  = Sexp.Private.Raw_grammar.var_name
 type type_name = Sexp.Private.Raw_grammar.type_name
 
-let lift_string ~loc s = pexp_constant ~loc (Pconst_string (s, None))
+let lift_string ~loc s = pexp_constant ~loc (Pconst_string (s, loc, None))
 let lift_var_name      = lift_string
 let lift_type_name     = lift_string
 
