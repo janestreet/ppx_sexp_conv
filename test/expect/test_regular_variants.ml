@@ -12,11 +12,11 @@ module Nullary = struct
 
   let (t_sexp_grammar : Ppx_sexp_conv_lib.Sexp.Private.Raw_grammar.t) =
     let (_the_generic_group : Ppx_sexp_conv_lib.Sexp.Private.Raw_grammar.generic_group) =
-      { implicit_vars = []
-      ; ggid          = "\239\242\007o\016\222\178\133\218\153\146w\129\255\167\208"
-      ; types         =
+      { tycon_names = []
+      ; ggid = "\239\242\007o\016\222\178\133\218\153\146w\129\255\167\208"
+      ; types =
           [ ( "t"
-            , Explicit_bind
+            , Tyvar_parameterize
                 ( [ "a" ]
                 , Variant { ignore_capitalization = true; alts = [ "A", []; "B", [] ] } )
             )
@@ -24,10 +24,10 @@ module Nullary = struct
       }
     in
     let (_the_group : Ppx_sexp_conv_lib.Sexp.Private.Raw_grammar.group) =
-      { gid            = Ppx_sexp_conv_lib.Lazy_group_id.create ()
-      ; apply_implicit = []
-      ; generic_group  = _the_generic_group
-      ; origin         = "test_regular_variants.ml.Nullary"
+      { gid = Ppx_sexp_conv_lib.Lazy_group_id.create ()
+      ; instantiate_tycons = []
+      ; generic_group = _the_generic_group
+      ; origin = "test_regular_variants.ml.Nullary"
       }
     in
     let (t_sexp_grammar : Ppx_sexp_conv_lib.Sexp.Private.Raw_grammar.t) =
@@ -58,25 +58,25 @@ module With_arguments = struct
 
   let (t_sexp_grammar : Ppx_sexp_conv_lib.Sexp.Private.Raw_grammar.t) =
     let (_the_generic_group : Ppx_sexp_conv_lib.Sexp.Private.Raw_grammar.generic_group) =
-      { implicit_vars = [ "int"; "string" ]
-      ; ggid          = "B\127\229(\029\022\255\"\167ab\178F\134\201\234"
-      ; types         =
+      { tycon_names = [ "int"; "string" ]
+      ; ggid = "B\127\229(\029\022\255\"\167ab\178F\134\201\234"
+      ; types =
           [ ( "t"
             , Variant
                 { ignore_capitalization = true
-                ; alts                  =
-                    [ "A", [ One (Implicit_var 0); One (Implicit_var 0) ]
-                    ; "B", [ One (Implicit_var 1) ]
+                ; alts =
+                    [ "A", [ One (Tycon_index 0); One (Tycon_index 0) ]
+                    ; "B", [ One (Tycon_index 1) ]
                     ]
                 } )
           ]
       }
     in
     let (_the_group : Ppx_sexp_conv_lib.Sexp.Private.Raw_grammar.group) =
-      { gid            = Ppx_sexp_conv_lib.Lazy_group_id.create ()
-      ; apply_implicit = [ int_sexp_grammar; string_sexp_grammar ]
-      ; generic_group  = _the_generic_group
-      ; origin         = "test_regular_variants.ml.With_arguments"
+      { gid = Ppx_sexp_conv_lib.Lazy_group_id.create ()
+      ; instantiate_tycons = [ int_sexp_grammar; string_sexp_grammar ]
+      ; generic_group = _the_generic_group
+      ; origin = "test_regular_variants.ml.With_arguments"
       }
     in
     let (t_sexp_grammar : Ppx_sexp_conv_lib.Sexp.Private.Raw_grammar.t) =
@@ -103,45 +103,46 @@ end
 module Sexp_list = struct
   module With_sexp = struct
     type t =
-      | Int           of int
-      | List          of int list
+      | Int of int
+      | List of int list
       | Sexp_dot_list of int list [@sexp.list]
-      | Sexp_list     of int sexp_list [@warning "-3"]
+      | Sexp_list of int sexp_list [@warning "-3"]
     [@@deriving sexp]
   end
 
   type t = With_sexp.t =
-    | Int           of int
-    | List          of int list
+    | Int of int
+    | List of int list
     | Sexp_dot_list of int list [@sexp.list]
-    | Sexp_list     of int sexp_list [@warning "-3"]
+    | Sexp_list of int sexp_list [@warning "-3"]
   [@@deriving_inline sexp_grammar]
 
   let _ = fun (_ : t) -> ()
 
   let (t_sexp_grammar : Ppx_sexp_conv_lib.Sexp.Private.Raw_grammar.t) =
     let (_the_generic_group : Ppx_sexp_conv_lib.Sexp.Private.Raw_grammar.generic_group) =
-      { implicit_vars = [ "int"; "list" ]
-      ; ggid          = "\219\014J\247\148Iq\193\248\rk\216J\012\200\152"
-      ; types         =
+      { tycon_names = [ "int"; "list" ]
+      ; ggid = "\219\014J\247\148Iq\193\248\rk\216J\012\200\152"
+      ; types =
           [ ( "t"
             , Variant
                 { ignore_capitalization = true
-                ; alts                  =
-                    [ "Int"          , [ One (Implicit_var 0) ]
-                    ; "List"         , [ One (Apply (Implicit_var 1, [ Implicit_var 0 ])) ]
-                    ; "Sexp_dot_list", [ Many (Implicit_var 0) ]
-                    ; "Sexp_list"    , [ Many (Implicit_var 0) ]
+                ; alts =
+                    [ "Int", [ One (Tycon_index 0) ]
+                    ; ( "List"
+                      , [ One (Tyvar_instantiate (Tycon_index 1, [ Tycon_index 0 ])) ] )
+                    ; "Sexp_dot_list", [ Many (Tycon_index 0) ]
+                    ; "Sexp_list", [ Many (Tycon_index 0) ]
                     ]
                 } )
           ]
       }
     in
     let (_the_group : Ppx_sexp_conv_lib.Sexp.Private.Raw_grammar.group) =
-      { gid            = Ppx_sexp_conv_lib.Lazy_group_id.create ()
-      ; apply_implicit = [ int_sexp_grammar; list_sexp_grammar ]
-      ; generic_group  = _the_generic_group
-      ; origin         = "test_regular_variants.ml.Sexp_list"
+      { gid = Ppx_sexp_conv_lib.Lazy_group_id.create ()
+      ; instantiate_tycons = [ int_sexp_grammar; list_sexp_grammar ]
+      ; generic_group = _the_generic_group
+      ; origin = "test_regular_variants.ml.Sexp_list"
       }
     in
     let (t_sexp_grammar : Ppx_sexp_conv_lib.Sexp.Private.Raw_grammar.t) =
@@ -161,9 +162,9 @@ module Sexp_list = struct
   let%expect_test _ =
     print_s (With_sexp.sexp_of_t (Int 1));
     List.iter [ []; [ 1 ]; [ 1; 2 ] ] ~f:(fun l ->
-      print_s (With_sexp.sexp_of_t (List          l ));
-      print_s (With_sexp.sexp_of_t (Sexp_dot_list l ));
-      print_s (With_sexp.sexp_of_t (Sexp_list     l)));
+      print_s (With_sexp.sexp_of_t (List l));
+      print_s (With_sexp.sexp_of_t (Sexp_dot_list l));
+      print_s (With_sexp.sexp_of_t (Sexp_list l)));
     [%expect
       {|
       (Int 1)

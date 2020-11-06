@@ -2,140 +2,166 @@ open! Base
 open! Ppxlib
 
 let default =
-  Attribute.declare "sexp.default"
+  Attribute.declare
+    "sexp.default"
     Attribute.Context.label_declaration
     Ast_pattern.(pstr (pstr_eval __ nil ^:: nil))
     (fun x -> x)
+;;
 
 let drop_default =
-  Attribute.declare "sexp.sexp_drop_default"
+  Attribute.declare
+    "sexp.sexp_drop_default"
     Attribute.Context.label_declaration
     Ast_pattern.(pstr (alt_option (pstr_eval __ nil ^:: nil) nil))
     (fun x -> x)
+;;
 
 let drop_default_equal =
-  Attribute.declare "sexp.@sexp_drop_default.equal"
+  Attribute.declare
+    "sexp.@sexp_drop_default.equal"
     Attribute.Context.label_declaration
     Ast_pattern.(pstr nil)
     ()
+;;
 
 let drop_default_compare =
-  Attribute.declare "sexp.@sexp_drop_default.compare"
+  Attribute.declare
+    "sexp.@sexp_drop_default.compare"
     Attribute.Context.label_declaration
     Ast_pattern.(pstr nil)
     ()
+;;
 
 let drop_default_sexp =
-  Attribute.declare "sexp.@sexp_drop_default.sexp"
+  Attribute.declare
+    "sexp.@sexp_drop_default.sexp"
     Attribute.Context.label_declaration
     Ast_pattern.(pstr nil)
     ()
+;;
 
 let drop_if =
-  Attribute.declare "sexp.sexp_drop_if"
+  Attribute.declare
+    "sexp.sexp_drop_if"
     Attribute.Context.label_declaration
     Ast_pattern.(pstr (pstr_eval __ nil ^:: nil))
     (fun x -> x)
+;;
 
 let opaque =
-  Attribute.declare "sexp.opaque"
-    Attribute.Context.core_type
-    Ast_pattern.(pstr nil)
-    ()
+  Attribute.declare "sexp.opaque" Attribute.Context.core_type Ast_pattern.(pstr nil) ()
+;;
 
 let omit_nil =
-  Attribute.declare "sexp.omit_nil"
+  Attribute.declare
+    "sexp.omit_nil"
     Attribute.Context.label_declaration
     Ast_pattern.(pstr nil)
     ()
+;;
 
 let option =
-  Attribute.declare "sexp.option"
+  Attribute.declare
+    "sexp.option"
     Attribute.Context.label_declaration
     Ast_pattern.(pstr nil)
     ()
+;;
 
 let list =
-  Attribute.declare "sexp.list"
+  Attribute.declare
+    "sexp.list"
     Attribute.Context.label_declaration
     Ast_pattern.(pstr nil)
     ()
+;;
 
 let array =
-  Attribute.declare "sexp.array"
+  Attribute.declare
+    "sexp.array"
     Attribute.Context.label_declaration
     Ast_pattern.(pstr nil)
     ()
+;;
 
 let bool =
-  Attribute.declare "sexp.bool"
+  Attribute.declare
+    "sexp.bool"
     Attribute.Context.label_declaration
     Ast_pattern.(pstr nil)
     ()
+;;
 
 let list_variant =
-  Attribute.declare "sexp.list"
+  Attribute.declare
+    "sexp.list"
     Attribute.Context.constructor_declaration
     Ast_pattern.(pstr nil)
     ()
+;;
 
 let list_exception =
-  Attribute.declare "sexp.list"
-    Attribute.Context.type_exception
-    Ast_pattern.(pstr nil)
-    ()
+  Attribute.declare "sexp.list" Attribute.Context.type_exception Ast_pattern.(pstr nil) ()
+;;
 
 let list_poly =
-  Attribute.declare "sexp.list"
-    Attribute.Context.rtag
-    Ast_pattern.(pstr nil)
-    ()
+  Attribute.declare "sexp.list" Attribute.Context.rtag Ast_pattern.(pstr nil) ()
+;;
 
 let allow_extra_fields_td =
-  Attribute.declare "sexp.allow_extra_fields"
+  Attribute.declare
+    "sexp.allow_extra_fields"
     Attribute.Context.type_declaration
     Ast_pattern.(pstr nil)
     ()
+;;
 
 let allow_extra_fields_cd =
-  Attribute.declare "sexp.allow_extra_fields"
+  Attribute.declare
+    "sexp.allow_extra_fields"
     Attribute.Context.constructor_declaration
     Ast_pattern.(pstr nil)
     ()
-
+;;
 
 let invalid_attribute ~loc attr description =
-  Location.raise_errorf ~loc
+  Location.raise_errorf
+    ~loc
     "ppx_sexp_conv: [@%s] is only allowed on type [%s]."
     (Attribute.name attr)
     description
+;;
 
 let fail_if_allow_extra_field_cd ~loc x =
   if Option.is_some (Attribute.get allow_extra_fields_cd x)
   then
-    Location.raise_errorf ~loc
-      "ppx_sexp_conv: [@@allow_extra_fields] is only allowed on \
-       inline records."
+    Location.raise_errorf
+      ~loc
+      "ppx_sexp_conv: [@@allow_extra_fields] is only allowed on inline records."
+;;
 
 let fail_if_allow_extra_field_td ~loc x =
   if Option.is_some (Attribute.get allow_extra_fields_td x)
-  then
+  then (
     match x.ptype_kind with
     | Ptype_variant cds
-      when List.exists cds
-             ~f:(fun cd -> match cd.pcd_args with Pcstr_record _ -> true | _ -> false)
-      ->
-      Location.raise_errorf ~loc
-        "ppx_sexp_conv: [@@@@allow_extra_fields] only works on records. \
-         For inline records, do: type t = A of { a : int } [@@allow_extra_fields] | B \
-         [@@@@deriving sexp]"
+      when List.exists cds ~f:(fun cd ->
+        match cd.pcd_args with
+        | Pcstr_record _ -> true
+        | _ -> false) ->
+      Location.raise_errorf
+        ~loc
+        "ppx_sexp_conv: [@@@@allow_extra_fields] only works on records. For inline \
+         records, do: type t = A of { a : int } [@@allow_extra_fields] | B [@@@@deriving \
+         sexp]"
     | _ ->
-      Location.raise_errorf ~loc
-        "ppx_sexp_conv: [@@@@allow_extra_fields] is only allowed on \
-         records."
+      Location.raise_errorf
+        ~loc
+        "ppx_sexp_conv: [@@@@allow_extra_fields] is only allowed on records.")
+;;
 
 module Record_field_handler = struct
-
   type common =
     [ `omit_nil
     | `sexp_array of core_type
@@ -153,10 +179,10 @@ module Record_field_handler = struct
       [ get_attribute omit_nil ~f:(fun () -> `omit_nil)
       ; (fun ld ->
            match ld.pld_type with
-           | [%type: sexp_bool ] -> Some (`sexp_bool, "sexp_bool")
-           | [%type: [%t? ty] sexp_option ] -> Some (`sexp_option ty, "sexp_option")
-           | [%type: [%t? ty] sexp_list ] -> Some (`sexp_list ty, "sexp_list")
-           | [%type: [%t? ty] sexp_array ] -> Some (`sexp_array ty, "sexp_array")
+           | [%type: sexp_bool] -> Some (`sexp_bool, "sexp_bool")
+           | [%type: [%t? ty] sexp_option] -> Some (`sexp_option ty, "sexp_option")
+           | [%type: [%t? ty] sexp_list] -> Some (`sexp_list ty, "sexp_list")
+           | [%type: [%t? ty] sexp_array] -> Some (`sexp_array ty, "sexp_array")
            | ty when Option.is_some (Attribute.get bool ld) ->
              (match ty with
               | [%type: bool] -> Some (`sexp_bool, "[@sexp.bool]")
@@ -180,7 +206,9 @@ module Record_field_handler = struct
     | [] -> None
     | [ (v, _) ] -> Some v
     | _ :: _ :: _ as attributes ->
-      Location.raise_errorf ~loc "The following elements are mutually exclusive: %s"
+      Location.raise_errorf
+        ~loc
+        "The following elements are mutually exclusive: %s"
         (String.concat ~sep:" " (List.map attributes ~f:snd))
   ;;
 
@@ -192,6 +220,7 @@ module Record_field_handler = struct
 
     let create ~loc ld =
       create ~loc [ get_attribute default ~f:(fun default -> `default default) ] ld
+    ;;
   end
 
   module Sexp_of = struct
@@ -209,14 +238,12 @@ module Record_field_handler = struct
             | None -> `drop_default `no_arg
             | Some e -> `drop_default (`func e))
         ; get_attribute drop_default_equal ~f:(fun () -> `drop_default `equal)
-        ; get_attribute drop_default_compare
-            ~f:(fun () -> `drop_default `compare)
-        ; get_attribute drop_default_sexp
-            ~f:(fun () -> `drop_default `sexp)
+        ; get_attribute drop_default_compare ~f:(fun () -> `drop_default `compare)
+        ; get_attribute drop_default_sexp ~f:(fun () -> `drop_default `sexp)
         ; get_attribute drop_if ~f:(fun x -> `drop_if x)
         ]
         ld
-    |> Option.value ~default:`keep
-
+      |> Option.value ~default:`keep
+    ;;
   end
 end

@@ -13,31 +13,36 @@ let%expect_test "polymorphic" =
     {|
     ((generic_groups
       ((6a84293b8771489e87de480107049eda
-        ((implicit_vars (list))
+        ((tycon_names (list))
          (types
-          ((t (Explicit_bind (a) (Apply (Implicit_var 0) ((Explicit_var 0)))))))))
+          ((t
+            (Tyvar_parameterize (a)
+             (Tyvar_instantiate (Tycon_index 0) ((Tyvar_index 0)))))))))
        (90163c5a0ec60eaf19da04c7fc7e1f3d
-        ((implicit_vars (List.t))
+        ((tycon_names (List.t))
          (types
-          ((list (Explicit_bind (a) (Apply (Implicit_var 0) ((Explicit_var 0)))))))))
+          ((list
+            (Tyvar_parameterize (a)
+             (Tyvar_instantiate (Tycon_index 0) ((Tyvar_index 0)))))))))
        (c235a370b5135a2c190baecfd2bd77e7
-        ((implicit_vars (list))
+        ((tycon_names (list))
          (types
           ((dummy_type_name_from_sexp_grammar
-            (Explicit_bind (k v)
-             (Apply (Implicit_var 0)
-              ((List ((One (Explicit_var 0)) (One (Explicit_var 1))))))))))))))
+            (Tyvar_parameterize (k v)
+             (Tyvar_instantiate (Tycon_index 0)
+              ((List ((One (Tyvar_index 0)) (One (Tyvar_index 1))))))))))))))
      (groups
       ((0
         ((generic_group 6a84293b8771489e87de480107049eda) (origin list.ml.T)
-         (apply_implicit
-          ((Inline (Explicit_bind ('a) (List ((Many (Explicit_var 0))))))))))
+         (instantiate_tycons
+          ((Inline (Tyvar_parameterize ('a) (List ((Many (Tyvar_index 0))))))))))
        (1
         ((generic_group 90163c5a0ec60eaf19da04c7fc7e1f3d) (origin base.ml.Export)
-         (apply_implicit ((Ref t 0)))))
+         (instantiate_tycons ((Ref t 0)))))
        (2
         ((generic_group c235a370b5135a2c190baecfd2bd77e7)
-         (origin test_percent_sexp_grammar.ml) (apply_implicit ((Ref list 1)))))))
+         (origin test_percent_sexp_grammar.ml)
+         (instantiate_tycons ((Ref list 1)))))))
      (start (Ref dummy_type_name_from_sexp_grammar 2))) |}]
 ;;
 
@@ -47,22 +52,23 @@ let%expect_test "primitive" =
     {|
     ((generic_groups
       ((926517f9eb65458b638457c38981eb19
-        ((implicit_vars (int)) (types ((t (Implicit_var 0))))))
+        ((tycon_names (int)) (types ((t (Tycon_index 0))))))
        (9f9fc55ea55deca5e5a55238a9e14814
-        ((implicit_vars (Int.t)) (types ((int (Implicit_var 0))))))
+        ((tycon_names (Int.t)) (types ((int (Tycon_index 0))))))
        (fbc7a39b4d9d260c4fa39e5250052c77
-        ((implicit_vars (int))
-         (types ((dummy_type_name_from_sexp_grammar (Implicit_var 0))))))))
+        ((tycon_names (int))
+         (types ((dummy_type_name_from_sexp_grammar (Tycon_index 0))))))))
      (groups
       ((3
         ((generic_group 926517f9eb65458b638457c38981eb19) (origin int.ml.T)
-         (apply_implicit ((Inline (Atom Int))))))
+         (instantiate_tycons ((Inline (Atom Int))))))
        (4
         ((generic_group 9f9fc55ea55deca5e5a55238a9e14814) (origin base.ml.Export)
-         (apply_implicit ((Ref t 3)))))
+         (instantiate_tycons ((Ref t 3)))))
        (5
         ((generic_group fbc7a39b4d9d260c4fa39e5250052c77)
-         (origin test_percent_sexp_grammar.ml) (apply_implicit ((Ref int 4)))))))
+         (origin test_percent_sexp_grammar.ml)
+         (instantiate_tycons ((Ref int 4)))))))
      (start (Ref dummy_type_name_from_sexp_grammar 5))) |}]
 ;;
 
@@ -72,40 +78,44 @@ let%expect_test "application of polymorphic type constructor" =
     {|
     ((generic_groups
       ((6a84293b8771489e87de480107049eda
-        ((implicit_vars (list))
+        ((tycon_names (list))
          (types
-          ((t (Explicit_bind (a) (Apply (Implicit_var 0) ((Explicit_var 0)))))))))
+          ((t
+            (Tyvar_parameterize (a)
+             (Tyvar_instantiate (Tycon_index 0) ((Tyvar_index 0)))))))))
        (90163c5a0ec60eaf19da04c7fc7e1f3d
-        ((implicit_vars (List.t))
+        ((tycon_names (List.t))
          (types
-          ((list (Explicit_bind (a) (Apply (Implicit_var 0) ((Explicit_var 0)))))))))
+          ((list
+            (Tyvar_parameterize (a)
+             (Tyvar_instantiate (Tycon_index 0) ((Tyvar_index 0)))))))))
        (926517f9eb65458b638457c38981eb19
-        ((implicit_vars (int)) (types ((t (Implicit_var 0))))))
+        ((tycon_names (int)) (types ((t (Tycon_index 0))))))
        (9f9fc55ea55deca5e5a55238a9e14814
-        ((implicit_vars (Int.t)) (types ((int (Implicit_var 0))))))
+        ((tycon_names (Int.t)) (types ((int (Tycon_index 0))))))
        (b796e27d2ccfcadf2fd17396632c6ef8
-        ((implicit_vars (int list))
+        ((tycon_names (int list))
          (types
           ((dummy_type_name_from_sexp_grammar
-            (Apply (Implicit_var 1) ((Implicit_var 0))))))))))
+            (Tyvar_instantiate (Tycon_index 1) ((Tycon_index 0))))))))))
      (groups
       ((0
         ((generic_group 6a84293b8771489e87de480107049eda) (origin list.ml.T)
-         (apply_implicit
-          ((Inline (Explicit_bind ('a) (List ((Many (Explicit_var 0))))))))))
+         (instantiate_tycons
+          ((Inline (Tyvar_parameterize ('a) (List ((Many (Tyvar_index 0))))))))))
        (1
         ((generic_group 90163c5a0ec60eaf19da04c7fc7e1f3d) (origin base.ml.Export)
-         (apply_implicit ((Ref t 0)))))
+         (instantiate_tycons ((Ref t 0)))))
        (3
         ((generic_group 926517f9eb65458b638457c38981eb19) (origin int.ml.T)
-         (apply_implicit ((Inline (Atom Int))))))
+         (instantiate_tycons ((Inline (Atom Int))))))
        (4
         ((generic_group 9f9fc55ea55deca5e5a55238a9e14814) (origin base.ml.Export)
-         (apply_implicit ((Ref t 3)))))
+         (instantiate_tycons ((Ref t 3)))))
        (6
         ((generic_group b796e27d2ccfcadf2fd17396632c6ef8)
          (origin test_percent_sexp_grammar.ml)
-         (apply_implicit ((Ref int 4) (Ref list 1)))))))
+         (instantiate_tycons ((Ref int 4) (Ref list 1)))))))
      (start (Ref dummy_type_name_from_sexp_grammar 6))) |}]
 ;;
 
@@ -115,12 +125,12 @@ let%expect_test "arrow type / original polymorphic type syntax" =
     {|
     ((generic_groups
       ((ddc522722eb44f32c55594e2d02c83b6
-        ((implicit_vars ())
+        ((tycon_names ())
          (types
           ((dummy_type_name_from_sexp_grammar (Grammar (Inline (Union ()))))))))))
      (groups
       ((7
         ((generic_group ddc522722eb44f32c55594e2d02c83b6)
-         (origin test_percent_sexp_grammar.ml) (apply_implicit ())))))
+         (origin test_percent_sexp_grammar.ml) (instantiate_tycons ())))))
      (start (Ref dummy_type_name_from_sexp_grammar 7))) |}]
 ;;

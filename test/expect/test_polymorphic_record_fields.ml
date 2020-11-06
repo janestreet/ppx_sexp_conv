@@ -5,10 +5,10 @@ open! Base
 module Records_we_can_handle = struct
   type ('a, 'b) t =
     { not_first_class_tick_a : 'a
-    ; b                      : 'a. 'b
-    ; int                    : 'a. int
-    ; either                 : 'a. 'a option
-    ; polymorphic_variant    : 'a. [ `A of 'a | `B of 'b | `Int of int ]
+    ; b : 'a. 'b
+    ; int : 'a. int
+    ; either : 'a. 'a option
+    ; polymorphic_variant : 'a. [ `A of 'a | `B of 'b | `Int of int ]
     }
   [@@deriving_inline sexp_grammar]
 
@@ -16,33 +16,34 @@ module Records_we_can_handle = struct
 
   let (t_sexp_grammar : Ppx_sexp_conv_lib.Sexp.Private.Raw_grammar.t) =
     let (_the_generic_group : Ppx_sexp_conv_lib.Sexp.Private.Raw_grammar.generic_group) =
-      { implicit_vars = [ "int"; "option" ]
-      ; ggid          = "\018M5`u:\186\223\136?/\182\187\135R\029"
-      ; types         =
+      { tycon_names = [ "int"; "option" ]
+      ; ggid = "\018M5`u:\186\223\136?/\182\187\135R\029"
+      ; types =
           [ ( "t"
-            , Explicit_bind
+            , Tyvar_parameterize
                 ( [ "a"; "b" ]
                 , Record
                     { allow_extra_fields = false
-                    ; fields             =
+                    ; fields =
                         [ ( "not_first_class_tick_a"
-                          , { optional = false; args = [ One (Explicit_var 0) ] } )
-                        ; "b"  , { optional = false; args = [ One (Explicit_var 1) ] }
-                        ; "int", { optional = false; args = [ One (Implicit_var 0) ] }
+                          , { optional = false; args = [ One (Tyvar_index 0) ] } )
+                        ; "b", { optional = false; args = [ One (Tyvar_index 1) ] }
+                        ; "int", { optional = false; args = [ One (Tycon_index 0) ] }
                         ; ( "either"
                           , { optional = false
-                            ; args     = [ One (Apply (Implicit_var 1, [ Union [] ])) ]
+                            ; args =
+                                [ One (Tyvar_instantiate (Tycon_index 1, [ Union [] ])) ]
                             } )
                         ; ( "polymorphic_variant"
                           , { optional = false
-                            ; args     =
+                            ; args =
                                 [ One
                                     (Variant
                                        { ignore_capitalization = false
-                                       ; alts                  =
-                                           [ "A"  , [ One (Union []) ]
-                                           ; "B"  , [ One (Explicit_var 1) ]
-                                           ; "Int", [ One (Implicit_var 0) ]
+                                       ; alts =
+                                           [ "A", [ One (Union []) ]
+                                           ; "B", [ One (Tyvar_index 1) ]
+                                           ; "Int", [ One (Tycon_index 0) ]
                                            ]
                                        })
                                 ]
@@ -53,10 +54,10 @@ module Records_we_can_handle = struct
       }
     in
     let (_the_group : Ppx_sexp_conv_lib.Sexp.Private.Raw_grammar.group) =
-      { gid            = Ppx_sexp_conv_lib.Lazy_group_id.create ()
-      ; apply_implicit = [ int_sexp_grammar; option_sexp_grammar ]
-      ; generic_group  = _the_generic_group
-      ; origin         = "test_polymorphic_record_fields.ml.Records_we_can_handle"
+      { gid = Ppx_sexp_conv_lib.Lazy_group_id.create ()
+      ; instantiate_tycons = [ int_sexp_grammar; option_sexp_grammar ]
+      ; generic_group = _the_generic_group
+      ; origin = "test_polymorphic_record_fields.ml.Records_we_can_handle"
       }
     in
     let (t_sexp_grammar : Ppx_sexp_conv_lib.Sexp.Private.Raw_grammar.t) =
@@ -77,9 +78,9 @@ module Impossible_record = struct
 
   let (t_sexp_grammar : Ppx_sexp_conv_lib.Sexp.Private.Raw_grammar.t) =
     let (_the_generic_group : Ppx_sexp_conv_lib.Sexp.Private.Raw_grammar.generic_group) =
-      { implicit_vars = []
-      ; ggid          = "&\224\178\151\b>\2179\022\203\130~i\190G\245"
-      ; types         =
+      { tycon_names = []
+      ; ggid = "&\224\178\151\b>\2179\022\203\130~i\190G\245"
+      ; types =
           [ ( "t"
             , Record
                 { allow_extra_fields = false
@@ -89,10 +90,10 @@ module Impossible_record = struct
       }
     in
     let (_the_group : Ppx_sexp_conv_lib.Sexp.Private.Raw_grammar.group) =
-      { gid            = Ppx_sexp_conv_lib.Lazy_group_id.create ()
-      ; apply_implicit = []
-      ; generic_group  = _the_generic_group
-      ; origin         = "test_polymorphic_record_fields.ml.Impossible_record"
+      { gid = Ppx_sexp_conv_lib.Lazy_group_id.create ()
+      ; instantiate_tycons = []
+      ; generic_group = _the_generic_group
+      ; origin = "test_polymorphic_record_fields.ml.Impossible_record"
       }
     in
     let (t_sexp_grammar : Ppx_sexp_conv_lib.Sexp.Private.Raw_grammar.t) =
@@ -109,29 +110,29 @@ end
 module Inline_record = struct
   type 'a t =
     | Non_poly of { a : 'a }
-    | Poly     of { a : 'a. 'a }
+    | Poly of { a : 'a. 'a }
   [@@deriving_inline sexp_grammar]
 
   let _ = fun (_ : 'a t) -> ()
 
   let (t_sexp_grammar : Ppx_sexp_conv_lib.Sexp.Private.Raw_grammar.t) =
     let (_the_generic_group : Ppx_sexp_conv_lib.Sexp.Private.Raw_grammar.generic_group) =
-      { implicit_vars = []
-      ; ggid          = "\217\0037(\136\214}@\029 \130x\242\146\137\179"
-      ; types         =
+      { tycon_names = []
+      ; ggid = "\217\0037(\136\214}@\029 \130x\242\146\137\179"
+      ; types =
           [ ( "t"
-            , Explicit_bind
+            , Tyvar_parameterize
                 ( [ "a" ]
                 , Variant
                     { ignore_capitalization = true
-                    ; alts                  =
+                    ; alts =
                         [ ( "Non_poly"
                           , [ Fields
                                 { allow_extra_fields = false
-                                ; fields             =
+                                ; fields =
                                     [ ( "a"
                                       , { optional = false
-                                        ; args     = [ One (Explicit_var 0) ]
+                                        ; args = [ One (Tyvar_index 0) ]
                                         } )
                                     ]
                                 }
@@ -139,7 +140,7 @@ module Inline_record = struct
                         ; ( "Poly"
                           , [ Fields
                                 { allow_extra_fields = false
-                                ; fields             =
+                                ; fields =
                                     [ "a", { optional = false; args = [ One (Union []) ] }
                                     ]
                                 }
@@ -150,10 +151,10 @@ module Inline_record = struct
       }
     in
     let (_the_group : Ppx_sexp_conv_lib.Sexp.Private.Raw_grammar.group) =
-      { gid            = Ppx_sexp_conv_lib.Lazy_group_id.create ()
-      ; apply_implicit = []
-      ; generic_group  = _the_generic_group
-      ; origin         = "test_polymorphic_record_fields.ml.Inline_record"
+      { gid = Ppx_sexp_conv_lib.Lazy_group_id.create ()
+      ; instantiate_tycons = []
+      ; generic_group = _the_generic_group
+      ; origin = "test_polymorphic_record_fields.ml.Inline_record"
       }
     in
     let (t_sexp_grammar : Ppx_sexp_conv_lib.Sexp.Private.Raw_grammar.t) =

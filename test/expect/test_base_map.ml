@@ -20,16 +20,17 @@ let _ = fun (_ : t) -> ()
 
 let (t_sexp_grammar : Ppx_sexp_conv_lib.Sexp.Private.Raw_grammar.t) =
   let (_the_generic_group : Ppx_sexp_conv_lib.Sexp.Private.Raw_grammar.generic_group) =
-    { implicit_vars = [ "string"; "Pair.m__t"; "Key.t" ]
-    ; ggid          = "^DF\173\243\197\131\141\253\181\029-\19450\231"
-    ; types         = [ "t", Apply (Implicit_var 1, [ Implicit_var 2; Implicit_var 0 ]) ]
+    { tycon_names = [ "string"; "Pair.m__t"; "Key.t" ]
+    ; ggid = "^DF\173\243\197\131\141\253\181\029-\19450\231"
+    ; types = [ "t", Tyvar_instantiate (Tycon_index 1, [ Tycon_index 2; Tycon_index 0 ]) ]
     }
   in
   let (_the_group : Ppx_sexp_conv_lib.Sexp.Private.Raw_grammar.group) =
-    { gid            = Ppx_sexp_conv_lib.Lazy_group_id.create ()
-    ; apply_implicit = [ string_sexp_grammar; Pair.m__t_sexp_grammar; Key.t_sexp_grammar ]
-    ; generic_group  = _the_generic_group
-    ; origin         = "test_base_map.ml"
+    { gid = Ppx_sexp_conv_lib.Lazy_group_id.create ()
+    ; instantiate_tycons =
+        [ string_sexp_grammar; Pair.m__t_sexp_grammar; Key.t_sexp_grammar ]
+    ; generic_group = _the_generic_group
+    ; origin = "test_base_map.ml"
     }
   in
   let (t_sexp_grammar : Ppx_sexp_conv_lib.Sexp.Private.Raw_grammar.t) =

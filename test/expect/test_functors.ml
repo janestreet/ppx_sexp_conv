@@ -7,17 +7,20 @@ module Maybe = struct
 
   let (t_sexp_grammar : Ppx_sexp_conv_lib.Sexp.Private.Raw_grammar.t) =
     let (_the_generic_group : Ppx_sexp_conv_lib.Sexp.Private.Raw_grammar.generic_group) =
-      { implicit_vars = [ "option" ]
-      ; ggid          = "j\132);\135qH\158\135\222H\001\007\004\158\218"
-      ; types         =
-          [ "t", Explicit_bind ([ "a" ], Apply (Implicit_var 0, [ Explicit_var 0 ])) ]
+      { tycon_names = [ "option" ]
+      ; ggid = "j\132);\135qH\158\135\222H\001\007\004\158\218"
+      ; types =
+          [ ( "t"
+            , Tyvar_parameterize
+                ([ "a" ], Tyvar_instantiate (Tycon_index 0, [ Tyvar_index 0 ])) )
+          ]
       }
     in
     let (_the_group : Ppx_sexp_conv_lib.Sexp.Private.Raw_grammar.group) =
-      { gid            = Ppx_sexp_conv_lib.Lazy_group_id.create ()
-      ; apply_implicit = [ option_sexp_grammar ]
-      ; generic_group  = _the_generic_group
-      ; origin         = "test_functors.ml.Maybe"
+      { gid = Ppx_sexp_conv_lib.Lazy_group_id.create ()
+      ; instantiate_tycons = [ option_sexp_grammar ]
+      ; generic_group = _the_generic_group
+      ; origin = "test_functors.ml.Maybe"
       }
     in
     let (t_sexp_grammar : Ppx_sexp_conv_lib.Sexp.Private.Raw_grammar.t) =
@@ -48,37 +51,39 @@ struct
       , (u_sexp_grammar : Ppx_sexp_conv_lib.Sexp.Private.Raw_grammar.t) )
     =
     let (_the_generic_group : Ppx_sexp_conv_lib.Sexp.Private.Raw_grammar.generic_group) =
-      { implicit_vars = [ "T.t"; "Maybe.t" ]
-      ; ggid          = "\245\184\243\180\181_5t\027u6u\233p#\158"
-      ; types         =
+      { tycon_names = [ "T.t"; "Maybe.t" ]
+      ; ggid = "\245\184\243\180\181_5t\027u6u\233p#\158"
+      ; types =
           [ ( "t"
-            , Explicit_bind
+            , Tyvar_parameterize
                 ( [ "a" ]
                 , Variant
                     { ignore_capitalization = true
-                    ; alts                  =
+                    ; alts =
                         [ ( "T"
                           , [ One
-                                (Apply
+                                (Tyvar_instantiate
                                    ( Recursive "u"
-                                   , [ Apply (Implicit_var 0, [ Explicit_var 0 ]) ] ))
+                                   , [ Tyvar_instantiate (Tycon_index 0, [ Tyvar_index 0 ])
+                                     ] ))
                             ] )
                         ]
                     } ) )
           ; ( "u"
-            , Explicit_bind
+            , Tyvar_parameterize
                 ( [ "a" ]
                 , Variant
                     { ignore_capitalization = true
-                    ; alts                  =
+                    ; alts =
                         [ ( "U"
                           , [ One
-                                (Apply
-                                   ( Implicit_var 1
-                                   , [ Apply
+                                (Tyvar_instantiate
+                                   ( Tycon_index 1
+                                   , [ Tyvar_instantiate
                                          ( Recursive "t"
-                                         , [ Apply (Implicit_var 0, [ Explicit_var 0 ]) ]
-                                         )
+                                         , [ Tyvar_instantiate
+                                               (Tycon_index 0, [ Tyvar_index 0 ])
+                                           ] )
                                      ] ))
                             ] )
                         ]
@@ -87,10 +92,10 @@ struct
       }
     in
     let (_the_group : Ppx_sexp_conv_lib.Sexp.Private.Raw_grammar.group) =
-      { gid            = Ppx_sexp_conv_lib.Lazy_group_id.create ()
-      ; apply_implicit = [ T.t_sexp_grammar; Maybe.t_sexp_grammar ]
-      ; generic_group  = _the_generic_group
-      ; origin         = "test_functors.ml.Make"
+      { gid = Ppx_sexp_conv_lib.Lazy_group_id.create ()
+      ; instantiate_tycons = [ T.t_sexp_grammar; Maybe.t_sexp_grammar ]
+      ; generic_group = _the_generic_group
+      ; origin = "test_functors.ml.Make"
       }
     in
     let (t_sexp_grammar : Ppx_sexp_conv_lib.Sexp.Private.Raw_grammar.t) =
@@ -112,24 +117,28 @@ struct
 
   let (v_sexp_grammar : Ppx_sexp_conv_lib.Sexp.Private.Raw_grammar.t) =
     let (_the_generic_group : Ppx_sexp_conv_lib.Sexp.Private.Raw_grammar.generic_group) =
-      { implicit_vars = [ "t" ]
-      ; ggid          = "W\019\225!\031\181\213k\190\002\145\212\228\251\207#"
-      ; types         =
+      { tycon_names = [ "t" ]
+      ; ggid = "W\019\225!\031\181\213k\190\002\145\212\228\251\207#"
+      ; types =
           [ ( "v"
-            , Explicit_bind
+            , Tyvar_parameterize
                 ( [ "a" ]
                 , Variant
                     { ignore_capitalization = true
-                    ; alts = [ "V", [ One (Apply (Implicit_var 0, [ Explicit_var 0 ])) ] ]
+                    ; alts =
+                        [ ( "V"
+                          , [ One (Tyvar_instantiate (Tycon_index 0, [ Tyvar_index 0 ])) ]
+                          )
+                        ]
                     } ) )
           ]
       }
     in
     let (_the_group : Ppx_sexp_conv_lib.Sexp.Private.Raw_grammar.group) =
-      { gid            = Ppx_sexp_conv_lib.Lazy_group_id.create ()
-      ; apply_implicit = [ t_sexp_grammar ]
-      ; generic_group  = _the_generic_group
-      ; origin         = "test_functors.ml.Make"
+      { gid = Ppx_sexp_conv_lib.Lazy_group_id.create ()
+      ; instantiate_tycons = [ t_sexp_grammar ]
+      ; generic_group = _the_generic_group
+      ; origin = "test_functors.ml.Make"
       }
     in
     let (v_sexp_grammar : Ppx_sexp_conv_lib.Sexp.Private.Raw_grammar.t) =
@@ -152,22 +161,22 @@ let _ = fun (_ : t) -> ()
 
 let (t_sexp_grammar : Ppx_sexp_conv_lib.Sexp.Private.Raw_grammar.t) =
   let (_the_generic_group : Ppx_sexp_conv_lib.Sexp.Private.Raw_grammar.generic_group) =
-    { implicit_vars = [ "int"; "T2.t"; "T1.t" ]
-    ; ggid          = "\023\203\177!5(\\B1\167\214\007S\000\134B"
-    ; types         =
+    { tycon_names = [ "int"; "T2.t"; "T1.t" ]
+    ; ggid = "\023\203\177!5(\\B1\167\214\007S\000\134B"
+    ; types =
         [ ( "t"
           , List
-              [ One (Apply (Implicit_var 1, [ Implicit_var 0 ]))
-              ; One (Apply (Implicit_var 2, [ Implicit_var 0 ]))
+              [ One (Tyvar_instantiate (Tycon_index 1, [ Tycon_index 0 ]))
+              ; One (Tyvar_instantiate (Tycon_index 2, [ Tycon_index 0 ]))
               ] )
         ]
     }
   in
   let (_the_group : Ppx_sexp_conv_lib.Sexp.Private.Raw_grammar.group) =
-    { gid            = Ppx_sexp_conv_lib.Lazy_group_id.create ()
-    ; apply_implicit = [ int_sexp_grammar; T2.t_sexp_grammar; T1.t_sexp_grammar ]
-    ; generic_group  = _the_generic_group
-    ; origin         = "test_functors.ml"
+    { gid = Ppx_sexp_conv_lib.Lazy_group_id.create ()
+    ; instantiate_tycons = [ int_sexp_grammar; T2.t_sexp_grammar; T1.t_sexp_grammar ]
+    ; generic_group = _the_generic_group
+    ; origin = "test_functors.ml"
     }
   in
   let (t_sexp_grammar : Ppx_sexp_conv_lib.Sexp.Private.Raw_grammar.t) =

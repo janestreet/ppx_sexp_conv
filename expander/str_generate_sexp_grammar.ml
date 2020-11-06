@@ -2,7 +2,7 @@ open! Base
 open! Ppxlib
 open! Ast_builder.Default
 open! Sexp.Private.Raw_grammar
-module Var_name  = String
+module Var_name = String
 module Type_name = String
 
 module Longident = struct
@@ -19,40 +19,40 @@ let _ = debug_s
 (* [grammar] and [generic_group] form the generic part of grammar: it's the information
    we can compute statically  from the AST *)
 type grammar =
-  | Inline          of grammar Sexp.Private.Raw_grammar.type_ loc
+  | Inline of grammar Sexp.Private.Raw_grammar.type_ loc
   (* E.g.,[Ref_same_group "t"] vs [Ref_other_group (Ldot (Lident "t", "Foo"))]. *)
-  | Ref_same_group  of Type_name.t loc
+  | Ref_same_group of Type_name.t loc
   | Ref_other_group of Longident.t loc
 
 type generic_group =
-  { implicit_vars : var_name list
-  ; ggid          : generic_group_id
-  ; types         : (type_name * grammar type_) list
+  { tycon_names : var_name list
+  ; ggid : generic_group_id
+  ; types : (type_name * grammar type_) list
   }
 
 (* [group] has extra information collected from scope at runtime, necessary to interpret
-   [implicit_vars] in [generic_group] *)
-type group = { apply_implicit : grammar list }
+   [tycon_names] in [generic_group] *)
+type group = { instantiate_tycons : grammar list }
 
 let id_mapper =
   object
     inherit Sexp_grammar_lifter.map
 
-    method var_name  x = x
+    method var_name x = x
 
-    method unit      () = ()
+    method unit () = ()
 
     method type_name x = x
 
-    method list      f l = List.map l ~f
+    method list f l = List.map l ~f
 
-    method label     x = x
+    method label x = x
 
-    method int       x = x
+    method int x = x
 
-    method bool      x = x
+    method bool x = x
 
-    method atom      x = x
+    method atom x = x
   end
 ;;
 
@@ -60,25 +60,25 @@ let erase_locs
   : grammar Sexp.Private.Raw_grammar.type_ -> grammar Sexp.Private.Raw_grammar.type_
   =
   id_mapper#type_ (function
-    | Inline          x -> Inline          { x with loc = Location.none }
-    | Ref_same_group  x -> Ref_same_group  { x with loc = Location.none }
+    | Inline x -> Inline { x with loc = Location.none }
+    | Ref_same_group x -> Ref_same_group { x with loc = Location.none }
     | Ref_other_group x -> Ref_other_group { x with loc = Location.none })
 ;;
 
-let make_generic_group ~implicit_vars ~types =
+let make_generic_group ~tycon_names ~types =
   let ggid =
     let types = List.map types ~f:(fun (x, g) -> x, erase_locs g) in
     Caml.Digest.string (Caml.Marshal.to_string types [])
   in
-  { implicit_vars; types; ggid }
+  { tycon_names; types; ggid }
 ;;
 
 type t =
-  { grammars      : grammar Map.M(Type_name).t
+  { grammars : grammar Map.M(Type_name).t
   ; generic_group : generic_group
-  ; group         : group
-  ; loc           : Location.t
-  ; module_path   : string
+  ; group : group
+  ; loc : Location.t
+  ; module_path : string
   }
 
 let impossible ~loc s =
@@ -93,32 +93,32 @@ module Env : sig
   type t
 
   val sexp_of_t : t -> Sexp.t
-  val create    : rec_flag -> type_declaration list -> t
+  val create : rec_flag -> type_declaration list -> t
   val is_in_this_recursive_group : t -> Type_name.t -> bool
 
-  (** [add_implicit_variable ~loc t id] registers [id] as an implicit variable (a type
-      introduced by functor application) and returns the correct [Implicit_var _] to refer
-      to [id]. *)
-  val add_implicit_variable : loc:Location.t -> t -> Longident.t -> 'a type_
+  (** [add_tycon ~loc t id] registers [id] as a type constructor and returns the correct
+      [Tycon_index _] to refer to [id]. *)
+  val add_tycon : loc:Location.t -> t -> Longident.t -> 'a type_
 
   (** [type_for_var ~loc t type_name var] returns the right grammar (typically
-      [Explicit_var _]) for [var_name] in [type_name] in this recursive group. *)
+      [Tyvar_index _]) for [var_name] in [type_name] in this recursive group. *)
   val type_for_var : loc:Location.t -> t -> Type_name.t -> Var_name.t -> 'a type_
 
   (** Register some type variables as being universally quantified. *)
   val within_polymorphic_record_field : t -> Var_name.t loc list -> t
 
-  (** [with_explicit_bind ~loc t type_name type_] wraps [type_] in [Explicit_bind] if [t]
-      indicates that [type_name] has type variables that might otherwise be free in [type_]. *)
-  val with_explicit_bind : loc:Location.t -> t -> Type_name.t -> 'a type_ -> 'a type_
+  (** [with_tyvar_parameterize ~loc t type_name type_] wraps [type_] in
+      [Tyvar_parameterize] if [t] indicates that [type_name] has type variables that might
+      otherwise be free in [type_]. *)
+  val with_tyvar_parameterize : loc:Location.t -> t -> Type_name.t -> 'a type_ -> 'a type_
 
-  (** For the [implicit_vars] field of a [generic_group] value. *)
-  val implicit_vars : t -> Type_name.t list
+  (** For the [tycon_names] field of a [generic_group] value. *)
+  val tycon_names : t -> Type_name.t list
 
-  (** For the [apply_implicit] field of a [group] value *)
-  val apply_implicit : t -> grammar list
+  (** For the [instantiate_tycons] field of a [group] value *)
+  val instantiate_tycons : t -> grammar list
 end = struct
-  module Explicit_type_variables = struct
+  module Type_variables = struct
     type t = Var_name.t option array
 
     let sexp_of_t : t -> Sexp.t = Array.sexp_of_t (Option.sexp_of_t Var_name.sexp_of_t)
@@ -126,35 +126,36 @@ end = struct
     let create td =
       List.map td.ptype_params ~f:(fun (ctype, _variance) ->
         match ctype.ptyp_desc with
-        | Ptyp_any   -> None
+        | Ptyp_any -> None
         | Ptyp_var s -> Some s
-        | _          -> Location.raise_errorf ~loc:ctype.ptyp_loc "not a type parameter")
+        | _ -> Location.raise_errorf ~loc:ctype.ptyp_loc "not a type parameter")
       |> Array.of_list
     ;;
 
     let find t name =
       Array.find_mapi t ~f:(fun i var_name ->
         match Option.equal String.equal var_name (Some name) with
-        | true  -> Some i
+        | true -> Some i
         | false -> None)
     ;;
 
-    let explicit_bind t type_ =
+    let parameterize t type_ =
       match t with
       | [||] -> type_
-      | _    ->
+      | _ ->
         let variables = Array.map t ~f:(Option.value ~default:"_") |> Array.to_list in
-        Explicit_bind (variables, type_)
+        Tyvar_parameterize (variables, type_)
     ;;
   end
 
   (* The kitchen-sink type for information used as we generate the grammars. *)
   type init =
-    { (* Explicit type variables of type declarations in this recursive group. *)
-      explicit : Explicit_type_variables.t Map.M(Type_name).t
-    ; (* Implicit type variables in this mutually recursive group, filled in as we
-         traverse the type declarations. *)
-      mutable implicit : int loc Map.M(Longident).t
+    { (* Type variables of type declarations in this recursive group. *)
+      tyvars : Type_variables.t Map.M(Type_name).t
+    ; (* Type constructors used in this mutually recursive group, filled in as we traverse
+         the type declarations. The ints represent the type constructor indexes, for use
+         with [Tycon_index] *)
+      mutable tycons : int loc Map.M(Longident).t
     ; rec_flag : rec_flag
     }
 
@@ -168,22 +169,19 @@ end = struct
              Values of these types can't occur in serializable values so we're
              substituting them with the unsatisfiable grammar [Union []]. *)
           first_class_polymorphism : Set.M(Var_name).t
-        ; t                        : t
+        ; t : t
         }
 
-  let sexp_of_init { explicit; implicit; rec_flag } : Sexp.t =
+  let sexp_of_init { tyvars; tycons; rec_flag } : Sexp.t =
     List
       [ Atom "T"
       ; List
           [ List
-              [ Atom "explicit"
-              ; Map.sexp_of_m__t
-                  (module Type_name)
-                  Explicit_type_variables.sexp_of_t
-                  explicit
+              [ Atom "tyvars"
+              ; Map.sexp_of_m__t (module Type_name) Type_variables.sexp_of_t tyvars
               ]
           ; List
-              [ Atom "implicit"
+              [ Atom "tycons"
               ; Map.sexp_of_m__t
                   (module struct
                     type t = Longident.t
@@ -191,7 +189,7 @@ end = struct
                     let sexp_of_t t = sexp_of_string (Longident.name t)
                   end)
                   (fun { loc = _; txt = int } -> sexp_of_int int)
-                  implicit
+                  tycons
               ]
           ; List [ Atom "rec_flag"; Ast_traverse.sexp_of#rec_flag rec_flag ]
           ]
@@ -218,10 +216,10 @@ end = struct
 
   let create rec_flag tds : t =
     Init
-      { explicit =
-          List.map tds ~f:(fun td -> td.ptype_name.txt, Explicit_type_variables.create td)
+      { tyvars =
+          List.map tds ~f:(fun td -> td.ptype_name.txt, Type_variables.create td)
           |> Map.of_alist_exn (module Type_name)
-      ; implicit = Map.empty (module Longident)
+      ; tycons = Map.empty (module Longident)
       ; rec_flag
       }
   ;;
@@ -232,31 +230,31 @@ end = struct
     | Within_polymorphic_record_field { first_class_polymorphism = _; t } -> get_init t
   ;;
 
-  let add_implicit_variable ~loc t lident =
+  let add_tycon ~loc t lident =
     let init = get_init t in
-    match Map.find init.implicit lident with
-    | Some i -> Implicit_var i.txt
-    | None   ->
-      let i = Map.length init.implicit in
-      init.implicit <- Map.add_exn init.implicit ~key:lident ~data:{ loc; txt = i };
-      Implicit_var i
+    match Map.find init.tycons lident with
+    | Some i -> Tycon_index i.txt
+    | None ->
+      let i = Map.length init.tycons in
+      init.tycons <- Map.add_exn init.tycons ~key:lident ~data:{ loc; txt = i };
+      Tycon_index i
   ;;
 
   let sort_by_index m ~f =
     Map.to_alist m |> List.sort ~compare:(fun (_, i) (_, j) -> compare (f i) (f j))
   ;;
 
-  let implicit_vars t =
+  let tycon_names t =
     let init = get_init t in
     List.map
-      (sort_by_index init.implicit ~f:(fun x -> x.txt))
+      (sort_by_index init.tycons ~f:(fun x -> x.txt))
       ~f:(fun (lid, _) -> Longident.name lid)
   ;;
 
-  let apply_implicit t =
+  let instantiate_tycons t =
     let init = get_init t in
     List.map
-      (sort_by_index init.implicit ~f:(fun x -> x.txt))
+      (sort_by_index init.tycons ~f:(fun x -> x.txt))
       ~f:(fun (lident, { loc; txt = _ }) -> Ref_other_group { loc; txt = lident })
   ;;
 
@@ -264,12 +262,12 @@ end = struct
     let init = get_init t in
     match init.rec_flag with
     | Nonrecursive -> false
-    | Recursive    -> Map.mem init.explicit type_name
+    | Recursive -> Map.mem init.tyvars type_name
   ;;
 
   let variables_of_type ~loc init type_name =
-    match Map.find init.explicit type_name with
-    | None           -> impossible ~loc ("unknown type name: " ^ type_name)
+    match Map.find init.tyvars type_name with
+    | None -> impossible ~loc ("unknown type name: " ^ type_name)
     | Some variables -> variables
   ;;
 
@@ -277,14 +275,13 @@ end = struct
     match t with
     | Within_polymorphic_record_field { first_class_polymorphism; t } ->
       (match Set.mem first_class_polymorphism var_name with
-       | true  -> Union []
+       | true -> Union []
        | false -> type_for_var ~loc t type_name var_name)
     | Init init ->
-      (match
-         Explicit_type_variables.find (variables_of_type ~loc init type_name) var_name
-       with
-       | None   -> Location.raise_errorf "unbound type parameter '%s" var_name
-       | Some i -> Explicit_var i)
+      (match Type_variables.find (variables_of_type ~loc init type_name) var_name with
+       | None ->
+         Location.raise_errorf ~loc "no sexp grammar for type parameter '%s" var_name
+       | Some i -> Tyvar_index i)
   ;;
 
   let within_polymorphic_record_field t type_names =
@@ -296,9 +293,9 @@ end = struct
       }
   ;;
 
-  let with_explicit_bind ~loc t type_name type_ =
+  let with_tyvar_parameterize ~loc t type_name type_ =
     let init = get_init t in
-    Explicit_type_variables.explicit_bind (variables_of_type ~loc init type_name) type_
+    Type_variables.parameterize (variables_of_type ~loc init type_name) type_
   ;;
 end
 
@@ -306,13 +303,13 @@ let _ = Env.sexp_of_t
 
 module Row_field = struct
   type t =
-    | Inherit       of core_type
-    | Tag_nullary   of label
+    | Inherit of core_type
+    | Tag_nullary of label
     (** [Tag_sexp_list (label, ctype)] means one of these forms:
         - [`Label of ctype sexp_list]
         - [`Label of ctype list [@sexp.list]]. *)
     | Tag_sexp_list of label * core_type
-    | Tag_tuple     of label * core_type
+    | Tag_tuple of label * core_type
 
   let core_type_within_sexp_list args sexp_list_attribute attribute_of =
     match args with
@@ -330,12 +327,12 @@ module Row_field = struct
     | Rinherit ctype -> Inherit ctype
     | Rtag ({ loc; txt = label }, nullary, possible_arg_types) ->
       (match nullary, possible_arg_types with
-       | true , []                         -> Tag_nullary label
-       | false, ([ ctype ] as args)        ->
+       | true, [] -> Tag_nullary label
+       | false, ([ ctype ] as args) ->
          (match core_type_within_sexp_list args Attrs.list_poly row_field with
           | Some ctype -> Tag_sexp_list (label, ctype)
-          | None       -> Tag_tuple     (label, ctype))
-       | false, []                         ->
+          | None -> Tag_tuple (label, ctype))
+       | false, [] ->
          impossible ~loc "polymorphic variant constructor neither nullary nor not"
        | true, _ :: _ | false, _ :: _ :: _ ->
          not_supported ~loc "polymorphic variants with intersection types ([`A of _ & _])")
@@ -350,7 +347,7 @@ module Opaque = struct
   let create ctype : t =
     match Attribute.get Attrs.opaque ctype with
     | Some () -> Opaque
-    | None    ->
+    | None ->
       (match ctype.ptyp_desc with
        | Ptyp_constr ({ loc = _; txt = Lident "sexp_opaque" }, _) -> Opaque
        | _ -> Not_opaque ctype)
@@ -362,7 +359,7 @@ let sexp_grammar_suffix = "_sexp_grammar"
 (* Given [(u, v) A.B.F(M)(N).t], [type_of_type_constructor] returns
    {[
      fun [u_grammar; v_grammar] ->
-       Apply
+       Tyvar_instantiate
          ( Grammar A.B.f__t_sexp_grammar
          , [ M.t_sexp_grammar; N.t_sexp_grammar; u_grammar; v_grammar ])
 
@@ -371,30 +368,30 @@ let sexp_grammar_suffix = "_sexp_grammar"
 *)
 let type_of_type_constructor ~loc env lident args =
   let apply_if_args tycon = function
-    | []   -> tycon
-    | args -> Apply (tycon, args)
+    | [] -> tycon
+    | args -> Tyvar_instantiate (tycon, args)
   in
   match lident with
   | Lident type_name when Env.is_in_this_recursive_group env type_name ->
     apply_if_args (Recursive type_name) args
   | Lident _ | Ldot ((Lident _ | Ldot _), _) ->
-    apply_if_args (Env.add_implicit_variable ~loc env lident) args
+    apply_if_args (Env.add_tycon ~loc env lident) args
   | Lapply _ -> impossible ~loc ("Expected type name, got " ^ Longident.name lident)
   | Ldot ((Lapply _ as module_path), n) ->
     let suffix_n functor_ = String.uncapitalize functor_ ^ "__" ^ n in
     let rec gather_lapply functor_args : Longident.t -> Longident.t * _ = function
       | Lapply (rest, arg) -> gather_lapply (arg :: functor_args) rest
-      | Lident functor_    -> Lident (suffix_n functor_), functor_args
+      | Lident functor_ -> Lident (suffix_n functor_), functor_args
       | Ldot (functor_path, functor_) ->
         Ldot (functor_path, suffix_n functor_), functor_args
     in
-    let ident, functor_args = gather_lapply [] module_path             in
-    let tycon               = Env.add_implicit_variable ~loc env ident in
+    let ident, functor_args = gather_lapply [] module_path in
+    let tycon = Env.add_tycon ~loc env ident in
     let functor_args =
       List.map functor_args ~f:(fun functor_arg ->
-        Env.add_implicit_variable ~loc env (Ldot (functor_arg, "t")))
+        Env.add_tycon ~loc env (Ldot (functor_arg, "t")))
     in
-    Apply (tycon, functor_args @ args)
+    Tyvar_instantiate (tycon, functor_args @ args)
 ;;
 
 (* We use a fully qualified module path here because it does not make sense for the user
@@ -419,11 +416,11 @@ let type_of_core_type env0 type_name ctype =
     | Opaque -> unsupported_builtin ~loc:ctype.ptyp_loc "opaque"
     | Not_opaque { ptyp_desc; ptyp_loc = loc; ptyp_attributes = _; ptyp_loc_stack = _ } ->
       (match ptyp_desc with
-       | Ptyp_any              ->
+       | Ptyp_any ->
          (* For consistency with [%of_sexp: _] which treats [_] as unsatisfiable. *)
          Union []
-       | Ptyp_var s            -> Env.type_for_var    ~loc env type_name s
-       | Ptyp_arrow (_, _, _)  -> unsupported_builtin ~loc "fun"
+       | Ptyp_var s -> Env.type_for_var ~loc env type_name s
+       | Ptyp_arrow (_, _, _) -> unsupported_builtin ~loc "fun"
        | Ptyp_tuple core_types ->
          List
            (List.map core_types ~f:(fun core_type -> One (type_of_core_type env core_type)))
@@ -433,22 +430,22 @@ let type_of_core_type env0 type_name ctype =
            env
            ident.txt
            (List.map args ~f:(type_of_core_type env))
-       | Ptyp_object (_, _)                      -> not_supported ~loc "objects"
-       | Ptyp_class (_, _)                       -> not_supported ~loc "classes"
-       | Ptyp_alias (_, _)                       -> not_supported ~loc "aliases"
+       | Ptyp_object (_, _) -> not_supported ~loc "objects"
+       | Ptyp_class (_, _) -> not_supported ~loc "classes"
+       | Ptyp_alias (_, _) -> not_supported ~loc "aliases"
        | Ptyp_variant (row_fields, Closed, None) -> type_of_row_fields env row_fields
        | Ptyp_variant (_, Open, _) | Ptyp_variant (_, _, Some _) ->
          not_supported ~loc "polymorphic variants with < or >"
        | Ptyp_poly (first_class_variables, core_type) ->
          let env = Env.within_polymorphic_record_field env first_class_variables in
          type_of_core_type env core_type
-       | Ptyp_package _                          -> not_supported ~loc "packed modules"
-       | Ptyp_extension _                        -> not_supported ~loc "extension nodes")
+       | Ptyp_package _ -> not_supported ~loc "packed modules"
+       | Ptyp_extension _ -> not_supported ~loc "extension nodes")
   and type_of_row_fields env row_fields =
     let alts, inherits =
       List.partition_map row_fields ~f:(fun row_field ->
         match Row_field.create row_field with
-        | Inherit ctype     -> Second ((type_of_core_type env) ctype)
+        | Inherit ctype -> Second ((type_of_core_type env) ctype)
         | Tag_nullary label -> First (label, [])
         | Tag_sexp_list (label, ctype) ->
           First (label, [ Many (type_of_core_type env ctype) ])
@@ -457,11 +454,11 @@ let type_of_core_type env0 type_name ctype =
     in
     let types =
       match alts with
-      | []     -> None
+      | [] -> None
       | _ :: _ -> Some (Variant { ignore_capitalization = false; alts })
     in
     match Option.to_list types @ inherits with
-    | []        -> unsupported_builtin ~loc:ctype.ptyp_loc "empty"
+    | [] -> unsupported_builtin ~loc:ctype.ptyp_loc "empty"
     | [ type_ ] -> type_
     | _ :: _ as types -> Union types
   in
@@ -477,20 +474,20 @@ let record_type_of_label_declarations env type_name lds ~allow_extra_fields =
           match Attrs.Record_field_handler.Of_sexp.create ~loc:pld_loc ld with
           | None ->
             { optional = false
-            ; args     = [ One (type_of_core_type env type_name pld_type) ]
+            ; args = [ One (type_of_core_type env type_name pld_type) ]
             }
           | Some (`default _ | `omit_nil) ->
             { optional = true
-            ; args     = [ One (type_of_core_type env type_name pld_type) ]
+            ; args = [ One (type_of_core_type env type_name pld_type) ]
             }
           | Some `sexp_bool -> { optional = true; args = [] }
           | Some (`sexp_array core_type | `sexp_list core_type) ->
             { optional = true
-            ; args     = [ One (List [ Many (type_of_core_type env type_name core_type) ]) ]
+            ; args = [ One (List [ Many (type_of_core_type env type_name core_type) ]) ]
             }
           | Some (`sexp_option core_type) ->
             { optional = true
-            ; args     = [ One (type_of_core_type env type_name core_type) ]
+            ; args = [ One (type_of_core_type env type_name core_type) ]
             }
         in
         pld_name.txt, field)
@@ -501,32 +498,29 @@ module Constructor_declaration = struct
   type t =
     | Record of
         { allow_extra_fields : bool
-        ; fields             : label_declaration list
-        ; label              : label
+        ; fields : label_declaration list
+        ; label : label
         }
-    | Tuple_regular   of label * core_type list
+    | Tuple_regular of label * core_type list
     (** [Tuple_sexp_list (label, ctype)] means one of these forms:
         - [Label of ctype sexp_list]
         - [Label of ctype list [@sexp.list]]. *)
     | Tuple_sexp_list of label * core_type
 
-  let create ({ pcd_name; pcd_args; pcd_res; pcd_loc; _ } as cd) =
-    match pcd_res with
-    | Some _ -> not_supported ~loc:pcd_loc "GADTs"
-    | None   ->
-      let label = pcd_name.txt in
-      (match pcd_args with
-       | Pcstr_record fields ->
-         Record
-           { allow_extra_fields =
-               Option.is_some (Attribute.get Attrs.allow_extra_fields_cd cd)
-           ; fields
-           ; label
-           }
-       | Pcstr_tuple args ->
-         (match Row_field.core_type_within_sexp_list args Attrs.list_variant cd with
-          | Some ctype -> Tuple_sexp_list (label, ctype )
-          | None       -> Tuple_regular   (label, args)))
+  let create ({ pcd_name; pcd_args; _ } as cd) =
+    let label = pcd_name.txt in
+    match pcd_args with
+    | Pcstr_record fields ->
+      Record
+        { allow_extra_fields =
+            Option.is_some (Attribute.get Attrs.allow_extra_fields_cd cd)
+        ; fields
+        ; label
+        }
+    | Pcstr_tuple args ->
+      (match Row_field.core_type_within_sexp_list args Attrs.list_variant cd with
+       | Some ctype -> Tuple_sexp_list (label, ctype)
+       | None -> Tuple_regular (label, args))
   ;;
 end
 
@@ -539,22 +533,22 @@ let variant env type_name constructor_declarations =
           record_type_of_label_declarations env type_name fields ~allow_extra_fields
         in
         label, [ Fields fields ]
-      | Tuple_regular   (label, ctypes) ->
+      | Tuple_regular (label, ctypes) ->
         let f ctype = One (type_of_core_type env type_name ctype) in
         label, List.map ctypes ~f
-      | Tuple_sexp_list (label, ctype ) ->
+      | Tuple_sexp_list (label, ctype) ->
         label, [ Many (type_of_core_type env type_name ctype) ])
   in
   Variant { ignore_capitalization = true; alts }
 ;;
 
 let type_of_type_declaration env td =
-  let loc       = td.ptype_loc      in
+  let loc = td.ptype_loc in
   let type_name = td.ptype_name.txt in
   let type_ =
     match td.ptype_kind with
     | Ptype_variant alts -> variant env type_name alts
-    | Ptype_record  lds  ->
+    | Ptype_record lds ->
       Record
         (record_type_of_label_declarations
            env
@@ -562,13 +556,13 @@ let type_of_type_declaration env td =
            lds
            ~allow_extra_fields:
              (Attribute.get Attrs.allow_extra_fields_td td |> Option.is_some))
-    | Ptype_open     -> not_supported ~loc "open types"
+    | Ptype_open -> not_supported ~loc "open types"
     | Ptype_abstract ->
       (match td.ptype_manifest with
-       | None           -> unsupported_builtin ~loc "empty"
+       | None -> unsupported_builtin ~loc "empty"
        | Some core_type -> type_of_core_type env type_name core_type)
   in
-  Env.with_explicit_bind ~loc env td.ptype_name.txt type_
+  Env.with_tyvar_parameterize ~loc env td.ptype_name.txt type_
 ;;
 
 let create ~loc ~path rec_flag tds : t =
@@ -580,8 +574,8 @@ let create ~loc ~path rec_flag tds : t =
   let types =
     List.map tds ~f:(fun td -> td.ptype_name.txt, type_of_type_declaration env td)
   in
-  let generic_group = make_generic_group ~implicit_vars:(Env.implicit_vars env) ~types in
-  let group         = { apply_implicit = Env.apply_implicit env }                      in
+  let generic_group = make_generic_group ~tycon_names:(Env.tycon_names env) ~types in
+  let group = { instantiate_tycons = Env.instantiate_tycons env } in
   { grammars; generic_group; group; loc; module_path = path }
 ;;
 
@@ -617,32 +611,32 @@ let singleton ~loc ~path core_type : t =
       ~private_:Public
       ~manifest:(Some core_type)
   in
-  let env   = Env.create Recursive [ td ]                   in
+  let env = Env.create Recursive [ td ] in
   let types = [ name.txt, type_of_type_declaration env td ] in
-  { grammars      = Map.singleton (module Type_name) name.txt (Ref_same_group name)
-  ; generic_group = make_generic_group ~implicit_vars:(Env.implicit_vars env) ~types
-  ; group         = { apply_implicit = Env.apply_implicit env }
+  { grammars = Map.singleton (module Type_name) name.txt (Ref_same_group name)
+  ; generic_group = make_generic_group ~tycon_names:(Env.tycon_names env) ~types
+  ; group = { instantiate_tycons = Env.instantiate_tycons env }
   ; loc
-  ; module_path   = path
+  ; module_path = path
   }
 ;;
 
 module Pattern = struct
   let the_generic_group ~loc = [%pat? _the_generic_group]
-  let the_group         ~loc = [%pat? _the_group]
+  let the_group ~loc = [%pat? _the_group]
 end
 
 module Expression = struct
-  let the_generic_group ~loc          = [%expr _the_generic_group]
-  let the_group         ~loc          = [%expr _the_group]
-  let list              ~loc xs ~f    = elist ~loc (List.map xs ~f:(f ~loc))
-  let tuple2 a b        ~loc (a_, b_) = [%expr [%e a ~loc a_], [%e b ~loc b_]]
+  let the_generic_group ~loc = [%expr _the_generic_group]
+  let the_group ~loc = [%expr _the_group]
+  let list ~loc xs ~f = elist ~loc (List.map xs ~f:(f ~loc))
+  let tuple2 a b ~loc (a_, b_) = [%expr [%e a ~loc a_], [%e b ~loc b_]]
 
   let map_lident_last lident ~f =
     match lident with
-    | Lident x         -> Lident (f x)
+    | Lident x -> Lident (f x)
     | Ldot (lident, x) -> Ldot (lident, f x)
-    | Lapply _         -> invalid_arg "Lapply"
+    | Lapply _ -> invalid_arg "Lapply"
   ;;
 
   let of_grammar ~loc =
@@ -665,21 +659,21 @@ module Expression = struct
 
   let of_type ~loc = (Sexp_grammar_lifter.lifter ~loc)#type_ (of_grammar ~loc)
 
-  let of_generic_group ~loc { implicit_vars; ggid; types } =
+  let of_generic_group ~loc { tycon_names; ggid; types } =
     [%expr
-      { implicit_vars = [%e list ~loc implicit_vars ~f:Sexp_grammar_lifter.lift_var_name]
-      ; ggid          = [%e estring ~loc ggid]
-      ; types         =
+      { tycon_names = [%e list ~loc tycon_names ~f:Sexp_grammar_lifter.lift_var_name]
+      ; ggid = [%e estring ~loc ggid]
+      ; types =
           [%e list ~loc types ~f:(tuple2 Sexp_grammar_lifter.lift_type_name of_type)]
       }]
   ;;
 
-  let of_group ~loc { apply_implicit } ~module_path =
+  let of_group ~loc { instantiate_tycons } ~module_path =
     [%expr
-      { gid            = Ppx_sexp_conv_lib.Lazy_group_id.create ()
-      ; apply_implicit = [%e list ~loc apply_implicit ~f:of_grammar]
-      ; generic_group  = [%e the_generic_group ~loc]
-      ; origin         = [%e estring ~loc module_path]
+      { gid = Ppx_sexp_conv_lib.Lazy_group_id.create ()
+      ; instantiate_tycons = [%e list ~loc instantiate_tycons ~f:of_grammar]
+      ; generic_group = [%e the_generic_group ~loc]
+      ; origin = [%e estring ~loc module_path]
       }]
   ;;
 end
@@ -700,9 +694,9 @@ let to_pat_and_expr { grammars; generic_group; group; loc; module_path } =
       let expr = Expression.of_grammar ~loc grammar in
       pat, expr)
   in
-  let pat           = ppat_tuple (List.map bindings ~f:fst) ~loc     in
+  let pat = ppat_tuple (List.map bindings ~f:fst) ~loc in
   let generic_group = Expression.of_generic_group ~loc generic_group in
-  let group         = Expression.of_group ~loc group ~module_path    in
+  let group = Expression.of_group ~loc group ~module_path in
   let grammars =
     pexp_let
       Nonrecursive
