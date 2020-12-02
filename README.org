@@ -1,4 +1,6 @@
 #+TITLE: ppx\_sexp\_conv
+#+PARENT: ../README.md
+#+UUID: 1c395b8a-b77a-3554-e1b6-2fec585788f8
 
 * [@@deriving sexp]
 
@@ -261,6 +263,19 @@ list as its argument.
 
   A [1; 2; 3] => (A (1 2 3))
   B [1; 2; 3] => (B 1 2 3)
+#+end_src
+
+**** Inline records
+
+Constructors with inline records are represented as lists, the first element
+being the constructor name, the rest being the record fields, represented the
+same way as in record types, but without being wrapped in an extra layer of
+parentheses.
+
+#+begin_src ocaml
+  type t = A of { x : int }
+
+  A { x = 8 } => (A (x 8))
 #+end_src
 
 *** Polymorphic variants
