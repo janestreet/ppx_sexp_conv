@@ -1,6 +1,4 @@
 #+TITLE: ppx\_sexp\_conv
-#+PARENT: ../README.md
-#+UUID: 1c395b8a-b77a-3554-e1b6-2fec585788f8
 
 * [@@deriving sexp]
 
