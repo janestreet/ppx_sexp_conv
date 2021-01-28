@@ -604,7 +604,7 @@ let singleton ~loc ~path core_type : t =
     let type_variables, core_type =
       collect_type_variables_of_polymorphic_grammar core_type
     in
-    ( List.map type_variables ~f:(fun var_name -> ptyp_var ~loc var_name, Invariant)
+    ( List.map type_variables ~f:(fun var_name -> ptyp_var ~loc var_name, (NoVariance, NoInjectivity))
     , core_type )
   in
   let td =
