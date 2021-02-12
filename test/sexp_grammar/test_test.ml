@@ -103,12 +103,11 @@ module Functions = struct
   let (t_sexp_grammar : Ppx_sexp_conv_lib.Sexp.Private.Raw_grammar.t) =
     let (_the_generic_group : Ppx_sexp_conv_lib.Sexp.Private.Raw_grammar.generic_group) =
       { tycon_names = []
-      ; ggid = "\181\1700\154U\254\250:\nZ\023T\139\004+\014"
+      ; ggid = "\212M\132\163`\216\129\163\189\156\2409m\207A>"
       ; types =
           [ ( "t"
             , Tyvar_parameterize
-                ( [ "a"; "b" ]
-                , Grammar Ppx_sexp_conv_lib.Sexp.Private.Raw_grammar.fun_sexp_grammar ) )
+                ([ "a"; "b" ], Grammar Ppx_sexp_conv_lib.Conv.fun_sexp_grammar) )
           ]
       }
     in

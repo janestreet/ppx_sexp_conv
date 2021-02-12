@@ -7,13 +7,11 @@ let _ = fun (_ : t) -> ()
 let (t_sexp_grammar : Ppx_sexp_conv_lib.Sexp.Private.Raw_grammar.t) =
   let (_the_generic_group : Ppx_sexp_conv_lib.Sexp.Private.Raw_grammar.generic_group) =
     { tycon_names = [ "list" ]
-    ; ggid = "2*\207\018\214\219\006M]8\234\246i\151\192\200"
+    ; ggid = "x\162\137\186\229\219\000\136\155\017TYunT\014"
     ; types =
         [ ( "t"
           , Tyvar_instantiate
-              ( Tycon_index 0
-              , [ Grammar Ppx_sexp_conv_lib.Sexp.Private.Raw_grammar.opaque_sexp_grammar ]
-              ) )
+              (Tycon_index 0, [ Grammar Ppx_sexp_conv_lib.Conv.opaque_sexp_grammar ]) )
         ]
     }
   in

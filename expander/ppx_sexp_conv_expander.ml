@@ -1963,23 +1963,6 @@ module Str_generate_of_sexp = struct
   ;;
 end
 
-(* Generates the signature for generation of sexp grammar *)
-module Sig_generate_sexp_grammar = struct
-  let type_of_sexp_grammar ~loc _ = [%type: Ppx_sexp_conv_lib.Sexp.Private.Raw_grammar.t]
-
-  let mk_sig ~loc:_ ~path:_ (_rf, tds) =
-    List.map tds ~f:(fun td ->
-      let loc = td.ptype_loc in
-      psig_value
-        ~loc
-        (value_description
-           ~loc
-           ~name:(Located.map (fun n -> n ^ "_sexp_grammar") td.ptype_name)
-           ~type_:(type_of_sexp_grammar ~loc td)
-           ~prim:[]))
-  ;;
-end
-
 module Sexp_of = struct
   let type_extension ty =
     Sig_generate_sexp_of.type_of_sexp_of ~loc:{ ty.ptyp_loc with loc_ghost = true } ty
@@ -1996,18 +1979,7 @@ module Sexp_of = struct
   let str_exception = Str_generate_sexp_of.sexp_of_exn ~types_being_defined:`Nonrecursive
 end
 
-module Sexp_grammar = struct
-  let type_extension ty =
-    Sig_generate_sexp_grammar.type_of_sexp_grammar ty ~loc:ty.ptyp_loc
-  ;;
-
-  let core_type ~loc ~path ty =
-    Merlin_helpers.hide_expression (Str_generate_sexp_grammar.sexp_grammar ~loc ~path ty)
-  ;;
-
-  let sig_type_decl = Sig_generate_sexp_grammar.mk_sig
-  let str_type_decl = Str_generate_sexp_grammar.grammar_of_tds
-end
+module Sexp_grammar = Ppx_sexp_conv_grammar
 
 module Of_sexp = struct
   let type_extension ty = Sig_generate_of_sexp.type_of_of_sexp ~loc:ty.ptyp_loc ty

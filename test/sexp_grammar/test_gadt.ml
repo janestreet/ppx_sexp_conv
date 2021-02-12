@@ -39,19 +39,13 @@ let _ = sexp_of_t
 let (t_sexp_grammar : Ppx_sexp_conv_lib.Sexp.Private.Raw_grammar.t) =
   let (_the_generic_group : Ppx_sexp_conv_lib.Sexp.Private.Raw_grammar.generic_group) =
     { tycon_names = []
-    ; ggid = "$Pn\171\031\017\185G\1673\007\224lQ\239\171"
+    ; ggid = "hI\171z\157>\191\157\183E\134\225\246>)\251"
     ; types =
         [ ( "t"
           , Variant
               { ignore_capitalization = true
               ; alts =
-                  [ ( "T"
-                    , [ One
-                          (Grammar
-                             Ppx_sexp_conv_lib.Sexp.Private.Raw_grammar
-                             .opaque_sexp_grammar)
-                      ] )
-                  ]
+                  [ "T", [ One (Grammar Ppx_sexp_conv_lib.Conv.opaque_sexp_grammar) ] ]
               } )
         ]
     }

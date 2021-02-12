@@ -124,13 +124,13 @@ let%expect_test "arrow type / original polymorphic type syntax" =
   [%expect
     {|
     ((generic_groups
-      ((ddc522722eb44f32c55594e2d02c83b6
+      ((9277b5c0e7c9f210a0945b662def59d0
         ((tycon_names ())
          (types
           ((dummy_type_name_from_sexp_grammar (Grammar (Inline (Union ()))))))))))
      (groups
       ((7
-        ((generic_group ddc522722eb44f32c55594e2d02c83b6)
+        ((generic_group 9277b5c0e7c9f210a0945b662def59d0)
          (origin test_percent_sexp_grammar.ml) (instantiate_tycons ())))))
      (start (Ref dummy_type_name_from_sexp_grammar 7))) |}]
 ;;

@@ -1,6 +1,5 @@
 open Ppx_sexp_conv_lib
 open Conv
-open! Sexp.Private.Raw_grammar.Builtin
 
 module Sum_and_polymorphic_variants = struct
   type poly =
