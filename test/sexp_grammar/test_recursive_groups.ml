@@ -7,29 +7,16 @@ module One_type = struct
 
   let _ = fun (_ : t) -> ()
 
-  let (t_sexp_grammar : Ppx_sexp_conv_lib.Sexp.Private.Raw_grammar.t) =
-    let (_the_generic_group : Ppx_sexp_conv_lib.Sexp.Private.Raw_grammar.generic_group) =
-      { tycon_names = [ "int" ]
-      ; ggid = "\243A~\012\241*Zj\026)S&\127Q\231x"
-      ; types =
-          [ ( "t"
-            , Variant
-                { ignore_capitalization = true; alts = [ "T", [ One (Tycon_index 0) ] ] }
-            )
-          ]
-      }
-    in
-    let (_the_group : Ppx_sexp_conv_lib.Sexp.Private.Raw_grammar.group) =
-      { gid = Ppx_sexp_conv_lib.Lazy_group_id.create ()
-      ; instantiate_tycons = [ int_sexp_grammar ]
-      ; generic_group = _the_generic_group
-      ; origin = "test_recursive_groups.ml.One_type"
-      }
-    in
-    let (t_sexp_grammar : Ppx_sexp_conv_lib.Sexp.Private.Raw_grammar.t) =
-      Ref ("t", _the_group)
-    in
-    t_sexp_grammar
+  let (t_sexp_grammar : t Ppx_sexp_conv_lib.Sexp.Private.Raw_grammar.t) =
+    { untyped =
+        Lazy
+          (lazy
+            (Variant
+               { name_kind = Capitalized
+               ; clauses =
+                   [ { name = "T"; args = Cons (int_sexp_grammar.untyped, Empty) } ]
+               }))
+    }
   ;;
 
   let _ = t_sexp_grammar
@@ -50,45 +37,59 @@ module Two_types = struct
   let _ = fun (_ : t) -> ()
   let _ = fun (_ : u) -> ()
 
-  let ( (t_sexp_grammar : Ppx_sexp_conv_lib.Sexp.Private.Raw_grammar.t)
-      , (u_sexp_grammar : Ppx_sexp_conv_lib.Sexp.Private.Raw_grammar.t) )
-    =
-    let (_the_generic_group : Ppx_sexp_conv_lib.Sexp.Private.Raw_grammar.generic_group) =
-      { tycon_names = [ "int" ]
-      ; ggid = "\241o\231&\242\021\147\249\029+\000\245\187\240\158H"
-      ; types =
-          [ ( "t"
-            , Variant
-                { ignore_capitalization = true
-                ; alts =
-                    [ "T_int", [ One (Tycon_index 0) ]; "T_u", [ One (Recursive "u") ] ]
-                } )
-          ; ( "u"
-            , Variant
-                { ignore_capitalization = true
-                ; alts =
-                    [ "U_int", [ One (Tycon_index 0) ]; "U_t", [ One (Recursive "t") ] ]
-                } )
-          ]
-      }
-    in
-    let (_the_group : Ppx_sexp_conv_lib.Sexp.Private.Raw_grammar.group) =
-      { gid = Ppx_sexp_conv_lib.Lazy_group_id.create ()
-      ; instantiate_tycons = [ int_sexp_grammar ]
-      ; generic_group = _the_generic_group
-      ; origin = "test_recursive_groups.ml.Two_types"
-      }
-    in
-    let (t_sexp_grammar : Ppx_sexp_conv_lib.Sexp.Private.Raw_grammar.t) =
-      Ref ("t", _the_group)
-    and (u_sexp_grammar : Ppx_sexp_conv_lib.Sexp.Private.Raw_grammar.t) =
-      Ref ("u", _the_group)
-    in
-    t_sexp_grammar, u_sexp_grammar
-  ;;
+  include struct
+    open struct
+      let (grammars__001_ :
+             Ppx_sexp_conv_lib.Sexp.Private.Raw_grammar.defn Stdlib.List.t Stdlib.Lazy.t)
+        =
+        lazy
+          (let (t_sexp_grammar : t Ppx_sexp_conv_lib.Sexp.Private.Raw_grammar.t) =
+             { untyped = Tycon ("t", []) }
+           and (u_sexp_grammar : u Ppx_sexp_conv_lib.Sexp.Private.Raw_grammar.t) =
+             { untyped = Tycon ("u", []) }
+           in
+           [ { tycon = "t"
+             ; tyvars = []
+             ; grammar =
+                 Variant
+                   { name_kind = Capitalized
+                   ; clauses =
+                       [ { name = "T_int"; args = Cons (int_sexp_grammar.untyped, Empty) }
+                       ; { name = "T_u"; args = Cons (u_sexp_grammar.untyped, Empty) }
+                       ]
+                   }
+             }
+           ; { tycon = "u"
+             ; tyvars = []
+             ; grammar =
+                 Variant
+                   { name_kind = Capitalized
+                   ; clauses =
+                       [ { name = "U_int"; args = Cons (int_sexp_grammar.untyped, Empty) }
+                       ; { name = "U_t"; args = Cons (t_sexp_grammar.untyped, Empty) }
+                       ]
+                   }
+             }
+           ])
+      ;;
 
-  let _ = t_sexp_grammar
-  and _ = u_sexp_grammar
+      let _ = grammars__001_
+    end
+
+    let (t_sexp_grammar : t Ppx_sexp_conv_lib.Sexp.Private.Raw_grammar.t) =
+      { untyped =
+          Lazy (lazy (Recursive (Tycon ("t", []), Stdlib.Lazy.force grammars__001_)))
+      }
+
+    and (u_sexp_grammar : u Ppx_sexp_conv_lib.Sexp.Private.Raw_grammar.t) =
+      { untyped =
+          Lazy (lazy (Recursive (Tycon ("u", []), Stdlib.Lazy.force grammars__001_)))
+      }
+    ;;
+
+    let _ = t_sexp_grammar
+    and _ = u_sexp_grammar
+  end
 
   [@@@end]
 end

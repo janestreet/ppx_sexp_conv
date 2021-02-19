@@ -36,31 +36,20 @@ let sexp_of_t =
 
 let _ = sexp_of_t
 
-let (t_sexp_grammar : Ppx_sexp_conv_lib.Sexp.Private.Raw_grammar.t) =
-  let (_the_generic_group : Ppx_sexp_conv_lib.Sexp.Private.Raw_grammar.generic_group) =
-    { tycon_names = []
-    ; ggid = "hI\171z\157>\191\157\183E\134\225\246>)\251"
-    ; types =
-        [ ( "t"
-          , Variant
-              { ignore_capitalization = true
-              ; alts =
-                  [ "T", [ One (Grammar Ppx_sexp_conv_lib.Conv.opaque_sexp_grammar) ] ]
-              } )
-        ]
-    }
-  in
-  let (_the_group : Ppx_sexp_conv_lib.Sexp.Private.Raw_grammar.group) =
-    { gid = Ppx_sexp_conv_lib.Lazy_group_id.create ()
-    ; instantiate_tycons = []
-    ; generic_group = _the_generic_group
-    ; origin = "test_gadt.ml"
-    }
-  in
-  let (t_sexp_grammar : Ppx_sexp_conv_lib.Sexp.Private.Raw_grammar.t) =
-    Ref ("t", _the_group)
-  in
-  t_sexp_grammar
+let (t_sexp_grammar : t Ppx_sexp_conv_lib.Sexp.Private.Raw_grammar.t) =
+  { untyped =
+      Lazy
+        (lazy
+          (Variant
+             { name_kind = Capitalized
+             ; clauses =
+                 [ { name = "T"
+                   ; args =
+                       Cons (Ppx_sexp_conv_lib.Conv.opaque_sexp_grammar.untyped, Empty)
+                   }
+                 ]
+             }))
+  }
 ;;
 
 let _ = t_sexp_grammar
@@ -96,25 +85,8 @@ let sexp_of_nullary =
 
 let _ = sexp_of_nullary
 
-let (nullary_sexp_grammar : Ppx_sexp_conv_lib.Sexp.Private.Raw_grammar.t) =
-  let (_the_generic_group : Ppx_sexp_conv_lib.Sexp.Private.Raw_grammar.generic_group) =
-    { tycon_names = []
-    ; ggid = "\127z'\177\250\197 V\163t\221416\000)"
-    ; types =
-        [ "nullary", Variant { ignore_capitalization = true; alts = [ "Nullary", [] ] } ]
-    }
-  in
-  let (_the_group : Ppx_sexp_conv_lib.Sexp.Private.Raw_grammar.group) =
-    { gid = Ppx_sexp_conv_lib.Lazy_group_id.create ()
-    ; instantiate_tycons = []
-    ; generic_group = _the_generic_group
-    ; origin = "test_gadt.ml"
-    }
-  in
-  let (nullary_sexp_grammar : Ppx_sexp_conv_lib.Sexp.Private.Raw_grammar.t) =
-    Ref ("nullary", _the_group)
-  in
-  nullary_sexp_grammar
+let (nullary_sexp_grammar : nullary Ppx_sexp_conv_lib.Sexp.Private.Raw_grammar.t) =
+  { untyped = Enum { name_kind = Capitalized; names = [ "Nullary" ] } }
 ;;
 
 let _ = nullary_sexp_grammar
@@ -127,32 +99,18 @@ type _ grammar_only = Grammar_only : int -> string grammar_only
 
 let _ = fun (_ : _ grammar_only) -> ()
 
-let (grammar_only_sexp_grammar : Ppx_sexp_conv_lib.Sexp.Private.Raw_grammar.t) =
-  let (_the_generic_group : Ppx_sexp_conv_lib.Sexp.Private.Raw_grammar.generic_group) =
-    { tycon_names = [ "int" ]
-    ; ggid = "_Z\019'\145\145)\144\155)\026\004\024\243z4"
-    ; types =
-        [ ( "grammar_only"
-          , Tyvar_parameterize
-              ( [ "_" ]
-              , Variant
-                  { ignore_capitalization = true
-                  ; alts = [ "Grammar_only", [ One (Tycon_index 0) ] ]
-                  } ) )
-        ]
-    }
-  in
-  let (_the_group : Ppx_sexp_conv_lib.Sexp.Private.Raw_grammar.group) =
-    { gid = Ppx_sexp_conv_lib.Lazy_group_id.create ()
-    ; instantiate_tycons = [ int_sexp_grammar ]
-    ; generic_group = _the_generic_group
-    ; origin = "test_gadt.ml"
-    }
-  in
-  let (grammar_only_sexp_grammar : Ppx_sexp_conv_lib.Sexp.Private.Raw_grammar.t) =
-    Ref ("grammar_only", _the_group)
-  in
-  grammar_only_sexp_grammar
+let (grammar_only_sexp_grammar :
+       'v_x__001_ Ppx_sexp_conv_lib.Sexp.Private.Raw_grammar.t
+     -> 'v_x__001_ grammar_only Ppx_sexp_conv_lib.Sexp.Private.Raw_grammar.t)
+  =
+  fun _'v_x__001__sexp_grammar ->
+  { untyped =
+      Variant
+        { name_kind = Capitalized
+        ; clauses =
+            [ { name = "Grammar_only"; args = Cons (int_sexp_grammar.untyped, Empty) } ]
+        }
+  }
 ;;
 
 let _ = grammar_only_sexp_grammar

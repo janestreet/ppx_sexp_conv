@@ -1,5 +1,9 @@
 open! Base
 
+module type S = sig
+  type t [@@deriving sexp_grammar]
+end
+
 module Key = struct
   type t = int [@@deriving sexp_grammar]
 end
@@ -11,32 +15,19 @@ module Pair = struct
     type 'b t = A.t * 'b
   end
 
-  let m__t_sexp_grammar = [%sexp_grammar: < for_all : 'a 'b. ('a, 'b) t > ]
+  let m__t_sexp_grammar (type a) (module Key : S with type t = a) v_sexp_grammar =
+    t_sexp_grammar Key.t_sexp_grammar v_sexp_grammar
+  ;;
 end
 
 type t = string Pair.M(Key).t [@@deriving_inline sexp_grammar]
 
 let _ = fun (_ : t) -> ()
 
-let (t_sexp_grammar : Ppx_sexp_conv_lib.Sexp.Private.Raw_grammar.t) =
-  let (_the_generic_group : Ppx_sexp_conv_lib.Sexp.Private.Raw_grammar.generic_group) =
-    { tycon_names = [ "string"; "Pair.m__t"; "Key.t" ]
-    ; ggid = "^DF\173\243\197\131\141\253\181\029-\19450\231"
-    ; types = [ "t", Tyvar_instantiate (Tycon_index 1, [ Tycon_index 2; Tycon_index 0 ]) ]
-    }
-  in
-  let (_the_group : Ppx_sexp_conv_lib.Sexp.Private.Raw_grammar.group) =
-    { gid = Ppx_sexp_conv_lib.Lazy_group_id.create ()
-    ; instantiate_tycons =
-        [ string_sexp_grammar; Pair.m__t_sexp_grammar; Key.t_sexp_grammar ]
-    ; generic_group = _the_generic_group
-    ; origin = "test_base_map.ml"
-    }
-  in
-  let (t_sexp_grammar : Ppx_sexp_conv_lib.Sexp.Private.Raw_grammar.t) =
-    Ref ("t", _the_group)
-  in
-  t_sexp_grammar
+let (t_sexp_grammar : t Ppx_sexp_conv_lib.Sexp.Private.Raw_grammar.t) =
+  { untyped =
+      Lazy (lazy (Pair.m__t_sexp_grammar (module Key) string_sexp_grammar).untyped)
+  }
 ;;
 
 let _ = t_sexp_grammar

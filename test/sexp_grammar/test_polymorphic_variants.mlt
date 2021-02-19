@@ -15,7 +15,7 @@ type t = [ `A of int & string ] [@@deriving sexp_grammar]
 [%%expect
   {|
 Line _, characters _-_:
-Error: ppx_sexp_conv: sexp_grammar doesn't support polymorphic variants with intersection types ([`A of _ & _])
+Error: sexp_grammar: intersection types are unsupported
 |}]
 
 type t = [> `A ] [@@deriving sexp]
@@ -31,7 +31,7 @@ type t = [> `A ] [@@deriving sexp_grammar]
 [%%expect
   {|
 Line _, characters _-_:
-Error: ppx_sexp_conv: sexp_grammar doesn't support polymorphic variants with < or >
+Error: sexp_grammar: open polymorphic variant types are unsupported
 |}]
 
 type t = [< `A ] [@@deriving sexp]
@@ -48,7 +48,8 @@ type t = [< `A ] [@@deriving sexp_grammar]
 [%%expect
   {|
 Line _, characters _-_:
-Error: ppx_sexp_conv: sexp_grammar doesn't support polymorphic variants with < or >
+Error: A type variable is unbound in this type declaration.
+In type [< `A ] as 'a the variable 'a is unbound
 |}]
 
 type 'a t = [< `A ] as 'a [@@deriving sexp]
@@ -61,10 +62,9 @@ Error: Type unsupported for ppx [of_sexp] conversion
 
 type 'a t = [< `A ] as 'a [@@deriving sexp_grammar]
 
-[%%expect
-  {|
+[%%expect {|
 Line _, characters _-_:
-Error: ppx_sexp_conv: sexp_grammar doesn't support aliases
+Error: sexp_grammar: type aliases are unsupported
 |}]
 
 type a = A : [> ] -> a [@@deriving sexp]

@@ -48,18 +48,16 @@ module Of_sexp : sig
 end
 
 module Sexp_grammar : sig
-  val type_extension : core_type -> core_type
-  val core_type : loc:Location.t -> path:string -> core_type -> expression
+  val type_extension : ctxt:Expansion_context.Extension.t -> core_type -> core_type
+  val core_type : ctxt:Expansion_context.Extension.t -> core_type -> expression
 
   val sig_type_decl
-    :  loc:Location.t
-    -> path:string
+    :  ctxt:Expansion_context.Deriver.t
     -> rec_flag * type_declaration list
     -> signature
 
   val str_type_decl
-    :  loc:Location.t
-    -> path:string
+    :  ctxt:Expansion_context.Deriver.t
     -> rec_flag * type_declaration list
     -> structure
 end

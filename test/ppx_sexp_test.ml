@@ -271,7 +271,7 @@ module Polymorphic_record_field = struct
     { poly : 'a 'b. 'a list
     ; maybe_x : 'x option
     }
-  [@@deriving sexp, sexp_grammar]
+  [@@deriving sexp]
 
   let%test_unit _ =
     let t x = { poly = []; maybe_x = Some x } in
@@ -483,8 +483,8 @@ module Omit_nil = struct
     | sexp -> int_of_sexp sexp
   ;;
 
-  let natural_option_sexp_grammar : Sexp.Private.Raw_grammar.t =
-    Inline (Union [ List []; Atom Int ])
+  let natural_option_sexp_grammar : natural_option Sexp.Private.Raw_grammar.t =
+    { untyped = Union [ List Empty; Integer ] }
   ;;
 
   let check sexp_of_t t_of_sexp str t =
@@ -802,8 +802,8 @@ module Magic_types = struct
   let%test _ = t_of_sexp sexp = t
   let%test _ = sexp_of_t t = sexp
 
-  type u = A of int sexp_list [@warning "-3"] [@@deriving sexp, sexp_grammar]
-  type v = ([ `A of int sexp_list ][@warning "-3"]) [@@deriving sexp, sexp_grammar]
+  type u = A of int sexp_list [@warning "-3"] [@@deriving sexp]
+  type v = ([ `A of int sexp_list ][@warning "-3"]) [@@deriving sexp]
 
   let sexp = Sexplib.Sexp.of_string "(A 1 2 3)"
   let u = A [ 1; 2; 3 ]
@@ -855,7 +855,13 @@ module Applicative_functor_types = struct
     ;;
 
     (* You would actually have to write this manually for functors. *)
-    let s__t_sexp_grammar = [%sexp_grammar: < for_all : 'k1 'k2. ('k1 * 'k2) list > ]
+    let s__t_sexp_grammar
+          (type k1 k2)
+          (module K1 : Of_sexpable with type t = k1)
+          (module K2 : Of_sexpable with type t = k2)
+      =
+      [%sexp_grammar: (K1.t * K2.t) list]
+    ;;
   end
 
   module Int = struct
@@ -931,7 +937,3 @@ module Default_values_and_polymorphism = struct
     }
   [@@deriving of_sexp]
 end
-
-let (_ : Sexplib.Sexp.Raw_grammar.t) =
-  [%sexp_grammar: < for_all : 'k 'v. ('k * 'v) list > ]
-;;

@@ -7,38 +7,29 @@ module Nested_inside_variant = struct
 
   let _ = fun (_ : t) -> ()
 
-  let (t_sexp_grammar : Ppx_sexp_conv_lib.Sexp.Private.Raw_grammar.t) =
-    let (_the_generic_group : Ppx_sexp_conv_lib.Sexp.Private.Raw_grammar.generic_group) =
-      { tycon_names = [ "int" ]
-      ; ggid = "Z\241\230\155\202\128I6<#U\238\187\226\131,"
-      ; types =
-          [ ( "t"
-            , Variant
-                { ignore_capitalization = true
-                ; alts =
-                    [ ( "A"
-                      , [ One
-                            (Variant
-                               { ignore_capitalization = false
-                               ; alts = [ "A", [ One (Tycon_index 0) ] ]
-                               })
-                        ] )
-                    ]
-                } )
-          ]
-      }
-    in
-    let (_the_group : Ppx_sexp_conv_lib.Sexp.Private.Raw_grammar.group) =
-      { gid = Ppx_sexp_conv_lib.Lazy_group_id.create ()
-      ; instantiate_tycons = [ int_sexp_grammar ]
-      ; generic_group = _the_generic_group
-      ; origin = "test_variants_more.ml.Nested_inside_variant"
-      }
-    in
-    let (t_sexp_grammar : Ppx_sexp_conv_lib.Sexp.Private.Raw_grammar.t) =
-      Ref ("t", _the_group)
-    in
-    t_sexp_grammar
+  let (t_sexp_grammar : t Ppx_sexp_conv_lib.Sexp.Private.Raw_grammar.t) =
+    { untyped =
+        Lazy
+          (lazy
+            (Variant
+               { name_kind = Capitalized
+               ; clauses =
+                   [ { name = "A"
+                     ; args =
+                         Cons
+                           ( Variant
+                               { name_kind = Any_case
+                               ; clauses =
+                                   [ { name = "A"
+                                     ; args = Cons (int_sexp_grammar.untyped, Empty)
+                                     }
+                                   ]
+                               }
+                           , Empty )
+                     }
+                   ]
+               }))
+    }
   ;;
 
   let _ = t_sexp_grammar
@@ -51,41 +42,31 @@ module Nested_inside_record = struct
 
   let _ = fun (_ : t) -> ()
 
-  let (t_sexp_grammar : Ppx_sexp_conv_lib.Sexp.Private.Raw_grammar.t) =
-    let (_the_generic_group : Ppx_sexp_conv_lib.Sexp.Private.Raw_grammar.generic_group) =
-      { tycon_names = [ "int" ]
-      ; ggid = "\001\215\152\002\244\149\139\179d\bwc\181\223W\187"
-      ; types =
-          [ ( "t"
-            , Record
-                { allow_extra_fields = false
-                ; fields =
-                    [ ( "a"
-                      , { optional = false
+  let (t_sexp_grammar : t Ppx_sexp_conv_lib.Sexp.Private.Raw_grammar.t) =
+    { untyped =
+        Lazy
+          (lazy
+            (List
+               (Fields
+                  { allow_extra_fields = false
+                  ; fields =
+                      [ { name = "a"
+                        ; required = true
                         ; args =
-                            [ One
-                                (Variant
-                                   { ignore_capitalization = false
-                                   ; alts = [ "A", [ One (Tycon_index 0) ] ]
-                                   })
-                            ]
-                        } )
-                    ]
-                } )
-          ]
-      }
-    in
-    let (_the_group : Ppx_sexp_conv_lib.Sexp.Private.Raw_grammar.group) =
-      { gid = Ppx_sexp_conv_lib.Lazy_group_id.create ()
-      ; instantiate_tycons = [ int_sexp_grammar ]
-      ; generic_group = _the_generic_group
-      ; origin = "test_variants_more.ml.Nested_inside_record"
-      }
-    in
-    let (t_sexp_grammar : Ppx_sexp_conv_lib.Sexp.Private.Raw_grammar.t) =
-      Ref ("t", _the_group)
-    in
-    t_sexp_grammar
+                            Cons
+                              ( Variant
+                                  { name_kind = Any_case
+                                  ; clauses =
+                                      [ { name = "A"
+                                        ; args = Cons (int_sexp_grammar.untyped, Empty)
+                                        }
+                                      ]
+                                  }
+                              , Empty )
+                        }
+                      ]
+                  })))
+    }
   ;;
 
   let _ = t_sexp_grammar

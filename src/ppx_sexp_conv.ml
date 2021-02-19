@@ -14,22 +14,24 @@ module Sexp_grammar = struct
   module E = Ppx_sexp_conv_expander.Sexp_grammar
 
   let name = "sexp_grammar"
-  let str_type_decl = Deriving.Generator.make_noarg E.str_type_decl
-  let sig_type_decl = Deriving.Generator.make_noarg E.sig_type_decl
+  let str_type_decl = Deriving.Generator.V2.make_noarg E.str_type_decl
+  let sig_type_decl = Deriving.Generator.V2.make_noarg E.sig_type_decl
   let deriver = Deriving.add name ~sig_type_decl ~str_type_decl
-  let extension = E.core_type
-  let () = register_extension name extension
+
+  let expr_extension =
+    Extension.V3.declare name Expression Ast_pattern.(ptyp __) E.core_type
+  ;;
+
+  let type_extension =
+    Extension.V3.declare name Core_type Ast_pattern.(ptyp __) E.type_extension
+  ;;
 
   let () =
     Driver.register_transformation
-      name
+      "Ppxlib.Deriving.sexp_grammar"
       ~rules:
-        [ Context_free.Rule.extension
-            (Extension.declare
-               name
-               Core_type
-               Ast_pattern.(ptyp __)
-               (fun ~loc:_ ~path:_ ty -> E.type_extension ty))
+        [ Context_free.Rule.extension expr_extension
+        ; Context_free.Rule.extension type_extension
         ]
   ;;
 end

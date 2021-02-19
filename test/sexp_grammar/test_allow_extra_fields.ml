@@ -5,30 +5,21 @@ module Allow_extra_fields = struct
 
   let _ = fun (_ : t) -> ()
 
-  let (t_sexp_grammar : Ppx_sexp_conv_lib.Sexp.Private.Raw_grammar.t) =
-    let (_the_generic_group : Ppx_sexp_conv_lib.Sexp.Private.Raw_grammar.generic_group) =
-      { tycon_names = [ "int" ]
-      ; ggid = "\024\018\219\231,\176\148\206Y\195\132\0042H\\U"
-      ; types =
-          [ ( "t"
-            , Record
-                { allow_extra_fields = true
-                ; fields = [ "a", { optional = false; args = [ One (Tycon_index 0) ] } ]
-                } )
-          ]
-      }
-    in
-    let (_the_group : Ppx_sexp_conv_lib.Sexp.Private.Raw_grammar.group) =
-      { gid = Ppx_sexp_conv_lib.Lazy_group_id.create ()
-      ; instantiate_tycons = [ int_sexp_grammar ]
-      ; generic_group = _the_generic_group
-      ; origin = "test_allow_extra_fields.ml.Allow_extra_fields"
-      }
-    in
-    let (t_sexp_grammar : Ppx_sexp_conv_lib.Sexp.Private.Raw_grammar.t) =
-      Ref ("t", _the_group)
-    in
-    t_sexp_grammar
+  let (t_sexp_grammar : t Ppx_sexp_conv_lib.Sexp.Private.Raw_grammar.t) =
+    { untyped =
+        Lazy
+          (lazy
+            (List
+               (Fields
+                  { allow_extra_fields = true
+                  ; fields =
+                      [ { name = "a"
+                        ; required = true
+                        ; args = Cons (int_sexp_grammar.untyped, Empty)
+                        }
+                      ]
+                  })))
+    }
   ;;
 
   let _ = t_sexp_grammar
@@ -41,30 +32,21 @@ module Forbid_extra_fields = struct
 
   let _ = fun (_ : t) -> ()
 
-  let (t_sexp_grammar : Ppx_sexp_conv_lib.Sexp.Private.Raw_grammar.t) =
-    let (_the_generic_group : Ppx_sexp_conv_lib.Sexp.Private.Raw_grammar.generic_group) =
-      { tycon_names = [ "int" ]
-      ; ggid = "\142\248\194uE\0077q\014\151\186\131R\n\213$"
-      ; types =
-          [ ( "t"
-            , Record
-                { allow_extra_fields = false
-                ; fields = [ "a", { optional = false; args = [ One (Tycon_index 0) ] } ]
-                } )
-          ]
-      }
-    in
-    let (_the_group : Ppx_sexp_conv_lib.Sexp.Private.Raw_grammar.group) =
-      { gid = Ppx_sexp_conv_lib.Lazy_group_id.create ()
-      ; instantiate_tycons = [ int_sexp_grammar ]
-      ; generic_group = _the_generic_group
-      ; origin = "test_allow_extra_fields.ml.Forbid_extra_fields"
-      }
-    in
-    let (t_sexp_grammar : Ppx_sexp_conv_lib.Sexp.Private.Raw_grammar.t) =
-      Ref ("t", _the_group)
-    in
-    t_sexp_grammar
+  let (t_sexp_grammar : t Ppx_sexp_conv_lib.Sexp.Private.Raw_grammar.t) =
+    { untyped =
+        Lazy
+          (lazy
+            (List
+               (Fields
+                  { allow_extra_fields = false
+                  ; fields =
+                      [ { name = "a"
+                        ; required = true
+                        ; args = Cons (int_sexp_grammar.untyped, Empty)
+                        }
+                      ]
+                  })))
+    }
   ;;
 
   let _ = t_sexp_grammar
@@ -80,49 +62,40 @@ module Variant_type = struct
 
   let _ = fun (_ : t) -> ()
 
-  let (t_sexp_grammar : Ppx_sexp_conv_lib.Sexp.Private.Raw_grammar.t) =
-    let (_the_generic_group : Ppx_sexp_conv_lib.Sexp.Private.Raw_grammar.generic_group) =
-      { tycon_names = [ "int" ]
-      ; ggid = "d\241\139\1990f06\b\n\217\001J:\030B"
-      ; types =
-          [ ( "t"
-            , Variant
-                { ignore_capitalization = true
-                ; alts =
-                    [ ( "Allow_extra_fields"
-                      , [ Fields
-                            { allow_extra_fields = true
-                            ; fields =
-                                [ ( "foo"
-                                  , { optional = false; args = [ One (Tycon_index 0) ] } )
-                                ]
-                            }
-                        ] )
-                    ; ( "Forbid_extra_fields"
-                      , [ Fields
-                            { allow_extra_fields = false
-                            ; fields =
-                                [ ( "bar"
-                                  , { optional = false; args = [ One (Tycon_index 0) ] } )
-                                ]
-                            }
-                        ] )
-                    ]
-                } )
-          ]
-      }
-    in
-    let (_the_group : Ppx_sexp_conv_lib.Sexp.Private.Raw_grammar.group) =
-      { gid = Ppx_sexp_conv_lib.Lazy_group_id.create ()
-      ; instantiate_tycons = [ int_sexp_grammar ]
-      ; generic_group = _the_generic_group
-      ; origin = "test_allow_extra_fields.ml.Variant_type"
-      }
-    in
-    let (t_sexp_grammar : Ppx_sexp_conv_lib.Sexp.Private.Raw_grammar.t) =
-      Ref ("t", _the_group)
-    in
-    t_sexp_grammar
+  let (t_sexp_grammar : t Ppx_sexp_conv_lib.Sexp.Private.Raw_grammar.t) =
+    { untyped =
+        Lazy
+          (lazy
+            (Variant
+               { name_kind = Capitalized
+               ; clauses =
+                   [ { name = "Allow_extra_fields"
+                     ; args =
+                         Fields
+                           { allow_extra_fields = true
+                           ; fields =
+                               [ { name = "foo"
+                                 ; required = true
+                                 ; args = Cons (int_sexp_grammar.untyped, Empty)
+                                 }
+                               ]
+                           }
+                     }
+                   ; { name = "Forbid_extra_fields"
+                     ; args =
+                         Fields
+                           { allow_extra_fields = false
+                           ; fields =
+                               [ { name = "bar"
+                                 ; required = true
+                                 ; args = Cons (int_sexp_grammar.untyped, Empty)
+                                 }
+                               ]
+                           }
+                     }
+                   ]
+               }))
+    }
   ;;
 
   let _ = t_sexp_grammar

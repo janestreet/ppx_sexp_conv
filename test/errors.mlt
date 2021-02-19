@@ -213,37 +213,38 @@ let (_ : _) = [%sexp_grammar: 'k -> 'v -> ('k * 'v) list]
 let (_ : _) = [%sexp_grammar: < for_all : 'k 'v. ('k * 'v) list > ]
 
 [%%expect {|
+Line _, characters _-_:
+Error: sexp_grammar: object types are unsupported
 |}]
 
 let (_ : _) = [%sexp_grammar: < other : 'k 'v. ('k * 'v) list > ]
 
-[%%expect
-  {|
+[%%expect {|
 Line _, characters _-_:
-Error: ppx_sexp_conv: sexp_grammar doesn't support objects, except the syntax [%sexp_grammar: < for_all : 'a 'b . ... >] to generate grammars of polymorphic types
+Error: sexp_grammar: object types are unsupported
 |}]
 
 type t = < for_all : 'k 'v. ('k * 'v) list > [@@deriving sexp_grammar]
 
-[%%expect
-  {|
+[%%expect {|
 Line _, characters _-_:
-Error: ppx_sexp_conv: sexp_grammar doesn't support objects
+Error: sexp_grammar: object types are unsupported
 |}]
 
 type t = < other : 'k 'v. ('k * 'v) list > [@@deriving sexp_grammar]
 
-[%%expect
-  {|
+[%%expect {|
 Line _, characters _-_:
-Error: ppx_sexp_conv: sexp_grammar doesn't support objects
+Error: sexp_grammar: object types are unsupported
 |}]
 
 type t = T : 'a -> t [@@deriving sexp_grammar]
 
-[%%expect {|
+[%%expect
+  {|
 Line _, characters _-_:
-Error: no sexp grammar for type parameter 'a
+Error: Unbound value _'a_sexp_grammar
+Hint: Did you mean char_sexp_grammar, int_sexp_grammar or ref_sexp_grammar?
 |}]
 
 (* If we can sensibly derive [sexp_grammar], we might as well, because the user might
@@ -259,6 +260,6 @@ type _ t = T : int -> string t [@@deriving of_sexp]
   {|
 Line _, characters _-_:
 Error: This expression has type string t
-       but an expression was expected of type v_x__001_ t
-       Type string is not compatible with type v_x__001_
+       but an expression was expected of type v_x__002_ t
+       Type string is not compatible with type v_x__002_
 |}]
