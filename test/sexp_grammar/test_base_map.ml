@@ -24,7 +24,7 @@ type t = string Pair.M(Key).t [@@deriving_inline sexp_grammar]
 
 let _ = fun (_ : t) -> ()
 
-let (t_sexp_grammar : t Ppx_sexp_conv_lib.Sexp.Private.Raw_grammar.t) =
+let (t_sexp_grammar : t Ppx_sexp_conv_lib.Sexp_grammar.t) =
   { untyped =
       Lazy (lazy (Pair.m__t_sexp_grammar (module Key) string_sexp_grammar).untyped)
   }

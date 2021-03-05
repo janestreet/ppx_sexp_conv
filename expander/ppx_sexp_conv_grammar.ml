@@ -9,10 +9,7 @@ let unsupported ~loc string =
 let grammar_name name = name ^ "_sexp_grammar"
 let tyvar_grammar_name name = grammar_name ("_'" ^ name)
 let estr { loc; txt } = estring ~loc txt
-
-let grammar_type ~loc core_type =
-  [%type: [%t core_type] Ppx_sexp_conv_lib.Sexp.Private.Raw_grammar.t]
-;;
+let grammar_type ~loc core_type = [%type: [%t core_type] Ppx_sexp_conv_lib.Sexp_grammar.t]
 
 let abstract_grammar ~ctxt ~loc id =
   let module_name =
@@ -32,7 +29,7 @@ let tycon_grammar ~loc name args = [%expr Tycon ([%e name], [%e args])]
 let recursive_grammar ~loc grammar defns = [%expr Recursive ([%e grammar], [%e defns])]
 
 let defns_type ~loc =
-  [%type: Ppx_sexp_conv_lib.Sexp.Private.Raw_grammar.defn Stdlib.List.t Stdlib.Lazy.t]
+  [%type: Ppx_sexp_conv_lib.Sexp_grammar.defn Stdlib.List.t Stdlib.Lazy.t]
 ;;
 
 let untyped_grammar ~loc expr =

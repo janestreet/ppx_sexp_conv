@@ -6,7 +6,7 @@ type abstract_a [@@deriving sexp] [@@deriving_inline sexp_grammar]
 include sig
   [@@@ocaml.warning "-32"]
 
-  val abstract_a_sexp_grammar : abstract_a Ppx_sexp_conv_lib.Sexp.Private.Raw_grammar.t
+  val abstract_a_sexp_grammar : abstract_a Ppx_sexp_conv_lib.Sexp_grammar.t
 end
 [@@ocaml.doc "@inline"]
 
@@ -17,7 +17,7 @@ type abstract_b [@@deriving sexp] [@@deriving_inline sexp_grammar]
 include sig
   [@@@ocaml.warning "-32"]
 
-  val abstract_b_sexp_grammar : abstract_b Ppx_sexp_conv_lib.Sexp.Private.Raw_grammar.t
+  val abstract_b_sexp_grammar : abstract_b Ppx_sexp_conv_lib.Sexp_grammar.t
 end
 [@@ocaml.doc "@inline"]
 
@@ -28,7 +28,7 @@ type integer = int [@@deriving sexp] [@@deriving_inline sexp_grammar]
 include sig
   [@@@ocaml.warning "-32"]
 
-  val integer_sexp_grammar : integer Ppx_sexp_conv_lib.Sexp.Private.Raw_grammar.t
+  val integer_sexp_grammar : integer Ppx_sexp_conv_lib.Sexp_grammar.t
 end
 [@@ocaml.doc "@inline"]
 
@@ -39,7 +39,7 @@ type tuple = int * string [@@deriving sexp] [@@deriving_inline sexp_grammar]
 include sig
   [@@@ocaml.warning "-32"]
 
-  val tuple_sexp_grammar : tuple Ppx_sexp_conv_lib.Sexp.Private.Raw_grammar.t
+  val tuple_sexp_grammar : tuple Ppx_sexp_conv_lib.Sexp_grammar.t
 end
 [@@ocaml.doc "@inline"]
 
@@ -54,7 +54,7 @@ type pos =
 include sig
   [@@@ocaml.warning "-32"]
 
-  val pos_sexp_grammar : pos Ppx_sexp_conv_lib.Sexp.Private.Raw_grammar.t
+  val pos_sexp_grammar : pos Ppx_sexp_conv_lib.Sexp_grammar.t
 end
 [@@ocaml.doc "@inline"]
 
@@ -66,8 +66,8 @@ include sig
   [@@@ocaml.warning "-32"]
 
   val unary_sexp_grammar
-    :  'a Ppx_sexp_conv_lib.Sexp.Private.Raw_grammar.t
-    -> 'a unary Ppx_sexp_conv_lib.Sexp.Private.Raw_grammar.t
+    :  'a Ppx_sexp_conv_lib.Sexp_grammar.t
+    -> 'a unary Ppx_sexp_conv_lib.Sexp_grammar.t
 end
 [@@ocaml.doc "@inline"]
 
@@ -82,7 +82,7 @@ type enum =
 include sig
   [@@@ocaml.warning "-32"]
 
-  val enum_sexp_grammar : enum Ppx_sexp_conv_lib.Sexp.Private.Raw_grammar.t
+  val enum_sexp_grammar : enum Ppx_sexp_conv_lib.Sexp_grammar.t
 end
 [@@ocaml.doc "@inline"]
 
@@ -97,9 +97,9 @@ include sig
   [@@@ocaml.warning "-32"]
 
   val which_sexp_grammar
-    :  'a Ppx_sexp_conv_lib.Sexp.Private.Raw_grammar.t
-    -> 'b Ppx_sexp_conv_lib.Sexp.Private.Raw_grammar.t
-    -> ('a, 'b) which Ppx_sexp_conv_lib.Sexp.Private.Raw_grammar.t
+    :  'a Ppx_sexp_conv_lib.Sexp_grammar.t
+    -> 'b Ppx_sexp_conv_lib.Sexp_grammar.t
+    -> ('a, 'b) which Ppx_sexp_conv_lib.Sexp_grammar.t
 end
 [@@ocaml.doc "@inline"]
 
@@ -114,8 +114,8 @@ include sig
   [@@@ocaml.warning "-32"]
 
   val optional_sexp_grammar
-    :  'a Ppx_sexp_conv_lib.Sexp.Private.Raw_grammar.t
-    -> 'a optional Ppx_sexp_conv_lib.Sexp.Private.Raw_grammar.t
+    :  'a Ppx_sexp_conv_lib.Sexp_grammar.t
+    -> 'a optional Ppx_sexp_conv_lib.Sexp_grammar.t
 end
 [@@ocaml.doc "@inline"]
 
@@ -126,7 +126,7 @@ type empty = | [@@deriving sexp] [@@deriving_inline sexp_grammar]
 include sig
   [@@@ocaml.warning "-32"]
 
-  val empty_sexp_grammar : empty Ppx_sexp_conv_lib.Sexp.Private.Raw_grammar.t
+  val empty_sexp_grammar : empty Ppx_sexp_conv_lib.Sexp_grammar.t
 end
 [@@ocaml.doc "@inline"]
 
@@ -138,8 +138,8 @@ include sig
   [@@@ocaml.warning "-32"]
 
   val phantom_sexp_grammar
-    :  'v_x__003_ Ppx_sexp_conv_lib.Sexp.Private.Raw_grammar.t
-    -> 'v_x__003_ phantom Ppx_sexp_conv_lib.Sexp.Private.Raw_grammar.t
+    :  'v_x__003_ Ppx_sexp_conv_lib.Sexp_grammar.t
+    -> 'v_x__003_ phantom Ppx_sexp_conv_lib.Sexp_grammar.t
 end
 [@@ocaml.doc "@inline"]
 
@@ -154,7 +154,7 @@ type color =
 include sig
   [@@@ocaml.warning "-32"]
 
-  val color_sexp_grammar : color Ppx_sexp_conv_lib.Sexp.Private.Raw_grammar.t
+  val color_sexp_grammar : color Ppx_sexp_conv_lib.Sexp_grammar.t
 end
 [@@ocaml.doc "@inline"]
 
@@ -171,7 +171,7 @@ type adjective =
 include sig
   [@@@ocaml.warning "-32"]
 
-  val adjective_sexp_grammar : adjective Ppx_sexp_conv_lib.Sexp.Private.Raw_grammar.t
+  val adjective_sexp_grammar : adjective Ppx_sexp_conv_lib.Sexp_grammar.t
 end
 [@@ocaml.doc "@inline"]
 
@@ -187,8 +187,8 @@ include sig
   [@@@ocaml.warning "-32"]
 
   val tree_sexp_grammar
-    :  'a Ppx_sexp_conv_lib.Sexp.Private.Raw_grammar.t
-    -> 'a tree Ppx_sexp_conv_lib.Sexp.Private.Raw_grammar.t
+    :  'a Ppx_sexp_conv_lib.Sexp_grammar.t
+    -> 'a tree Ppx_sexp_conv_lib.Sexp_grammar.t
 end
 [@@ocaml.doc "@inline"]
 
@@ -206,9 +206,9 @@ and gamma = beta list [@@deriving sexp] [@@deriving_inline sexp_grammar]
 include sig
   [@@@ocaml.warning "-32"]
 
-  val alpha_sexp_grammar : alpha Ppx_sexp_conv_lib.Sexp.Private.Raw_grammar.t
-  val beta_sexp_grammar : beta Ppx_sexp_conv_lib.Sexp.Private.Raw_grammar.t
-  val gamma_sexp_grammar : gamma Ppx_sexp_conv_lib.Sexp.Private.Raw_grammar.t
+  val alpha_sexp_grammar : alpha Ppx_sexp_conv_lib.Sexp_grammar.t
+  val beta_sexp_grammar : beta Ppx_sexp_conv_lib.Sexp_grammar.t
+  val gamma_sexp_grammar : gamma Ppx_sexp_conv_lib.Sexp_grammar.t
 end
 [@@ocaml.doc "@inline"]
 
@@ -227,8 +227,7 @@ type record_attributes =
 include sig
   [@@@ocaml.warning "-32"]
 
-  val record_attributes_sexp_grammar
-    : record_attributes Ppx_sexp_conv_lib.Sexp.Private.Raw_grammar.t
+  val record_attributes_sexp_grammar : record_attributes Ppx_sexp_conv_lib.Sexp_grammar.t
 end
 [@@ocaml.doc "@inline"]
 
@@ -251,7 +250,7 @@ include sig
   [@@@ocaml.warning "-32"]
 
   val variant_attributes_sexp_grammar
-    : variant_attributes Ppx_sexp_conv_lib.Sexp.Private.Raw_grammar.t
+    : variant_attributes Ppx_sexp_conv_lib.Sexp_grammar.t
 end
 [@@ocaml.doc "@inline"]
 
@@ -267,7 +266,7 @@ include sig
   [@@@ocaml.warning "-32"]
 
   val polymorphic_variant_attributes_sexp_grammar
-    : polymorphic_variant_attributes Ppx_sexp_conv_lib.Sexp.Private.Raw_grammar.t
+    : polymorphic_variant_attributes Ppx_sexp_conv_lib.Sexp_grammar.t
 end
 [@@ocaml.doc "@inline"]
 
@@ -282,7 +281,7 @@ type opaque =
 include sig
   [@@@ocaml.warning "-32"]
 
-  val opaque_sexp_grammar : opaque Ppx_sexp_conv_lib.Sexp.Private.Raw_grammar.t
+  val opaque_sexp_grammar : opaque Ppx_sexp_conv_lib.Sexp_grammar.t
 end
 [@@ocaml.doc "@inline"]
 

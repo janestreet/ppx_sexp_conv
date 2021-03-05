@@ -67,7 +67,7 @@ putting underscores for that type name.
 
 If =ppx_sexp_conv= can derive =of_sexp=, it can also generate a description of
 the sexps that the resulting =t_of_sexp= would accept.  This is the sexp grammar.
-See =Sexplib0.Private.Raw_grammar= for details.
+See =Sexplib0.Sexp_grammar= for details.
 
 It is possible to construct sexp grammars directly from type expressions, e.g.,
 

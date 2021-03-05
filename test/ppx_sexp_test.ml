@@ -483,7 +483,7 @@ module Omit_nil = struct
     | sexp -> int_of_sexp sexp
   ;;
 
-  let natural_option_sexp_grammar : natural_option Sexp.Private.Raw_grammar.t =
+  let natural_option_sexp_grammar : natural_option Sexplib0.Sexp_grammar.t =
     { untyped = Union [ List Empty; Integer ] }
   ;;
 

@@ -6,8 +6,7 @@ module Maybe = struct
   let _ = fun (_ : 'a t) -> ()
 
   let (t_sexp_grammar :
-         'a Ppx_sexp_conv_lib.Sexp.Private.Raw_grammar.t
-       -> 'a t Ppx_sexp_conv_lib.Sexp.Private.Raw_grammar.t)
+         'a Ppx_sexp_conv_lib.Sexp_grammar.t -> 'a t Ppx_sexp_conv_lib.Sexp_grammar.t)
     =
     fun _'a_sexp_grammar -> option_sexp_grammar _'a_sexp_grammar
   ;;
@@ -33,18 +32,18 @@ struct
   include struct
     open struct
       let (grammars__001_ :
-             Ppx_sexp_conv_lib.Sexp.Private.Raw_grammar.defn Stdlib.List.t Stdlib.Lazy.t)
+             Ppx_sexp_conv_lib.Sexp_grammar.defn Stdlib.List.t Stdlib.Lazy.t)
         =
         lazy
           (let (t_sexp_grammar
-                : 'a Ppx_sexp_conv_lib.Sexp.Private.Raw_grammar.t
-                -> 'a t Ppx_sexp_conv_lib.Sexp.Private.Raw_grammar.t)
+                : 'a Ppx_sexp_conv_lib.Sexp_grammar.t
+                -> 'a t Ppx_sexp_conv_lib.Sexp_grammar.t)
             =
             fun _'a_sexp_grammar ->
               { untyped = Tycon ("t", [ _'a_sexp_grammar.untyped ]) }
            and (u_sexp_grammar
-                : 'a Ppx_sexp_conv_lib.Sexp.Private.Raw_grammar.t
-                -> 'a u Ppx_sexp_conv_lib.Sexp.Private.Raw_grammar.t)
+                : 'a Ppx_sexp_conv_lib.Sexp_grammar.t
+                -> 'a u Ppx_sexp_conv_lib.Sexp_grammar.t)
              =
              fun _'a_sexp_grammar ->
                { untyped = Tycon ("u", [ _'a_sexp_grammar.untyped ]) }
@@ -91,8 +90,7 @@ struct
     end
 
     let (t_sexp_grammar :
-           'a Ppx_sexp_conv_lib.Sexp.Private.Raw_grammar.t
-         -> 'a t Ppx_sexp_conv_lib.Sexp.Private.Raw_grammar.t)
+           'a Ppx_sexp_conv_lib.Sexp_grammar.t -> 'a t Ppx_sexp_conv_lib.Sexp_grammar.t)
       =
       fun _'a_sexp_grammar ->
       { untyped =
@@ -101,8 +99,7 @@ struct
       }
 
     and (u_sexp_grammar :
-           'a Ppx_sexp_conv_lib.Sexp.Private.Raw_grammar.t
-         -> 'a u Ppx_sexp_conv_lib.Sexp.Private.Raw_grammar.t)
+           'a Ppx_sexp_conv_lib.Sexp_grammar.t -> 'a u Ppx_sexp_conv_lib.Sexp_grammar.t)
       =
       fun _'a_sexp_grammar ->
       { untyped =
@@ -122,8 +119,7 @@ struct
   let _ = fun (_ : 'a v) -> ()
 
   let (v_sexp_grammar :
-         'a Ppx_sexp_conv_lib.Sexp.Private.Raw_grammar.t
-       -> 'a v Ppx_sexp_conv_lib.Sexp.Private.Raw_grammar.t)
+         'a Ppx_sexp_conv_lib.Sexp_grammar.t -> 'a v Ppx_sexp_conv_lib.Sexp_grammar.t)
     =
     fun _'a_sexp_grammar ->
     { untyped =
@@ -150,7 +146,7 @@ type t = int T2.t * int T1.t [@@deriving_inline sexp_grammar]
 
 let _ = fun (_ : t) -> ()
 
-let (t_sexp_grammar : t Ppx_sexp_conv_lib.Sexp.Private.Raw_grammar.t) =
+let (t_sexp_grammar : t Ppx_sexp_conv_lib.Sexp_grammar.t) =
   { untyped =
       Lazy
         (lazy

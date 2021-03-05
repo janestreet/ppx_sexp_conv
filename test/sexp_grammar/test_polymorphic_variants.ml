@@ -12,8 +12,7 @@ module Nullary = struct
   let _ = fun (_ : 'a t) -> ()
 
   let (t_sexp_grammar :
-         'a Ppx_sexp_conv_lib.Sexp.Private.Raw_grammar.t
-       -> 'a t Ppx_sexp_conv_lib.Sexp.Private.Raw_grammar.t)
+         'a Ppx_sexp_conv_lib.Sexp_grammar.t -> 'a t Ppx_sexp_conv_lib.Sexp_grammar.t)
     =
     fun _'a_sexp_grammar ->
     { untyped = Enum { name_kind = Any_case; names = [ "A"; "B" ] } }
@@ -41,7 +40,7 @@ module With_arguments = struct
 
   let _ = fun (_ : t) -> ()
 
-  let (t_sexp_grammar : t Ppx_sexp_conv_lib.Sexp.Private.Raw_grammar.t) =
+  let (t_sexp_grammar : t Ppx_sexp_conv_lib.Sexp_grammar.t) =
     { untyped =
         Lazy
           (lazy
@@ -97,7 +96,7 @@ module Sexp_list = struct
 
   let _ = fun (_ : t) -> ()
 
-  let (t_sexp_grammar : t Ppx_sexp_conv_lib.Sexp.Private.Raw_grammar.t) =
+  let (t_sexp_grammar : t Ppx_sexp_conv_lib.Sexp_grammar.t) =
     { untyped =
         Lazy
           (lazy

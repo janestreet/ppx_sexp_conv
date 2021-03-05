@@ -5,7 +5,7 @@ module Allow_extra_fields = struct
 
   let _ = fun (_ : t) -> ()
 
-  let (t_sexp_grammar : t Ppx_sexp_conv_lib.Sexp.Private.Raw_grammar.t) =
+  let (t_sexp_grammar : t Ppx_sexp_conv_lib.Sexp_grammar.t) =
     { untyped =
         Lazy
           (lazy
@@ -32,7 +32,7 @@ module Forbid_extra_fields = struct
 
   let _ = fun (_ : t) -> ()
 
-  let (t_sexp_grammar : t Ppx_sexp_conv_lib.Sexp.Private.Raw_grammar.t) =
+  let (t_sexp_grammar : t Ppx_sexp_conv_lib.Sexp_grammar.t) =
     { untyped =
         Lazy
           (lazy
@@ -62,7 +62,7 @@ module Variant_type = struct
 
   let _ = fun (_ : t) -> ()
 
-  let (t_sexp_grammar : t Ppx_sexp_conv_lib.Sexp.Private.Raw_grammar.t) =
+  let (t_sexp_grammar : t Ppx_sexp_conv_lib.Sexp_grammar.t) =
     { untyped =
         Lazy
           (lazy

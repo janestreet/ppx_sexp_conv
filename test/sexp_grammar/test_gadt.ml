@@ -36,7 +36,7 @@ let sexp_of_t =
 
 let _ = sexp_of_t
 
-let (t_sexp_grammar : t Ppx_sexp_conv_lib.Sexp.Private.Raw_grammar.t) =
+let (t_sexp_grammar : t Ppx_sexp_conv_lib.Sexp_grammar.t) =
   { untyped =
       Lazy
         (lazy
@@ -85,7 +85,7 @@ let sexp_of_nullary =
 
 let _ = sexp_of_nullary
 
-let (nullary_sexp_grammar : nullary Ppx_sexp_conv_lib.Sexp.Private.Raw_grammar.t) =
+let (nullary_sexp_grammar : nullary Ppx_sexp_conv_lib.Sexp_grammar.t) =
   { untyped = Enum { name_kind = Capitalized; names = [ "Nullary" ] } }
 ;;
 
@@ -100,8 +100,8 @@ type _ grammar_only = Grammar_only : int -> string grammar_only
 let _ = fun (_ : _ grammar_only) -> ()
 
 let (grammar_only_sexp_grammar :
-       'v_x__001_ Ppx_sexp_conv_lib.Sexp.Private.Raw_grammar.t
-     -> 'v_x__001_ grammar_only Ppx_sexp_conv_lib.Sexp.Private.Raw_grammar.t)
+       'v_x__001_ Ppx_sexp_conv_lib.Sexp_grammar.t
+     -> 'v_x__001_ grammar_only Ppx_sexp_conv_lib.Sexp_grammar.t)
   =
   fun _'v_x__001__sexp_grammar ->
   { untyped =

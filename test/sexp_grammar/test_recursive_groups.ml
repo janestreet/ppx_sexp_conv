@@ -7,7 +7,7 @@ module One_type = struct
 
   let _ = fun (_ : t) -> ()
 
-  let (t_sexp_grammar : t Ppx_sexp_conv_lib.Sexp.Private.Raw_grammar.t) =
+  let (t_sexp_grammar : t Ppx_sexp_conv_lib.Sexp_grammar.t) =
     { untyped =
         Lazy
           (lazy
@@ -40,12 +40,12 @@ module Two_types = struct
   include struct
     open struct
       let (grammars__001_ :
-             Ppx_sexp_conv_lib.Sexp.Private.Raw_grammar.defn Stdlib.List.t Stdlib.Lazy.t)
+             Ppx_sexp_conv_lib.Sexp_grammar.defn Stdlib.List.t Stdlib.Lazy.t)
         =
         lazy
-          (let (t_sexp_grammar : t Ppx_sexp_conv_lib.Sexp.Private.Raw_grammar.t) =
+          (let (t_sexp_grammar : t Ppx_sexp_conv_lib.Sexp_grammar.t) =
              { untyped = Tycon ("t", []) }
-           and (u_sexp_grammar : u Ppx_sexp_conv_lib.Sexp.Private.Raw_grammar.t) =
+           and (u_sexp_grammar : u Ppx_sexp_conv_lib.Sexp_grammar.t) =
              { untyped = Tycon ("u", []) }
            in
            [ { tycon = "t"
@@ -76,12 +76,12 @@ module Two_types = struct
       let _ = grammars__001_
     end
 
-    let (t_sexp_grammar : t Ppx_sexp_conv_lib.Sexp.Private.Raw_grammar.t) =
+    let (t_sexp_grammar : t Ppx_sexp_conv_lib.Sexp_grammar.t) =
       { untyped =
           Lazy (lazy (Recursive (Tycon ("t", []), Stdlib.Lazy.force grammars__001_)))
       }
 
-    and (u_sexp_grammar : u Ppx_sexp_conv_lib.Sexp.Private.Raw_grammar.t) =
+    and (u_sexp_grammar : u Ppx_sexp_conv_lib.Sexp_grammar.t) =
       { untyped =
           Lazy (lazy (Recursive (Tycon ("u", []), Stdlib.Lazy.force grammars__001_)))
       }
