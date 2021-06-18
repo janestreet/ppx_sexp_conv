@@ -15,7 +15,15 @@ module Nullary = struct
          'a Ppx_sexp_conv_lib.Sexp_grammar.t -> 'a t Ppx_sexp_conv_lib.Sexp_grammar.t)
     =
     fun _'a_sexp_grammar ->
-    { untyped = Enum { name_kind = Any_case; names = [ "A"; "B" ] } }
+    { untyped =
+        Variant
+          { name_kind = Any_case
+          ; clauses =
+              [ { name = "A"; clause_kind = Atom_clause }
+              ; { name = "B"; clause_kind = Atom_clause }
+              ]
+          }
+    }
   ;;
 
   let _ = t_sexp_grammar
@@ -48,15 +56,21 @@ module With_arguments = struct
                { name_kind = Any_case
                ; clauses =
                    [ { name = "A"
-                     ; args =
-                         Cons
-                           ( List
-                               (Cons
-                                  ( int_sexp_grammar.untyped
-                                  , Cons (int_sexp_grammar.untyped, Empty) ))
-                           , Empty )
+                     ; clause_kind =
+                         List_clause
+                           { args =
+                               Cons
+                                 ( List
+                                     (Cons
+                                        ( int_sexp_grammar.untyped
+                                        , Cons (int_sexp_grammar.untyped, Empty) ))
+                                 , Empty )
+                           }
                      }
-                   ; { name = "B"; args = Cons (string_sexp_grammar.untyped, Empty) }
+                   ; { name = "B"
+                     ; clause_kind =
+                         List_clause { args = Cons (string_sexp_grammar.untyped, Empty) }
+                     }
                    ]
                }))
     }
@@ -103,11 +117,20 @@ module Sexp_list = struct
             (Variant
                { name_kind = Any_case
                ; clauses =
-                   [ { name = "Int"; args = Cons (int_sexp_grammar.untyped, Empty) }
-                   ; { name = "List"
-                     ; args = Cons ((list_sexp_grammar int_sexp_grammar).untyped, Empty)
+                   [ { name = "Int"
+                     ; clause_kind =
+                         List_clause { args = Cons (int_sexp_grammar.untyped, Empty) }
                      }
-                   ; { name = "Sexp_dot_list"; args = Many int_sexp_grammar.untyped }
+                   ; { name = "List"
+                     ; clause_kind =
+                         List_clause
+                           { args =
+                               Cons ((list_sexp_grammar int_sexp_grammar).untyped, Empty)
+                           }
+                     }
+                   ; { name = "Sexp_dot_list"
+                     ; clause_kind = List_clause { args = Many int_sexp_grammar.untyped }
+                     }
                    ]
                }))
     }

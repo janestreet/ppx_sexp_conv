@@ -60,26 +60,22 @@ let tuple_grammar ~loc exprs =
     [%expr Cons ([%e expr], [%e rest])])
 ;;
 
-let variant_and_or_enum_grammars ~loc ~name_kind ~variants ~enums =
-  let unless_empty ~f = function
-    | [] -> None
-    | _ :: _ as xs -> Some (f xs)
-  in
-  List.filter_opt
-    [ unless_empty enums ~f:(fun enums ->
-        [%expr
-          Enum
-            { name_kind = [%e name_kind]
-            ; names = [%e enums |> List.map ~f:estr |> elist ~loc]
-            }])
-    ; unless_empty variants ~f:(fun variants ->
-        let clauses =
-          List.map variants ~f:(fun (name, args) ->
-            [%expr { name = [%e estr name]; args = [%e args] }])
-        in
-        [%expr
-          Variant { name_kind = [%e name_kind]; clauses = [%e elist ~loc clauses] }])
-    ]
+let atom_clause ~loc = [%expr Atom_clause]
+let list_clause ~loc args = [%expr List_clause { args = [%e args] }]
+
+let variant_grammars ~loc ~name_kind ~clauses =
+  match List.is_empty clauses with
+  | true -> []
+  | false ->
+    let clause_exprs =
+      List.map clauses ~f:(fun (name, clause_kind) ->
+        [%expr { name = [%e estr name]; clause_kind = [%e clause_kind] }])
+    in
+    let grammar =
+      [%expr
+        Variant { name_kind = [%e name_kind]; clauses = [%e elist ~loc clause_exprs] }]
+    in
+    [ grammar ]
 ;;
 
 (* Wrap [expr] in [fun a b ... ->] for type parameters. *)
@@ -153,22 +149,27 @@ let rec grammar_of_type core_type ~rec_flag =
      | Ptyp_extension _ -> unsupported ~loc "unexpanded ppx extensions")
 
 and grammar_of_polymorphic_variant ~loc ~rec_flag rows =
-  let inherits, enums, variants =
-    List.partition3_map rows ~f:(fun row ->
+  let inherits, clauses =
+    List.partition_map rows ~f:(fun row ->
       match Attribute.get Attrs.list_poly row with
       | Some () ->
         (match Row_field_type.of_row_field ~loc row.prf_desc with
          | Tag_with_arg (name, [%type: [%t? ty] list]) ->
-           `Trd (name, many_grammar ~loc (grammar_of_type ~rec_flag ty))
+           Second
+             (name, list_clause ~loc (many_grammar ~loc (grammar_of_type ~rec_flag ty)))
          | _ -> Attrs.invalid_attribute ~loc Attrs.list_poly "_ list")
       | None ->
         (match Row_field_type.of_row_field ~loc row.prf_desc with
-         | Inherit core_type -> `Fst (grammar_of_type ~rec_flag core_type)
-         | Tag_no_arg name -> `Snd name
+         | Inherit core_type -> First (grammar_of_type ~rec_flag core_type)
+         | Tag_no_arg name -> Second (name, atom_clause ~loc)
          | Tag_with_arg (name, core_type) ->
-           `Trd (name, tuple_grammar ~loc [ grammar_of_type ~rec_flag core_type ])))
+           Second
+             ( name
+             , list_clause
+                 ~loc
+                 (tuple_grammar ~loc [ grammar_of_type ~rec_flag core_type ]) )))
   in
-  variant_and_or_enum_grammars ~loc ~name_kind:[%expr Any_case] ~enums ~variants
+  variant_grammars ~loc ~name_kind:[%expr Any_case] ~clauses
   |> List.append inherits
   |> union_grammar ~loc
 ;;
@@ -216,25 +217,25 @@ let record_expr ~loc ~rec_flag ~extra_attr syntax fields =
     }]
 ;;
 
-let grammar_of_variant ~loc ~rec_flag clauses =
-  let enums, variants =
-    List.partition_map clauses ~f:(fun clause ->
+let grammar_of_variant ~loc ~rec_flag clause_decls =
+  let clauses =
+    List.map clause_decls ~f:(fun clause ->
       let loc = clause.pcd_loc in
       match Attribute.get Attrs.list_variant clause with
       | Some () ->
         (match clause.pcd_args with
          | Pcstr_tuple [ [%type: [%t? ty] list] ] ->
            let args = many_grammar ~loc (grammar_of_type ty ~rec_flag) in
-           Second (clause.pcd_name, args)
+           clause.pcd_name, list_clause ~loc args
          | _ -> Attrs.invalid_attribute ~loc Attrs.list_variant "_ list")
       | None ->
         (match clause.pcd_args with
-         | Pcstr_tuple [] -> First clause.pcd_name
+         | Pcstr_tuple [] -> clause.pcd_name, atom_clause ~loc
          | Pcstr_tuple (_ :: _ as args) ->
            let args =
              tuple_grammar ~loc (List.map args ~f:(grammar_of_type ~rec_flag))
            in
-           Second (clause.pcd_name, args)
+           clause.pcd_name, list_clause ~loc args
          | Pcstr_record fields ->
            let args =
              record_expr
@@ -245,10 +246,9 @@ let grammar_of_variant ~loc ~rec_flag clauses =
                fields
              |> fields_grammar ~loc
            in
-           Second (clause.pcd_name, args)))
+           clause.pcd_name, list_clause ~loc args))
   in
-  variant_and_or_enum_grammars ~loc ~name_kind:[%expr Capitalized] ~enums ~variants
-  |> union_grammar ~loc
+  variant_grammars ~loc ~name_kind:[%expr Capitalized] ~clauses |> union_grammar ~loc
 ;;
 
 let grammar_of_td ~ctxt ~rec_flag td =

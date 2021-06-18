@@ -55,12 +55,15 @@ struct
                    { name_kind = Capitalized
                    ; clauses =
                        [ { name = "T"
-                         ; args =
-                             Cons
-                               ( (u_sexp_grammar
-                                    (T.t_sexp_grammar { untyped = Tyvar "a" }))
-                                 .untyped
-                               , Empty )
+                         ; clause_kind =
+                             List_clause
+                               { args =
+                                   Cons
+                                     ( (u_sexp_grammar
+                                          (T.t_sexp_grammar { untyped = Tyvar "a" }))
+                                       .untyped
+                                     , Empty )
+                               }
                          }
                        ]
                    }
@@ -72,13 +75,16 @@ struct
                    { name_kind = Capitalized
                    ; clauses =
                        [ { name = "U"
-                         ; args =
-                             Cons
-                               ( (Maybe.t_sexp_grammar
-                                    (t_sexp_grammar
-                                       (T.t_sexp_grammar { untyped = Tyvar "a" })))
-                                 .untyped
-                               , Empty )
+                         ; clause_kind =
+                             List_clause
+                               { args =
+                                   Cons
+                                     ( (Maybe.t_sexp_grammar
+                                          (t_sexp_grammar
+                                             (T.t_sexp_grammar { untyped = Tyvar "a" })))
+                                       .untyped
+                                     , Empty )
+                               }
                          }
                        ]
                    }
@@ -127,7 +133,9 @@ struct
           { name_kind = Capitalized
           ; clauses =
               [ { name = "V"
-                ; args = Cons ((t_sexp_grammar _'a_sexp_grammar).untyped, Empty)
+                ; clause_kind =
+                    List_clause
+                      { args = Cons ((t_sexp_grammar _'a_sexp_grammar).untyped, Empty) }
                 }
               ]
           }

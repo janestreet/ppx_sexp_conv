@@ -70,27 +70,33 @@ module Variant_type = struct
                { name_kind = Capitalized
                ; clauses =
                    [ { name = "Allow_extra_fields"
-                     ; args =
-                         Fields
-                           { allow_extra_fields = true
-                           ; fields =
-                               [ { name = "foo"
-                                 ; required = true
-                                 ; args = Cons (int_sexp_grammar.untyped, Empty)
+                     ; clause_kind =
+                         List_clause
+                           { args =
+                               Fields
+                                 { allow_extra_fields = true
+                                 ; fields =
+                                     [ { name = "foo"
+                                       ; required = true
+                                       ; args = Cons (int_sexp_grammar.untyped, Empty)
+                                       }
+                                     ]
                                  }
-                               ]
                            }
                      }
                    ; { name = "Forbid_extra_fields"
-                     ; args =
-                         Fields
-                           { allow_extra_fields = false
-                           ; fields =
-                               [ { name = "bar"
-                                 ; required = true
-                                 ; args = Cons (int_sexp_grammar.untyped, Empty)
+                     ; clause_kind =
+                         List_clause
+                           { args =
+                               Fields
+                                 { allow_extra_fields = false
+                                 ; fields =
+                                     [ { name = "bar"
+                                       ; required = true
+                                       ; args = Cons (int_sexp_grammar.untyped, Empty)
+                                       }
+                                     ]
                                  }
-                               ]
                            }
                      }
                    ]

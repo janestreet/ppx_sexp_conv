@@ -107,7 +107,16 @@ type enum =
 let _ = fun (_ : enum) -> ()
 
 let (enum_sexp_grammar : enum Ppx_sexp_conv_lib.Sexp_grammar.t) =
-  { untyped = Enum { name_kind = Capitalized; names = [ "One"; "Two"; "Three" ] } }
+  { untyped =
+      Variant
+        { name_kind = Capitalized
+        ; clauses =
+            [ { name = "One"; clause_kind = Atom_clause }
+            ; { name = "Two"; clause_kind = Atom_clause }
+            ; { name = "Three"; clause_kind = Atom_clause }
+            ]
+        }
+  }
 ;;
 
 let _ = enum_sexp_grammar
@@ -131,8 +140,14 @@ let (which_sexp_grammar :
       Variant
         { name_kind = Capitalized
         ; clauses =
-            [ { name = "This"; args = Cons (_'a_sexp_grammar.untyped, Empty) }
-            ; { name = "That"; args = Cons (_'b_sexp_grammar.untyped, Empty) }
+            [ { name = "This"
+              ; clause_kind =
+                  List_clause { args = Cons (_'a_sexp_grammar.untyped, Empty) }
+              }
+            ; { name = "That"
+              ; clause_kind =
+                  List_clause { args = Cons (_'b_sexp_grammar.untyped, Empty) }
+              }
             ]
         }
   }
@@ -154,14 +169,16 @@ let (optional_sexp_grammar :
   =
   fun _'a_sexp_grammar ->
   { untyped =
-      Union
-        [ Enum { name_kind = Capitalized; names = [ "No" ] }
-        ; Variant
-            { name_kind = Capitalized
-            ; clauses =
-                [ { name = "Yes"; args = Cons (_'a_sexp_grammar.untyped, Empty) } ]
-            }
-        ]
+      Variant
+        { name_kind = Capitalized
+        ; clauses =
+            [ { name = "No"; clause_kind = Atom_clause }
+            ; { name = "Yes"
+              ; clause_kind =
+                  List_clause { args = Cons (_'a_sexp_grammar.untyped, Empty) }
+              }
+            ]
+        }
   }
 ;;
 
@@ -201,7 +218,15 @@ type color =
 let _ = fun (_ : color) -> ()
 
 let (color_sexp_grammar : color Ppx_sexp_conv_lib.Sexp_grammar.t) =
-  { untyped = Enum { name_kind = Any_case; names = [ "Red"; "Blue" ] } }
+  { untyped =
+      Variant
+        { name_kind = Any_case
+        ; clauses =
+            [ { name = "Red"; clause_kind = Atom_clause }
+            ; { name = "Blue"; clause_kind = Atom_clause }
+            ]
+        }
+  }
 ;;
 
 let _ = color_sexp_grammar
@@ -224,11 +249,16 @@ let (adjective_sexp_grammar : adjective Ppx_sexp_conv_lib.Sexp_grammar.t) =
         (lazy
           (Union
              [ color_sexp_grammar.untyped
-             ; Enum { name_kind = Any_case; names = [ "Fast"; "Slow" ] }
              ; Variant
                  { name_kind = Any_case
                  ; clauses =
-                     [ { name = "Count"; args = Cons (int_sexp_grammar.untyped, Empty) } ]
+                     [ { name = "Fast"; clause_kind = Atom_clause }
+                     ; { name = "Slow"; clause_kind = Atom_clause }
+                     ; { name = "Count"
+                       ; clause_kind =
+                           List_clause { args = Cons (int_sexp_grammar.untyped, Empty) }
+                       }
+                     ]
                  }
              ]))
   }
@@ -445,50 +475,54 @@ let (variant_attributes_sexp_grammar :
   { untyped =
       Lazy
         (lazy
-          (Union
-             [ Enum { name_kind = Capitalized; names = [ "A" ] }
-             ; Variant
-                 { name_kind = Capitalized
-                 ; clauses =
-                     [ { name = "B"; args = Many int_sexp_grammar.untyped }
-                     ; { name = "C"
-                       ; args =
-                           Fields
-                             { allow_extra_fields = true
-                             ; fields =
-                                 [ { name = "a"
-                                   ; required = false
-                                   ; args = Cons (int_sexp_grammar.untyped, Empty)
-                                   }
-                                 ; { name = "b"; required = false; args = Empty }
-                                 ; { name = "c"
-                                   ; required = false
-                                   ; args = Cons (float_sexp_grammar.untyped, Empty)
-                                   }
-                                 ; { name = "d"
-                                   ; required = false
-                                   ; args =
-                                       Cons
-                                         (List (Many string_sexp_grammar.untyped), Empty)
-                                   }
-                                 ; { name = "e"
-                                   ; required = false
-                                   ; args =
-                                       Cons (List (Many bytes_sexp_grammar.untyped), Empty)
-                                   }
-                                 ; { name = "f"
-                                   ; required = false
-                                   ; args =
-                                       Cons
-                                         ( Ppx_sexp_conv_lib.Sexp.t_sexp_grammar.untyped
-                                         , Empty )
-                                   }
-                                 ]
-                             }
-                       }
-                     ]
-                 }
-             ]))
+          (Variant
+             { name_kind = Capitalized
+             ; clauses =
+                 [ { name = "A"; clause_kind = Atom_clause }
+                 ; { name = "B"
+                   ; clause_kind = List_clause { args = Many int_sexp_grammar.untyped }
+                   }
+                 ; { name = "C"
+                   ; clause_kind =
+                       List_clause
+                         { args =
+                             Fields
+                               { allow_extra_fields = true
+                               ; fields =
+                                   [ { name = "a"
+                                     ; required = false
+                                     ; args = Cons (int_sexp_grammar.untyped, Empty)
+                                     }
+                                   ; { name = "b"; required = false; args = Empty }
+                                   ; { name = "c"
+                                     ; required = false
+                                     ; args = Cons (float_sexp_grammar.untyped, Empty)
+                                     }
+                                   ; { name = "d"
+                                     ; required = false
+                                     ; args =
+                                         Cons
+                                           (List (Many string_sexp_grammar.untyped), Empty)
+                                     }
+                                   ; { name = "e"
+                                     ; required = false
+                                     ; args =
+                                         Cons
+                                           (List (Many bytes_sexp_grammar.untyped), Empty)
+                                     }
+                                   ; { name = "f"
+                                     ; required = false
+                                     ; args =
+                                         Cons
+                                           ( Ppx_sexp_conv_lib.Sexp.t_sexp_grammar.untyped
+                                           , Empty )
+                                     }
+                                   ]
+                               }
+                         }
+                   }
+                 ]
+             }))
   }
 ;;
 
@@ -510,13 +544,15 @@ let (polymorphic_variant_attributes_sexp_grammar :
   { untyped =
       Lazy
         (lazy
-          (Union
-             [ Enum { name_kind = Any_case; names = [ "A" ] }
-             ; Variant
-                 { name_kind = Any_case
-                 ; clauses = [ { name = "B"; args = Many int_sexp_grammar.untyped } ]
-                 }
-             ]))
+          (Variant
+             { name_kind = Any_case
+             ; clauses =
+                 [ { name = "A"; clause_kind = Atom_clause }
+                 ; { name = "B"
+                   ; clause_kind = List_clause { args = Many int_sexp_grammar.untyped }
+                   }
+                 ]
+             }))
   }
 ;;
 

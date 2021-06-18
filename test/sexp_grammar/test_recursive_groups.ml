@@ -14,7 +14,11 @@ module One_type = struct
             (Variant
                { name_kind = Capitalized
                ; clauses =
-                   [ { name = "T"; args = Cons (int_sexp_grammar.untyped, Empty) } ]
+                   [ { name = "T"
+                     ; clause_kind =
+                         List_clause { args = Cons (int_sexp_grammar.untyped, Empty) }
+                     }
+                   ]
                }))
     }
   ;;
@@ -54,8 +58,14 @@ module Two_types = struct
                  Variant
                    { name_kind = Capitalized
                    ; clauses =
-                       [ { name = "T_int"; args = Cons (int_sexp_grammar.untyped, Empty) }
-                       ; { name = "T_u"; args = Cons (u_sexp_grammar.untyped, Empty) }
+                       [ { name = "T_int"
+                         ; clause_kind =
+                             List_clause { args = Cons (int_sexp_grammar.untyped, Empty) }
+                         }
+                       ; { name = "T_u"
+                         ; clause_kind =
+                             List_clause { args = Cons (u_sexp_grammar.untyped, Empty) }
+                         }
                        ]
                    }
              }
@@ -65,8 +75,14 @@ module Two_types = struct
                  Variant
                    { name_kind = Capitalized
                    ; clauses =
-                       [ { name = "U_int"; args = Cons (int_sexp_grammar.untyped, Empty) }
-                       ; { name = "U_t"; args = Cons (t_sexp_grammar.untyped, Empty) }
+                       [ { name = "U_int"
+                         ; clause_kind =
+                             List_clause { args = Cons (int_sexp_grammar.untyped, Empty) }
+                         }
+                       ; { name = "U_t"
+                         ; clause_kind =
+                             List_clause { args = Cons (t_sexp_grammar.untyped, Empty) }
+                         }
                        ]
                    }
              }

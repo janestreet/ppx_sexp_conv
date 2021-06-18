@@ -25,7 +25,12 @@ module Recursive_group = struct
     { untyped =
         Variant
           { name_kind = Capitalized
-          ; clauses = [ { name = "T"; args = Cons (_'a_sexp_grammar.untyped, Empty) } ]
+          ; clauses =
+              [ { name = "T"
+                ; clause_kind =
+                    List_clause { args = Cons (_'a_sexp_grammar.untyped, Empty) }
+                }
+              ]
           }
     }
   ;;
@@ -41,10 +46,14 @@ module Recursive_group = struct
           { name_kind = Capitalized
           ; clauses =
               [ { name = "U"
-                ; args =
-                    Cons
-                      ( (option_sexp_grammar (t_sexp_grammar _'a_sexp_grammar)).untyped
-                      , Empty )
+                ; clause_kind =
+                    List_clause
+                      { args =
+                          Cons
+                            ( (option_sexp_grammar (t_sexp_grammar _'a_sexp_grammar))
+                              .untyped
+                            , Empty )
+                      }
                 }
               ]
           }

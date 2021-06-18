@@ -7,8 +7,8 @@
 +|    | `B
 +|    ]
 @|============================================================
--|    { untyped = Enum { name_kind = Capitalized; names = [ "A"; "B" ] } }
-+|    { untyped = Enum { name_kind = Any_case; names = [ "A"; "B" ] } }
+-|          { name_kind = Capitalized
++|          { name_kind = Any_case
 @|============================================================
 -|      | A of int * int
 -|      | B of string
@@ -27,13 +27,13 @@
 -|               { name_kind = Capitalized
 +|               { name_kind = Any_case
 @|============================================================
--|                           ( int_sexp_grammar.untyped
--|                           , Cons (int_sexp_grammar.untyped, Empty) )
-+|                           ( List
-+|                               (Cons
-+|                                  ( int_sexp_grammar.untyped
-+|                                  , Cons (int_sexp_grammar.untyped, Empty) ))
-+|                           , Empty )
+-|                                 ( int_sexp_grammar.untyped
+-|                                 , Cons (int_sexp_grammar.untyped, Empty) )
++|                                 ( List
++|                                     (Cons
++|                                        ( int_sexp_grammar.untyped
++|                                        , Cons (int_sexp_grammar.untyped, Empty) ))
++|                                 , Empty )
 @|============================================================
 -|    print_s (With_sexp.sexp_of_t (A (1, 2)));
 -|    print_s (With_sexp.sexp_of_t (B "foo"));

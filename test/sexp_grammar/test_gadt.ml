@@ -44,8 +44,12 @@ let (t_sexp_grammar : t Ppx_sexp_conv_lib.Sexp_grammar.t) =
              { name_kind = Capitalized
              ; clauses =
                  [ { name = "T"
-                   ; args =
-                       Cons (Ppx_sexp_conv_lib.Conv.opaque_sexp_grammar.untyped, Empty)
+                   ; clause_kind =
+                       List_clause
+                         { args =
+                             Cons
+                               (Ppx_sexp_conv_lib.Conv.opaque_sexp_grammar.untyped, Empty)
+                         }
                    }
                  ]
              }))
@@ -86,7 +90,12 @@ let sexp_of_nullary =
 let _ = sexp_of_nullary
 
 let (nullary_sexp_grammar : nullary Ppx_sexp_conv_lib.Sexp_grammar.t) =
-  { untyped = Enum { name_kind = Capitalized; names = [ "Nullary" ] } }
+  { untyped =
+      Variant
+        { name_kind = Capitalized
+        ; clauses = [ { name = "Nullary"; clause_kind = Atom_clause } ]
+        }
+  }
 ;;
 
 let _ = nullary_sexp_grammar
@@ -108,7 +117,11 @@ let (grammar_only_sexp_grammar :
       Variant
         { name_kind = Capitalized
         ; clauses =
-            [ { name = "Grammar_only"; args = Cons (int_sexp_grammar.untyped, Empty) } ]
+            [ { name = "Grammar_only"
+              ; clause_kind =
+                  List_clause { args = Cons (int_sexp_grammar.untyped, Empty) }
+              }
+            ]
         }
   }
 ;;

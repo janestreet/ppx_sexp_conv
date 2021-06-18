@@ -15,17 +15,24 @@ module Nested_inside_variant = struct
                { name_kind = Capitalized
                ; clauses =
                    [ { name = "A"
-                     ; args =
-                         Cons
-                           ( Variant
-                               { name_kind = Any_case
-                               ; clauses =
-                                   [ { name = "A"
-                                     ; args = Cons (int_sexp_grammar.untyped, Empty)
+                     ; clause_kind =
+                         List_clause
+                           { args =
+                               Cons
+                                 ( Variant
+                                     { name_kind = Any_case
+                                     ; clauses =
+                                         [ { name = "A"
+                                           ; clause_kind =
+                                               List_clause
+                                                 { args =
+                                                     Cons (int_sexp_grammar.untyped, Empty)
+                                                 }
+                                           }
+                                         ]
                                      }
-                                   ]
-                               }
-                           , Empty )
+                                 , Empty )
+                           }
                      }
                    ]
                }))
@@ -58,7 +65,11 @@ module Nested_inside_record = struct
                                   { name_kind = Any_case
                                   ; clauses =
                                       [ { name = "A"
-                                        ; args = Cons (int_sexp_grammar.untyped, Empty)
+                                        ; clause_kind =
+                                            List_clause
+                                              { args =
+                                                  Cons (int_sexp_grammar.untyped, Empty)
+                                              }
                                         }
                                       ]
                                   }
