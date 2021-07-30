@@ -7,7 +7,7 @@ module Nested_inside_variant = struct
 
   let _ = fun (_ : t) -> ()
 
-  let (t_sexp_grammar : t Ppx_sexp_conv_lib.Sexp_grammar.t) =
+  let (t_sexp_grammar : t Sexplib0.Sexp_grammar.t) =
     { untyped =
         Lazy
           (lazy
@@ -49,7 +49,7 @@ module Nested_inside_record = struct
 
   let _ = fun (_ : t) -> ()
 
-  let (t_sexp_grammar : t Ppx_sexp_conv_lib.Sexp_grammar.t) =
+  let (t_sexp_grammar : t Sexplib0.Sexp_grammar.t) =
     { untyped =
         Lazy
           (lazy

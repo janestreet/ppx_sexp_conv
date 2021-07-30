@@ -5,9 +5,7 @@ module Maybe = struct
 
   let _ = fun (_ : 'a t) -> ()
 
-  let (t_sexp_grammar :
-         'a Ppx_sexp_conv_lib.Sexp_grammar.t -> 'a t Ppx_sexp_conv_lib.Sexp_grammar.t)
-    =
+  let (t_sexp_grammar : 'a Sexplib0.Sexp_grammar.t -> 'a t Sexplib0.Sexp_grammar.t) =
     fun _'a_sexp_grammar -> option_sexp_grammar _'a_sexp_grammar
   ;;
 
@@ -31,19 +29,15 @@ struct
 
   include struct
     open struct
-      let (grammars__001_ :
-             Ppx_sexp_conv_lib.Sexp_grammar.defn Stdlib.List.t Stdlib.Lazy.t)
-        =
+      let (grammars__001_ : Sexplib0.Sexp_grammar.defn Stdlib.List.t Stdlib.Lazy.t) =
         lazy
           (let (t_sexp_grammar
-                : 'a Ppx_sexp_conv_lib.Sexp_grammar.t
-                -> 'a t Ppx_sexp_conv_lib.Sexp_grammar.t)
+                : 'a Sexplib0.Sexp_grammar.t -> 'a t Sexplib0.Sexp_grammar.t)
             =
             fun _'a_sexp_grammar ->
               { untyped = Tycon ("t", [ _'a_sexp_grammar.untyped ]) }
            and (u_sexp_grammar
-                : 'a Ppx_sexp_conv_lib.Sexp_grammar.t
-                -> 'a u Ppx_sexp_conv_lib.Sexp_grammar.t)
+                : 'a Sexplib0.Sexp_grammar.t -> 'a u Sexplib0.Sexp_grammar.t)
              =
              fun _'a_sexp_grammar ->
                { untyped = Tycon ("u", [ _'a_sexp_grammar.untyped ]) }
@@ -95,18 +89,14 @@ struct
       let _ = grammars__001_
     end
 
-    let (t_sexp_grammar :
-           'a Ppx_sexp_conv_lib.Sexp_grammar.t -> 'a t Ppx_sexp_conv_lib.Sexp_grammar.t)
-      =
+    let (t_sexp_grammar : 'a Sexplib0.Sexp_grammar.t -> 'a t Sexplib0.Sexp_grammar.t) =
       fun _'a_sexp_grammar ->
       { untyped =
           Recursive
             (Tycon ("t", [ _'a_sexp_grammar.untyped ]), Stdlib.Lazy.force grammars__001_)
       }
 
-    and (u_sexp_grammar :
-           'a Ppx_sexp_conv_lib.Sexp_grammar.t -> 'a u Ppx_sexp_conv_lib.Sexp_grammar.t)
-      =
+    and (u_sexp_grammar : 'a Sexplib0.Sexp_grammar.t -> 'a u Sexplib0.Sexp_grammar.t) =
       fun _'a_sexp_grammar ->
       { untyped =
           Recursive
@@ -124,9 +114,7 @@ struct
 
   let _ = fun (_ : 'a v) -> ()
 
-  let (v_sexp_grammar :
-         'a Ppx_sexp_conv_lib.Sexp_grammar.t -> 'a v Ppx_sexp_conv_lib.Sexp_grammar.t)
-    =
+  let (v_sexp_grammar : 'a Sexplib0.Sexp_grammar.t -> 'a v Sexplib0.Sexp_grammar.t) =
     fun _'a_sexp_grammar ->
     { untyped =
         Variant
@@ -154,7 +142,7 @@ type t = int T2.t * int T1.t [@@deriving_inline sexp_grammar]
 
 let _ = fun (_ : t) -> ()
 
-let (t_sexp_grammar : t Ppx_sexp_conv_lib.Sexp_grammar.t) =
+let (t_sexp_grammar : t Sexplib0.Sexp_grammar.t) =
   { untyped =
       Lazy
         (lazy

@@ -8,10 +8,10 @@ let _ = fun (_ : ('a, _, 'b) t) -> ()
 let _ = fun (_ : u) -> ()
 
 let (t_sexp_grammar :
-       'a Ppx_sexp_conv_lib.Sexp_grammar.t
-     -> 'v_x__001_ Ppx_sexp_conv_lib.Sexp_grammar.t
-     -> 'b Ppx_sexp_conv_lib.Sexp_grammar.t
-     -> ('a, 'v_x__001_, 'b) t Ppx_sexp_conv_lib.Sexp_grammar.t)
+       'a Sexplib0.Sexp_grammar.t
+     -> 'v_x__001_ Sexplib0.Sexp_grammar.t
+     -> 'b Sexplib0.Sexp_grammar.t
+     -> ('a, 'v_x__001_, 'b) t Sexplib0.Sexp_grammar.t)
   =
   fun _'a_sexp_grammar _'v_x__001__sexp_grammar _'b_sexp_grammar ->
   { untyped =
@@ -21,7 +21,7 @@ let (t_sexp_grammar :
 
 let _ = t_sexp_grammar
 
-let (u_sexp_grammar : u Ppx_sexp_conv_lib.Sexp_grammar.t) =
+let (u_sexp_grammar : u Sexplib0.Sexp_grammar.t) =
   { untyped =
       Lazy
         (lazy

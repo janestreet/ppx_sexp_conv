@@ -9,7 +9,7 @@ let unsupported ~loc string =
 let grammar_name name = name ^ "_sexp_grammar"
 let tyvar_grammar_name name = grammar_name ("_'" ^ name)
 let estr { loc; txt } = estring ~loc txt
-let grammar_type ~loc core_type = [%type: [%t core_type] Ppx_sexp_conv_lib.Sexp_grammar.t]
+let grammar_type ~loc core_type = [%type: [%t core_type] Sexplib0.Sexp_grammar.t]
 
 let abstract_grammar ~ctxt ~loc id =
   let module_name =
@@ -18,8 +18,8 @@ let abstract_grammar ~ctxt ~loc id =
   [%expr Any [%e estr { id with txt = String.concat ~sep:"." [ module_name; id.txt ] }]]
 ;;
 
-let arrow_grammar ~loc = [%expr Ppx_sexp_conv_lib.Conv.fun_sexp_grammar.untyped]
-let opaque_grammar ~loc = [%expr Ppx_sexp_conv_lib.Conv.opaque_sexp_grammar.untyped]
+let arrow_grammar ~loc = [%expr Sexplib0.Sexp_conv.fun_sexp_grammar.untyped]
+let opaque_grammar ~loc = [%expr Sexplib0.Sexp_conv.opaque_sexp_grammar.untyped]
 let wildcard_grammar ~loc = [%expr Any "_"]
 let list_grammar ~loc expr = [%expr List [%e expr]]
 let many_grammar ~loc expr = [%expr Many [%e expr]]
@@ -27,10 +27,7 @@ let fields_grammar ~loc expr = [%expr Fields [%e expr]]
 let tyvar_grammar ~loc expr = [%expr Tyvar [%e expr]]
 let tycon_grammar ~loc name args = [%expr Tycon ([%e name], [%e args])]
 let recursive_grammar ~loc grammar defns = [%expr Recursive ([%e grammar], [%e defns])]
-
-let defns_type ~loc =
-  [%type: Ppx_sexp_conv_lib.Sexp_grammar.defn Stdlib.List.t Stdlib.Lazy.t]
-;;
+let defns_type ~loc = [%type: Sexplib0.Sexp_grammar.defn Stdlib.List.t Stdlib.Lazy.t]
 
 let untyped_grammar ~loc expr =
   match expr with

@@ -1,10 +1,5 @@
 open Ppxlib
-
-module Attrs : sig
-  val default : (label_declaration, expression) Attribute.t
-  val drop_default : (label_declaration, expression option) Attribute.t
-  val drop_if : (label_declaration, expression) Attribute.t
-end
+module Attrs = Attrs
 
 module Sexp_of : sig
   val type_extension : core_type -> core_type

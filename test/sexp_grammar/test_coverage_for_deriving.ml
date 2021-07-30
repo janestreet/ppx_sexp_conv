@@ -6,7 +6,7 @@ type abstract_a [@@deriving sexp] [@@deriving_inline sexp_grammar]
 
 let _ = fun (_ : abstract_a) -> ()
 
-let (abstract_a_sexp_grammar : abstract_a Ppx_sexp_conv_lib.Sexp_grammar.t) =
+let (abstract_a_sexp_grammar : abstract_a Sexplib0.Sexp_grammar.t) =
   { untyped = Any "Test_coverage_for_deriving.abstract_a" }
 ;;
 
@@ -18,7 +18,7 @@ type abstract_b [@@deriving sexp] [@@deriving_inline sexp_grammar]
 
 let _ = fun (_ : abstract_b) -> ()
 
-let (abstract_b_sexp_grammar : abstract_b Ppx_sexp_conv_lib.Sexp_grammar.t) =
+let (abstract_b_sexp_grammar : abstract_b Sexplib0.Sexp_grammar.t) =
   { untyped = Any "Test_coverage_for_deriving.abstract_b" }
 ;;
 
@@ -29,7 +29,7 @@ let _ = abstract_b_sexp_grammar
 type integer = int [@@deriving sexp] [@@deriving_inline sexp_grammar]
 
 let _ = fun (_ : integer) -> ()
-let (integer_sexp_grammar : integer Ppx_sexp_conv_lib.Sexp_grammar.t) = int_sexp_grammar
+let (integer_sexp_grammar : integer Sexplib0.Sexp_grammar.t) = int_sexp_grammar
 let _ = integer_sexp_grammar
 
 [@@@end]
@@ -38,7 +38,7 @@ type tuple = int * string [@@deriving sexp] [@@deriving_inline sexp_grammar]
 
 let _ = fun (_ : tuple) -> ()
 
-let (tuple_sexp_grammar : tuple Ppx_sexp_conv_lib.Sexp_grammar.t) =
+let (tuple_sexp_grammar : tuple Sexplib0.Sexp_grammar.t) =
   { untyped =
       Lazy
         (lazy
@@ -59,7 +59,7 @@ type pos =
 
 let _ = fun (_ : pos) -> ()
 
-let (pos_sexp_grammar : pos Ppx_sexp_conv_lib.Sexp_grammar.t) =
+let (pos_sexp_grammar : pos Sexplib0.Sexp_grammar.t) =
   { untyped =
       Lazy
         (lazy
@@ -88,9 +88,7 @@ type 'a unary = 'a list [@@deriving sexp] [@@deriving_inline sexp_grammar]
 
 let _ = fun (_ : 'a unary) -> ()
 
-let (unary_sexp_grammar :
-       'a Ppx_sexp_conv_lib.Sexp_grammar.t -> 'a unary Ppx_sexp_conv_lib.Sexp_grammar.t)
-  =
+let (unary_sexp_grammar : 'a Sexplib0.Sexp_grammar.t -> 'a unary Sexplib0.Sexp_grammar.t) =
   fun _'a_sexp_grammar -> list_sexp_grammar _'a_sexp_grammar
 ;;
 
@@ -106,7 +104,7 @@ type enum =
 
 let _ = fun (_ : enum) -> ()
 
-let (enum_sexp_grammar : enum Ppx_sexp_conv_lib.Sexp_grammar.t) =
+let (enum_sexp_grammar : enum Sexplib0.Sexp_grammar.t) =
   { untyped =
       Variant
         { name_kind = Capitalized
@@ -131,9 +129,9 @@ type ('a, 'b) which =
 let _ = fun (_ : ('a, 'b) which) -> ()
 
 let (which_sexp_grammar :
-       'a Ppx_sexp_conv_lib.Sexp_grammar.t
-     -> 'b Ppx_sexp_conv_lib.Sexp_grammar.t
-     -> ('a, 'b) which Ppx_sexp_conv_lib.Sexp_grammar.t)
+       'a Sexplib0.Sexp_grammar.t
+     -> 'b Sexplib0.Sexp_grammar.t
+     -> ('a, 'b) which Sexplib0.Sexp_grammar.t)
   =
   fun _'a_sexp_grammar _'b_sexp_grammar ->
   { untyped =
@@ -165,7 +163,7 @@ type 'a optional =
 let _ = fun (_ : 'a optional) -> ()
 
 let (optional_sexp_grammar :
-       'a Ppx_sexp_conv_lib.Sexp_grammar.t -> 'a optional Ppx_sexp_conv_lib.Sexp_grammar.t)
+       'a Sexplib0.Sexp_grammar.t -> 'a optional Sexplib0.Sexp_grammar.t)
   =
   fun _'a_sexp_grammar ->
   { untyped =
@@ -189,7 +187,7 @@ let _ = optional_sexp_grammar
 type empty = | [@@deriving sexp] [@@deriving_inline sexp_grammar]
 
 let _ = fun (_ : empty) -> ()
-let (empty_sexp_grammar : empty Ppx_sexp_conv_lib.Sexp_grammar.t) = { untyped = Union [] }
+let (empty_sexp_grammar : empty Sexplib0.Sexp_grammar.t) = { untyped = Union [] }
 let _ = empty_sexp_grammar
 
 [@@@end]
@@ -199,8 +197,7 @@ type _ phantom = int [@@deriving sexp] [@@deriving_inline sexp_grammar]
 let _ = fun (_ : _ phantom) -> ()
 
 let (phantom_sexp_grammar :
-       'v_x__003_ Ppx_sexp_conv_lib.Sexp_grammar.t
-     -> 'v_x__003_ phantom Ppx_sexp_conv_lib.Sexp_grammar.t)
+       'v_x__003_ Sexplib0.Sexp_grammar.t -> 'v_x__003_ phantom Sexplib0.Sexp_grammar.t)
   =
   fun _'v_x__003__sexp_grammar -> int_sexp_grammar
 ;;
@@ -217,7 +214,7 @@ type color =
 
 let _ = fun (_ : color) -> ()
 
-let (color_sexp_grammar : color Ppx_sexp_conv_lib.Sexp_grammar.t) =
+let (color_sexp_grammar : color Sexplib0.Sexp_grammar.t) =
   { untyped =
       Variant
         { name_kind = Any_case
@@ -243,7 +240,7 @@ type adjective =
 
 let _ = fun (_ : adjective) -> ()
 
-let (adjective_sexp_grammar : adjective Ppx_sexp_conv_lib.Sexp_grammar.t) =
+let (adjective_sexp_grammar : adjective Sexplib0.Sexp_grammar.t) =
   { untyped =
       Lazy
         (lazy
@@ -278,12 +275,10 @@ let _ = fun (_ : 'a tree) -> ()
 
 include struct
   open struct
-    let (grammars__004_ : Ppx_sexp_conv_lib.Sexp_grammar.defn Stdlib.List.t Stdlib.Lazy.t)
-      =
+    let (grammars__004_ : Sexplib0.Sexp_grammar.defn Stdlib.List.t Stdlib.Lazy.t) =
       lazy
         (let (tree_sexp_grammar
-              : 'a Ppx_sexp_conv_lib.Sexp_grammar.t
-              -> 'a tree Ppx_sexp_conv_lib.Sexp_grammar.t)
+              : 'a Sexplib0.Sexp_grammar.t -> 'a tree Sexplib0.Sexp_grammar.t)
           =
           fun _'a_sexp_grammar ->
             { untyped = Tycon ("tree", [ _'a_sexp_grammar.untyped ]) }
@@ -317,9 +312,7 @@ include struct
     let _ = grammars__004_
   end
 
-  let (tree_sexp_grammar :
-         'a Ppx_sexp_conv_lib.Sexp_grammar.t -> 'a tree Ppx_sexp_conv_lib.Sexp_grammar.t)
-    =
+  let (tree_sexp_grammar : 'a Sexplib0.Sexp_grammar.t -> 'a tree Sexplib0.Sexp_grammar.t) =
     fun _'a_sexp_grammar ->
     { untyped =
         Recursive
@@ -347,12 +340,11 @@ let _ = fun (_ : gamma) -> ()
 
 include struct
   open struct
-    let (grammars__005_ : Ppx_sexp_conv_lib.Sexp_grammar.defn Stdlib.List.t Stdlib.Lazy.t)
-      =
+    let (grammars__005_ : Sexplib0.Sexp_grammar.defn Stdlib.List.t Stdlib.Lazy.t) =
       lazy
-        (let (alpha_sexp_grammar : alpha Ppx_sexp_conv_lib.Sexp_grammar.t) =
+        (let (alpha_sexp_grammar : alpha Sexplib0.Sexp_grammar.t) =
            { untyped = Tycon ("alpha", []) }
-         and (beta_sexp_grammar : beta Ppx_sexp_conv_lib.Sexp_grammar.t) =
+         and (beta_sexp_grammar : beta Sexplib0.Sexp_grammar.t) =
            { untyped = Tycon ("beta", []) }
          in
          [ { tycon = "alpha"; tyvars = []; grammar = int_sexp_grammar.untyped }
@@ -381,12 +373,12 @@ include struct
     let _ = grammars__005_
   end
 
-  let (alpha_sexp_grammar : alpha Ppx_sexp_conv_lib.Sexp_grammar.t) =
+  let (alpha_sexp_grammar : alpha Sexplib0.Sexp_grammar.t) =
     { untyped =
         Lazy (lazy (Recursive (Tycon ("alpha", []), Stdlib.Lazy.force grammars__005_)))
     }
 
-  and (beta_sexp_grammar : beta Ppx_sexp_conv_lib.Sexp_grammar.t) =
+  and (beta_sexp_grammar : beta Sexplib0.Sexp_grammar.t) =
     { untyped =
         Lazy (lazy (Recursive (Tycon ("beta", []), Stdlib.Lazy.force grammars__005_)))
     }
@@ -396,7 +388,7 @@ include struct
   and _ = beta_sexp_grammar
 end
 
-let (gamma_sexp_grammar : gamma Ppx_sexp_conv_lib.Sexp_grammar.t) =
+let (gamma_sexp_grammar : gamma Sexplib0.Sexp_grammar.t) =
   { untyped = Lazy (lazy (list_sexp_grammar beta_sexp_grammar).untyped) }
 ;;
 
@@ -416,7 +408,7 @@ type record_attributes =
 
 let _ = fun (_ : record_attributes) -> ()
 
-let (record_attributes_sexp_grammar : record_attributes Ppx_sexp_conv_lib.Sexp_grammar.t) =
+let (record_attributes_sexp_grammar : record_attributes Sexplib0.Sexp_grammar.t) =
   { untyped =
       Lazy
         (lazy
@@ -469,9 +461,7 @@ type variant_attributes =
 
 let _ = fun (_ : variant_attributes) -> ()
 
-let (variant_attributes_sexp_grammar :
-       variant_attributes Ppx_sexp_conv_lib.Sexp_grammar.t)
-  =
+let (variant_attributes_sexp_grammar : variant_attributes Sexplib0.Sexp_grammar.t) =
   { untyped =
       Lazy
         (lazy
@@ -539,7 +529,7 @@ type polymorphic_variant_attributes =
 let _ = fun (_ : polymorphic_variant_attributes) -> ()
 
 let (polymorphic_variant_attributes_sexp_grammar :
-       polymorphic_variant_attributes Ppx_sexp_conv_lib.Sexp_grammar.t)
+       polymorphic_variant_attributes Sexplib0.Sexp_grammar.t)
   =
   { untyped =
       Lazy
@@ -568,7 +558,7 @@ type opaque =
 
 let _ = fun (_ : opaque) -> ()
 
-let (opaque_sexp_grammar : opaque Ppx_sexp_conv_lib.Sexp_grammar.t) =
+let (opaque_sexp_grammar : opaque Sexplib0.Sexp_grammar.t) =
   { untyped =
       Lazy
         (lazy
@@ -578,13 +568,11 @@ let (opaque_sexp_grammar : opaque Ppx_sexp_conv_lib.Sexp_grammar.t) =
                 ; fields =
                     [ { name = "x"
                       ; required = true
-                      ; args =
-                          Cons (Ppx_sexp_conv_lib.Conv.opaque_sexp_grammar.untyped, Empty)
+                      ; args = Cons (Sexplib0.Sexp_conv.opaque_sexp_grammar.untyped, Empty)
                       }
                     ; { name = "y"
                       ; required = true
-                      ; args =
-                          Cons (Ppx_sexp_conv_lib.Conv.fun_sexp_grammar.untyped, Empty)
+                      ; args = Cons (Sexplib0.Sexp_conv.fun_sexp_grammar.untyped, Empty)
                       }
                     ]
                 })))

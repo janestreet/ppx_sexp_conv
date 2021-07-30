@@ -4,7 +4,7 @@ module Simple_grammar = struct
   type t = int [@@deriving_inline sexp_grammar]
 
   let _ = fun (_ : t) -> ()
-  let (t_sexp_grammar : t Ppx_sexp_conv_lib.Sexp_grammar.t) = int_sexp_grammar
+  let (t_sexp_grammar : t Sexplib0.Sexp_grammar.t) = int_sexp_grammar
   let _ = t_sexp_grammar
 
   [@@@deriving.end]
@@ -18,9 +18,7 @@ module Recursive_group = struct
   let _ = fun (_ : 'a t) -> ()
   let _ = fun (_ : 'a u) -> ()
 
-  let (t_sexp_grammar :
-         'a Ppx_sexp_conv_lib.Sexp_grammar.t -> 'a t Ppx_sexp_conv_lib.Sexp_grammar.t)
-    =
+  let (t_sexp_grammar : 'a Sexplib0.Sexp_grammar.t -> 'a t Sexplib0.Sexp_grammar.t) =
     fun _'a_sexp_grammar ->
     { untyped =
         Variant
@@ -37,9 +35,7 @@ module Recursive_group = struct
 
   let _ = t_sexp_grammar
 
-  let (u_sexp_grammar :
-         'a Ppx_sexp_conv_lib.Sexp_grammar.t -> 'a u Ppx_sexp_conv_lib.Sexp_grammar.t)
-    =
+  let (u_sexp_grammar : 'a Sexplib0.Sexp_grammar.t -> 'a u Sexplib0.Sexp_grammar.t) =
     fun _'a_sexp_grammar ->
     { untyped =
         Variant
@@ -75,11 +71,11 @@ module Functions = struct
   let _ = fun (_ : ('a, 'b) t) -> ()
 
   let (t_sexp_grammar :
-         'a Ppx_sexp_conv_lib.Sexp_grammar.t
-       -> 'b Ppx_sexp_conv_lib.Sexp_grammar.t
-       -> ('a, 'b) t Ppx_sexp_conv_lib.Sexp_grammar.t)
+         'a Sexplib0.Sexp_grammar.t
+       -> 'b Sexplib0.Sexp_grammar.t
+       -> ('a, 'b) t Sexplib0.Sexp_grammar.t)
     =
-    fun _'a_sexp_grammar _'b_sexp_grammar -> Ppx_sexp_conv_lib.Conv.fun_sexp_grammar
+    fun _'a_sexp_grammar _'b_sexp_grammar -> Sexplib0.Sexp_conv.fun_sexp_grammar
   ;;
 
   let _ = t_sexp_grammar
