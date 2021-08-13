@@ -175,26 +175,20 @@ let record_expr ~loc ~rec_flag ~extra_attr syntax fields =
   let fields =
     List.map fields ~f:(fun field ->
       let loc = field.pld_loc in
-      let field_kind = Attrs.Record_field_handler.Of_sexp.create ~loc field in
+      let field_kind = Record_field_attrs.Of_sexp.create ~loc field in
       let required =
         match field_kind with
-        | None -> true
-        | Some
-            ( `default _
-            | `sexp_bool
-            | `sexp_option _
-            | `sexp_array _
-            | `sexp_list _
-            | `omit_nil ) -> false
+        | Specific Required -> true
+        | Specific (Default _)
+        | Sexp_bool | Sexp_option _ | Sexp_array _ | Sexp_list _ | Omit_nil -> false
       in
       let args =
         match field_kind with
-        | None | Some (`default _ | `omit_nil) ->
+        | Specific Required | Specific (Default _) | Omit_nil ->
           [%expr Cons ([%e grammar_of_type ~rec_flag field.pld_type], Empty)]
-        | Some `sexp_bool -> [%expr Empty]
-        | Some (`sexp_option ty) ->
-          [%expr Cons ([%e grammar_of_type ~rec_flag ty], Empty)]
-        | Some (`sexp_list ty | `sexp_array ty) ->
+        | Sexp_bool -> [%expr Empty]
+        | Sexp_option ty -> [%expr Cons ([%e grammar_of_type ~rec_flag ty], Empty)]
+        | Sexp_list ty | Sexp_array ty ->
           [%expr Cons (List (Many [%e grammar_of_type ~rec_flag ty]), Empty)]
       in
       [%expr

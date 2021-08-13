@@ -25,12 +25,18 @@ open! Ppxlib
 
 type t
 
-val identity : t
+val non_gadt : t
 val add_universally_bound : t -> string loc -> t
 
-type binding_kind =
-  | Universally_bound of string
-  | Existentially_bound
+module Binding_kind : sig
+  type t =
+    | Universally_bound of string
+    | Existentially_bound
+end
 
-val binding_kind : t -> string -> binding_kind
-val of_gadt : string list -> constructor_declaration -> t
+val binding_kind : t -> string -> Binding_kind.t
+
+val of_constructor_declaration
+  :  constructor_declaration
+  -> type_parameters:string list
+  -> t

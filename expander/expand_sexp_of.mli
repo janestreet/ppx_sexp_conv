@@ -18,10 +18,7 @@ end
 
 module Str_generate_sexp_of : sig
   (** Given a type, produce its [sexp_of] conversion. *)
-  val sexp_of_type
-    :  typevar_handling:[ `disallowed_in_type_expr | `ok of Renaming.t ]
-    -> core_type
-    -> Conversion.t
+  val sexp_of_core_type : core_type -> expression
 
   (** Derive a [sexp_of] implementation for a list of type declarations. *)
   val sexp_of_tds
@@ -31,10 +28,5 @@ module Str_generate_sexp_of : sig
     -> structure_item list
 
   (** Derive a [sexp_of] implementation for an exception declaration. *)
-  val sexp_of_exn
-    :  types_being_defined:[ `Nonrecursive | `Recursive of Set.M(String).t ]
-    -> loc:location
-    -> path:string
-    -> type_exception
-    -> structure_item list
+  val sexp_of_exn : loc:location -> path:string -> type_exception -> structure_item list
 end

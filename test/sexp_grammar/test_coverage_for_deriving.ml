@@ -197,9 +197,9 @@ type _ phantom = int [@@deriving sexp] [@@deriving_inline sexp_grammar]
 let _ = fun (_ : _ phantom) -> ()
 
 let (phantom_sexp_grammar :
-       'v_x__003_ Sexplib0.Sexp_grammar.t -> 'v_x__003_ phantom Sexplib0.Sexp_grammar.t)
+       'v_x__035_ Sexplib0.Sexp_grammar.t -> 'v_x__035_ phantom Sexplib0.Sexp_grammar.t)
   =
-  fun _'v_x__003__sexp_grammar -> int_sexp_grammar
+  fun _'v_x__035__sexp_grammar -> int_sexp_grammar
 ;;
 
 let _ = phantom_sexp_grammar
@@ -275,7 +275,7 @@ let _ = fun (_ : 'a tree) -> ()
 
 include struct
   open struct
-    let (grammars__004_ : Sexplib0.Sexp_grammar.defn Stdlib.List.t Stdlib.Lazy.t) =
+    let (grammars__043_ : Sexplib0.Sexp_grammar.defn Stdlib.List.t Stdlib.Lazy.t) =
       lazy
         (let (tree_sexp_grammar
               : 'a Sexplib0.Sexp_grammar.t -> 'a tree Sexplib0.Sexp_grammar.t)
@@ -309,14 +309,14 @@ include struct
          ])
     ;;
 
-    let _ = grammars__004_
+    let _ = grammars__043_
   end
 
   let (tree_sexp_grammar : 'a Sexplib0.Sexp_grammar.t -> 'a tree Sexplib0.Sexp_grammar.t) =
     fun _'a_sexp_grammar ->
     { untyped =
         Recursive
-          (Tycon ("tree", [ _'a_sexp_grammar.untyped ]), Stdlib.Lazy.force grammars__004_)
+          (Tycon ("tree", [ _'a_sexp_grammar.untyped ]), Stdlib.Lazy.force grammars__043_)
     }
   ;;
 
@@ -340,7 +340,7 @@ let _ = fun (_ : gamma) -> ()
 
 include struct
   open struct
-    let (grammars__005_ : Sexplib0.Sexp_grammar.defn Stdlib.List.t Stdlib.Lazy.t) =
+    let (grammars__047_ : Sexplib0.Sexp_grammar.defn Stdlib.List.t Stdlib.Lazy.t) =
       lazy
         (let (alpha_sexp_grammar : alpha Sexplib0.Sexp_grammar.t) =
            { untyped = Tycon ("alpha", []) }
@@ -370,17 +370,17 @@ include struct
          ])
     ;;
 
-    let _ = grammars__005_
+    let _ = grammars__047_
   end
 
   let (alpha_sexp_grammar : alpha Sexplib0.Sexp_grammar.t) =
     { untyped =
-        Lazy (lazy (Recursive (Tycon ("alpha", []), Stdlib.Lazy.force grammars__005_)))
+        Lazy (lazy (Recursive (Tycon ("alpha", []), Stdlib.Lazy.force grammars__047_)))
     }
 
   and (beta_sexp_grammar : beta Sexplib0.Sexp_grammar.t) =
     { untyped =
-        Lazy (lazy (Recursive (Tycon ("beta", []), Stdlib.Lazy.force grammars__005_)))
+        Lazy (lazy (Recursive (Tycon ("beta", []), Stdlib.Lazy.force grammars__047_)))
     }
   ;;
 

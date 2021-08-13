@@ -1,5 +1,6 @@
 open Ppxlib
 module Attrs = Attrs
+module Record_field_attrs = Record_field_attrs
 
 module Sexp_of : sig
   val type_extension : core_type -> core_type

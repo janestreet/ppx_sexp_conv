@@ -1,26 +1,29 @@
 open! Base
 open! Ppxlib
 
-type error = string Loc.t
-type t = (string, error) Result.t Map.M(String).t option
+type t =
+  | Gadt of (string, string loc) Result.t Map.M(String).t
+  | Non_gadt
 
-let identity = None
+let non_gadt = Non_gadt
 
-type binding_kind =
-  | Universally_bound of string
-  | Existentially_bound
+module Binding_kind = struct
+  type t =
+    | Universally_bound of string
+    | Existentially_bound
+end
 
 let add_universally_bound (t : t) name : t =
   let name = name.txt in
   match t with
-  | None -> None
-  | Some map -> Some (Map.set ~key:name ~data:(Ok name) map)
+  | Non_gadt -> Non_gadt
+  | Gadt map -> Gadt (Map.set ~key:name ~data:(Ok name) map)
 ;;
 
-let binding_kind t var =
+let binding_kind t var : Binding_kind.t =
   match t with
-  | None -> Universally_bound var
-  | Some map ->
+  | Non_gadt -> Universally_bound var
+  | Gadt map ->
     (match Map.find map var with
      | None -> Existentially_bound
      | Some (Ok value) -> Universally_bound value
@@ -38,21 +41,21 @@ let binding_kind t var =
 
    will produce:
 
-   {[
+   {v
      "x" -> Ok "a"
-              "y" -> Ok "b"
-   ]}
+     "y" -> Ok "b"
+   v}
 
    If a variable appears twice in the return type it will map to [Error _]. If a
    variable cannot be mapped to a parameter of the type declaration, it will map to
    [Error] (for instance [A : 'a -> 'a list t]).
 
-   It returns None on user error, to let the typer give the error message *)
-let of_gadt =
+   It returns [Non_gadt] on user error, to let the typer give the error message *)
+let of_constructor_declaration =
   (* Add all type variables of a type to a map. *)
   let add_typevars =
     object
-      inherit [(string, error) Result.t Map.M(String).t] Ast_traverse.fold as super
+      inherit [(string, string loc) Result.t Map.M(String).t] Ast_traverse.fold as super
 
       method! core_type ty map =
         match ty.ptyp_desc with
@@ -79,20 +82,20 @@ let of_gadt =
       Map.set map ~key:var ~data
     | _ -> add_typevars#core_type tp_in_return_type map
   in
-  fun tps cd ->
+  fun cd ~type_parameters:tps ->
     match cd.pcd_res with
-    | None -> None
+    | None -> Non_gadt
     | Some ty ->
       (match ty.ptyp_desc with
        | Ptyp_constr (_, params) ->
          if List.length params <> List.length tps
-         then None
+         then Non_gadt
          else
-           Some
+           Gadt
              (Stdlib.ListLabels.fold_left2
                 tps
                 params
                 ~init:(Map.empty (module String))
                 ~f:aux)
-       | _ -> None)
+       | _ -> Non_gadt)
 ;;

@@ -16,11 +16,7 @@ end
 
 module Str_generate_of_sexp : sig
   (** Given a type, produce its [of_sexp] conversion. *)
-  val type_of_sexp
-    :  typevar_handling:[ `disallowed_in_type_expr | `ok ]
-    -> path:string
-    -> core_type
-    -> expression
+  val core_type_of_sexp : path:string -> core_type -> expression
 
   (** Derive an [of_sexp] implementation for a list of type declarations. *)
   val tds_of_sexp

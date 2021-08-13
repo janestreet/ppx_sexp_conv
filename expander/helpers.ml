@@ -4,21 +4,6 @@ open Ast_builder.Default
 
 let ( --> ) lhs rhs = case ~guard:None ~lhs ~rhs
 
-(* Simplifies match cases, for readability of the generated code. It's not obvious we can
-   stick this in ppx_core, as (match e1 with p -> e2) and (let p = e1 in e2) are not typed
-   exactly the same (type inference goes in different order, meaning type disambiguation
-   differs). *)
-let pexp_match ~loc expr cases =
-  match cases with
-  | [ { pc_lhs; pc_guard = None; pc_rhs } ] ->
-    (match pc_lhs, expr with
-     | ( { ppat_attributes = []; ppat_desc = Ppat_var { txt = ident; _ }; _ }
-       , { pexp_attributes = []; pexp_desc = Pexp_ident { txt = Lident ident'; _ }; _ } )
-       when String.equal ident ident' -> pc_rhs
-     | _ -> pexp_let ~loc Nonrecursive [ value_binding ~loc ~pat:pc_lhs ~expr ] pc_rhs)
-  | _ -> pexp_match ~loc expr cases
-;;
-
 (* Utility functions *)
 
 let replace_variables_by_underscores =
@@ -125,7 +110,62 @@ let constrained_function_binding
   value_binding ~loc ~pat ~expr:body
 ;;
 
-let really_recursive rec_flag tds =
+let with_let ~loc ~binds body =
+  List.fold_right binds ~init:body ~f:(pexp_let ~loc Nonrecursive)
+;;
+
+let fresh_lambda ~loc apply =
+  let var = gen_symbol ~prefix:"x" () in
+  let pat = pvar ~loc var in
+  let arg = evar ~loc var in
+  let body = apply ~arg in
+  pexp_fun ~loc Nolabel None pat body
+;;
+
+let rec is_value_expression expr =
+  match expr.pexp_desc with
+  (* Syntactic values. *)
+  | Pexp_ident _ | Pexp_constant _ | Pexp_function _ | Pexp_fun _ | Pexp_lazy _ -> true
+  (* Type-only wrappers; we check their contents. *)
+  | Pexp_constraint (expr, (_ : core_type))
+  | Pexp_coerce (expr, (_ : core_type option), (_ : core_type))
+  | Pexp_newtype ((_ : string loc), expr) -> is_value_expression expr
+  (* Allocating constructors; they are only values if all of their contents are. *)
+  | Pexp_tuple exprs -> List.for_all exprs ~f:is_value_expression
+  | Pexp_construct (_, maybe_expr) -> Option.for_all maybe_expr ~f:is_value_expression
+  | Pexp_variant (_, maybe_expr) -> Option.for_all maybe_expr ~f:is_value_expression
+  | Pexp_record (fields, maybe_expr) ->
+    List.for_all fields ~f:(fun (_, expr) -> is_value_expression expr)
+    && Option.for_all maybe_expr ~f:is_value_expression
+  (* Not values, or not always values. We make a conservative approximation. *)
+  | Pexp_unreachable
+  | Pexp_let _
+  | Pexp_apply _
+  | Pexp_match _
+  | Pexp_try _
+  | Pexp_field _
+  | Pexp_setfield _
+  | Pexp_array _
+  | Pexp_ifthenelse _
+  | Pexp_sequence _
+  | Pexp_while _
+  | Pexp_for _
+  | Pexp_send _
+  | Pexp_new _
+  | Pexp_setinstvar _
+  | Pexp_override _
+  | Pexp_letmodule _
+  | Pexp_letexception _
+  | Pexp_assert _
+  | Pexp_poly _
+  | Pexp_object _
+  | Pexp_pack _
+  | Pexp_open _
+  | Pexp_letop _
+  | Pexp_extension _ -> false
+;;
+
+let really_recursive_respecting_opaque rec_flag tds =
   (object
     inherit type_is_recursive rec_flag tds as super
 

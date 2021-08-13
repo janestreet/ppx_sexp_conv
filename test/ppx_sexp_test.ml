@@ -568,7 +568,7 @@ module Gadt = struct
   let%test_unit _ = is_eq ([%sexp_of: int s] Packed) "Packed"
 
   (* two kind of existential variables *)
-  type 'a t = Packed : 'a * _ * 'b sexp_opaque -> 'a t [@warning "-3"]
+  type 'a t = Packed : 'a * _ * ('b[@sexp.opaque]) -> 'a t [@warning "-3"]
   [@@deriving sexp_of]
 
   let%test_unit _ =
@@ -769,50 +769,6 @@ module Inline = struct
 
   let%test _ = u_of_sexp sexp = u
   let%test _ = sexp_of_u u = sexp
-end
-
-module Magic_types = struct
-  type t =
-    { sexp_array : int sexp_array [@warning "-3"]
-    ; sexp_list : int sexp_list [@warning "-3"]
-    ; sexp_option : int sexp_option [@warning "-3"]
-    ; sexp_bool : sexp_bool [@warning "-3"]
-    }
-  [@@deriving sexp, sexp_grammar]
-
-  let sexp = Sexplib.Sexp.of_string "()"
-  let t = { sexp_array = [||]; sexp_list = []; sexp_option = None; sexp_bool = false }
-
-  let%test _ = t_of_sexp sexp = t
-  let%test _ = sexp_of_t t = sexp
-
-  let sexp =
-    Sexplib.Sexp.of_string
-      "((sexp_array (1 2))(sexp_list (3 4))(sexp_option 5)(sexp_bool))"
-  ;;
-
-  let t =
-    { sexp_array = [| 1; 2 |]
-    ; sexp_list = [ 3; 4 ]
-    ; sexp_option = Some 5
-    ; sexp_bool = true
-    }
-  ;;
-
-  let%test _ = t_of_sexp sexp = t
-  let%test _ = sexp_of_t t = sexp
-
-  type u = A of int sexp_list [@warning "-3"] [@@deriving sexp]
-  type v = ([ `A of int sexp_list ][@warning "-3"]) [@@deriving sexp]
-
-  let sexp = Sexplib.Sexp.of_string "(A 1 2 3)"
-  let u = A [ 1; 2; 3 ]
-  let v = `A [ 1; 2; 3 ]
-
-  let%test _ = u_of_sexp sexp = u
-  let%test _ = sexp_of_u u = sexp
-  let%test _ = v_of_sexp sexp = v
-  let%test _ = sexp_of_v v = sexp
 end
 
 module Variance = struct

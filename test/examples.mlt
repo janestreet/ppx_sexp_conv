@@ -44,3 +44,18 @@ type 'a t =
 [@@deriving sexp]
 
 [%%expect {||}]
+
+module Record_with_defaults = struct
+  open Sexplib0.Sexp_conv
+
+  let a_field = "a_field"
+  let b_field = "b_field"
+
+  type record_with_defaults =
+    { a : string [@default a_field]
+    ; b : string [@default b_field]
+    }
+  [@@deriving of_sexp]
+end
+
+[%%expect {||}]
