@@ -14,10 +14,10 @@ module Nullary = struct
     fun _'a_sexp_grammar ->
     { untyped =
         Variant
-          { name_kind = Capitalized
+          { case_sensitivity = Case_sensitive_except_first_character
           ; clauses =
-              [ { name = "A"; clause_kind = Atom_clause }
-              ; { name = "B"; clause_kind = Atom_clause }
+              [ No_tag { name = "A"; clause_kind = Atom_clause }
+              ; No_tag { name = "B"; clause_kind = Atom_clause }
               ]
           }
     }
@@ -48,21 +48,24 @@ module With_arguments = struct
         Lazy
           (lazy
             (Variant
-               { name_kind = Capitalized
+               { case_sensitivity = Case_sensitive_except_first_character
                ; clauses =
-                   [ { name = "A"
-                     ; clause_kind =
-                         List_clause
-                           { args =
-                               Cons
-                                 ( int_sexp_grammar.untyped
-                                 , Cons (int_sexp_grammar.untyped, Empty) )
-                           }
-                     }
-                   ; { name = "B"
-                     ; clause_kind =
-                         List_clause { args = Cons (string_sexp_grammar.untyped, Empty) }
-                     }
+                   [ No_tag
+                       { name = "A"
+                       ; clause_kind =
+                           List_clause
+                             { args =
+                                 Cons
+                                   ( int_sexp_grammar.untyped
+                                   , Cons (int_sexp_grammar.untyped, Empty) )
+                             }
+                       }
+                   ; No_tag
+                       { name = "B"
+                       ; clause_kind =
+                           List_clause
+                             { args = Cons (string_sexp_grammar.untyped, Empty) }
+                       }
                    ]
                }))
     }
@@ -105,22 +108,26 @@ module Sexp_list = struct
         Lazy
           (lazy
             (Variant
-               { name_kind = Capitalized
+               { case_sensitivity = Case_sensitive_except_first_character
                ; clauses =
-                   [ { name = "Int"
-                     ; clause_kind =
-                         List_clause { args = Cons (int_sexp_grammar.untyped, Empty) }
-                     }
-                   ; { name = "List"
-                     ; clause_kind =
-                         List_clause
-                           { args =
-                               Cons ((list_sexp_grammar int_sexp_grammar).untyped, Empty)
-                           }
-                     }
-                   ; { name = "Sexp_dot_list"
-                     ; clause_kind = List_clause { args = Many int_sexp_grammar.untyped }
-                     }
+                   [ No_tag
+                       { name = "Int"
+                       ; clause_kind =
+                           List_clause { args = Cons (int_sexp_grammar.untyped, Empty) }
+                       }
+                   ; No_tag
+                       { name = "List"
+                       ; clause_kind =
+                           List_clause
+                             { args =
+                                 Cons ((list_sexp_grammar int_sexp_grammar).untyped, Empty)
+                             }
+                       }
+                   ; No_tag
+                       { name = "Sexp_dot_list"
+                       ; clause_kind =
+                           List_clause { args = Many int_sexp_grammar.untyped }
+                       }
                    ]
                }))
     }

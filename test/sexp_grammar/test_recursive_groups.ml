@@ -12,12 +12,13 @@ module One_type = struct
         Lazy
           (lazy
             (Variant
-               { name_kind = Capitalized
+               { case_sensitivity = Case_sensitive_except_first_character
                ; clauses =
-                   [ { name = "T"
-                     ; clause_kind =
-                         List_clause { args = Cons (int_sexp_grammar.untyped, Empty) }
-                     }
+                   [ No_tag
+                       { name = "T"
+                       ; clause_kind =
+                           List_clause { args = Cons (int_sexp_grammar.untyped, Empty) }
+                       }
                    ]
                }))
     }
@@ -54,16 +55,19 @@ module Two_types = struct
              ; tyvars = []
              ; grammar =
                  Variant
-                   { name_kind = Capitalized
+                   { case_sensitivity = Case_sensitive_except_first_character
                    ; clauses =
-                       [ { name = "T_int"
-                         ; clause_kind =
-                             List_clause { args = Cons (int_sexp_grammar.untyped, Empty) }
-                         }
-                       ; { name = "T_u"
-                         ; clause_kind =
-                             List_clause { args = Cons (u_sexp_grammar.untyped, Empty) }
-                         }
+                       [ No_tag
+                           { name = "T_int"
+                           ; clause_kind =
+                               List_clause
+                                 { args = Cons (int_sexp_grammar.untyped, Empty) }
+                           }
+                       ; No_tag
+                           { name = "T_u"
+                           ; clause_kind =
+                               List_clause { args = Cons (u_sexp_grammar.untyped, Empty) }
+                           }
                        ]
                    }
              }
@@ -71,16 +75,19 @@ module Two_types = struct
              ; tyvars = []
              ; grammar =
                  Variant
-                   { name_kind = Capitalized
+                   { case_sensitivity = Case_sensitive_except_first_character
                    ; clauses =
-                       [ { name = "U_int"
-                         ; clause_kind =
-                             List_clause { args = Cons (int_sexp_grammar.untyped, Empty) }
-                         }
-                       ; { name = "U_t"
-                         ; clause_kind =
-                             List_clause { args = Cons (t_sexp_grammar.untyped, Empty) }
-                         }
+                       [ No_tag
+                           { name = "U_int"
+                           ; clause_kind =
+                               List_clause
+                                 { args = Cons (int_sexp_grammar.untyped, Empty) }
+                           }
+                       ; No_tag
+                           { name = "U_t"
+                           ; clause_kind =
+                               List_clause { args = Cons (t_sexp_grammar.untyped, Empty) }
+                           }
                        ]
                    }
              }

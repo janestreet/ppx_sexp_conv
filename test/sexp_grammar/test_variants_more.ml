@@ -12,28 +12,32 @@ module Nested_inside_variant = struct
         Lazy
           (lazy
             (Variant
-               { name_kind = Capitalized
+               { case_sensitivity = Case_sensitive_except_first_character
                ; clauses =
-                   [ { name = "A"
-                     ; clause_kind =
-                         List_clause
-                           { args =
-                               Cons
-                                 ( Variant
-                                     { name_kind = Any_case
-                                     ; clauses =
-                                         [ { name = "A"
-                                           ; clause_kind =
-                                               List_clause
-                                                 { args =
-                                                     Cons (int_sexp_grammar.untyped, Empty)
-                                                 }
-                                           }
-                                         ]
-                                     }
-                                 , Empty )
-                           }
-                     }
+                   [ No_tag
+                       { name = "A"
+                       ; clause_kind =
+                           List_clause
+                             { args =
+                                 Cons
+                                   ( Variant
+                                       { case_sensitivity = Case_sensitive
+                                       ; clauses =
+                                           [ No_tag
+                                               { name = "A"
+                                               ; clause_kind =
+                                                   List_clause
+                                                     { args =
+                                                         Cons
+                                                           ( int_sexp_grammar.untyped
+                                                           , Empty )
+                                                     }
+                                               }
+                                           ]
+                                       }
+                                   , Empty )
+                             }
+                       }
                    ]
                }))
     }
@@ -57,24 +61,27 @@ module Nested_inside_record = struct
                (Fields
                   { allow_extra_fields = false
                   ; fields =
-                      [ { name = "a"
-                        ; required = true
-                        ; args =
-                            Cons
-                              ( Variant
-                                  { name_kind = Any_case
-                                  ; clauses =
-                                      [ { name = "A"
-                                        ; clause_kind =
-                                            List_clause
-                                              { args =
-                                                  Cons (int_sexp_grammar.untyped, Empty)
-                                              }
-                                        }
-                                      ]
-                                  }
-                              , Empty )
-                        }
+                      [ No_tag
+                          { name = "a"
+                          ; required = true
+                          ; args =
+                              Cons
+                                ( Variant
+                                    { case_sensitivity = Case_sensitive
+                                    ; clauses =
+                                        [ No_tag
+                                            { name = "A"
+                                            ; clause_kind =
+                                                List_clause
+                                                  { args =
+                                                      Cons
+                                                        (int_sexp_grammar.untyped, Empty)
+                                                  }
+                                            }
+                                        ]
+                                    }
+                                , Empty )
+                          }
                       ]
                   })))
     }

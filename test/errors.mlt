@@ -6,12 +6,12 @@ Line _, characters _-_:
 Error: The following elements are mutually exclusive: sexp.sexp_drop_default sexp.omit_nil
 |}]
 
-type t = { a : int sexp_list [@sexp.omit_nil] } [@@deriving sexp_of]
+type t = { a : int list [@sexp.list] [@sexp.omit_nil] } [@@deriving sexp_of]
 
 [%%expect
   {|
 Line _, characters _-_:
-Error: The following elements are mutually exclusive: sexp.omit_nil sexp_list
+Error: The following elements are mutually exclusive: sexp.omit_nil [@sexp.list]
 |}]
 
 type t = { a : int [@default 0] [@sexp.omit_nil] } [@@deriving of_sexp]

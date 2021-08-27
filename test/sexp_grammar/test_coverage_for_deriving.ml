@@ -67,14 +67,16 @@ let (pos_sexp_grammar : pos Sexplib0.Sexp_grammar.t) =
              (Fields
                 { allow_extra_fields = false
                 ; fields =
-                    [ { name = "x"
-                      ; required = true
-                      ; args = Cons (float_sexp_grammar.untyped, Empty)
-                      }
-                    ; { name = "y"
-                      ; required = true
-                      ; args = Cons (float_sexp_grammar.untyped, Empty)
-                      }
+                    [ No_tag
+                        { name = "x"
+                        ; required = true
+                        ; args = Cons (float_sexp_grammar.untyped, Empty)
+                        }
+                    ; No_tag
+                        { name = "y"
+                        ; required = true
+                        ; args = Cons (float_sexp_grammar.untyped, Empty)
+                        }
                     ]
                 })))
   }
@@ -107,11 +109,11 @@ let _ = fun (_ : enum) -> ()
 let (enum_sexp_grammar : enum Sexplib0.Sexp_grammar.t) =
   { untyped =
       Variant
-        { name_kind = Capitalized
+        { case_sensitivity = Case_sensitive_except_first_character
         ; clauses =
-            [ { name = "One"; clause_kind = Atom_clause }
-            ; { name = "Two"; clause_kind = Atom_clause }
-            ; { name = "Three"; clause_kind = Atom_clause }
+            [ No_tag { name = "One"; clause_kind = Atom_clause }
+            ; No_tag { name = "Two"; clause_kind = Atom_clause }
+            ; No_tag { name = "Three"; clause_kind = Atom_clause }
             ]
         }
   }
@@ -136,16 +138,18 @@ let (which_sexp_grammar :
   fun _'a_sexp_grammar _'b_sexp_grammar ->
   { untyped =
       Variant
-        { name_kind = Capitalized
+        { case_sensitivity = Case_sensitive_except_first_character
         ; clauses =
-            [ { name = "This"
-              ; clause_kind =
-                  List_clause { args = Cons (_'a_sexp_grammar.untyped, Empty) }
-              }
-            ; { name = "That"
-              ; clause_kind =
-                  List_clause { args = Cons (_'b_sexp_grammar.untyped, Empty) }
-              }
+            [ No_tag
+                { name = "This"
+                ; clause_kind =
+                    List_clause { args = Cons (_'a_sexp_grammar.untyped, Empty) }
+                }
+            ; No_tag
+                { name = "That"
+                ; clause_kind =
+                    List_clause { args = Cons (_'b_sexp_grammar.untyped, Empty) }
+                }
             ]
         }
   }
@@ -168,13 +172,14 @@ let (optional_sexp_grammar :
   fun _'a_sexp_grammar ->
   { untyped =
       Variant
-        { name_kind = Capitalized
+        { case_sensitivity = Case_sensitive_except_first_character
         ; clauses =
-            [ { name = "No"; clause_kind = Atom_clause }
-            ; { name = "Yes"
-              ; clause_kind =
-                  List_clause { args = Cons (_'a_sexp_grammar.untyped, Empty) }
-              }
+            [ No_tag { name = "No"; clause_kind = Atom_clause }
+            ; No_tag
+                { name = "Yes"
+                ; clause_kind =
+                    List_clause { args = Cons (_'a_sexp_grammar.untyped, Empty) }
+                }
             ]
         }
   }
@@ -217,10 +222,10 @@ let _ = fun (_ : color) -> ()
 let (color_sexp_grammar : color Sexplib0.Sexp_grammar.t) =
   { untyped =
       Variant
-        { name_kind = Any_case
+        { case_sensitivity = Case_sensitive
         ; clauses =
-            [ { name = "Red"; clause_kind = Atom_clause }
-            ; { name = "Blue"; clause_kind = Atom_clause }
+            [ No_tag { name = "Red"; clause_kind = Atom_clause }
+            ; No_tag { name = "Blue"; clause_kind = Atom_clause }
             ]
         }
   }
@@ -247,14 +252,15 @@ let (adjective_sexp_grammar : adjective Sexplib0.Sexp_grammar.t) =
           (Union
              [ color_sexp_grammar.untyped
              ; Variant
-                 { name_kind = Any_case
+                 { case_sensitivity = Case_sensitive
                  ; clauses =
-                     [ { name = "Fast"; clause_kind = Atom_clause }
-                     ; { name = "Slow"; clause_kind = Atom_clause }
-                     ; { name = "Count"
-                       ; clause_kind =
-                           List_clause { args = Cons (int_sexp_grammar.untyped, Empty) }
-                       }
+                     [ No_tag { name = "Fast"; clause_kind = Atom_clause }
+                     ; No_tag { name = "Slow"; clause_kind = Atom_clause }
+                     ; No_tag
+                         { name = "Count"
+                         ; clause_kind =
+                             List_clause { args = Cons (int_sexp_grammar.untyped, Empty) }
+                         }
                      ]
                  }
              ]))
@@ -290,19 +296,21 @@ include struct
                  (Fields
                     { allow_extra_fields = false
                     ; fields =
-                        [ { name = "data"
-                          ; required = true
-                          ; args = Cons (Tyvar "a", Empty)
-                          }
-                        ; { name = "children"
-                          ; required = true
-                          ; args =
-                              Cons
-                                ( (list_sexp_grammar
-                                     (tree_sexp_grammar { untyped = Tyvar "a" }))
-                                  .untyped
-                                , Empty )
-                          }
+                        [ No_tag
+                            { name = "data"
+                            ; required = true
+                            ; args = Cons (Tyvar "a", Empty)
+                            }
+                        ; No_tag
+                            { name = "children"
+                            ; required = true
+                            ; args =
+                                Cons
+                                  ( (list_sexp_grammar
+                                       (tree_sexp_grammar { untyped = Tyvar "a" }))
+                                    .untyped
+                                  , Empty )
+                            }
                         ]
                     })
            }
@@ -355,15 +363,17 @@ include struct
                  (Fields
                     { allow_extra_fields = false
                     ; fields =
-                        [ { name = "alpha"
-                          ; required = true
-                          ; args = Cons (alpha_sexp_grammar.untyped, Empty)
-                          }
-                        ; { name = "betas"
-                          ; required = true
-                          ; args =
-                              Cons ((list_sexp_grammar beta_sexp_grammar).untyped, Empty)
-                          }
+                        [ No_tag
+                            { name = "alpha"
+                            ; required = true
+                            ; args = Cons (alpha_sexp_grammar.untyped, Empty)
+                            }
+                        ; No_tag
+                            { name = "betas"
+                            ; required = true
+                            ; args =
+                                Cons ((list_sexp_grammar beta_sexp_grammar).untyped, Empty)
+                            }
                         ]
                     })
            }
@@ -416,27 +426,33 @@ let (record_attributes_sexp_grammar : record_attributes Sexplib0.Sexp_grammar.t)
              (Fields
                 { allow_extra_fields = true
                 ; fields =
-                    [ { name = "a"
-                      ; required = false
-                      ; args = Cons (int_sexp_grammar.untyped, Empty)
-                      }
-                    ; { name = "b"; required = false; args = Empty }
-                    ; { name = "c"
-                      ; required = false
-                      ; args = Cons (float_sexp_grammar.untyped, Empty)
-                      }
-                    ; { name = "d"
-                      ; required = false
-                      ; args = Cons (List (Many string_sexp_grammar.untyped), Empty)
-                      }
-                    ; { name = "e"
-                      ; required = false
-                      ; args = Cons (List (Many bytes_sexp_grammar.untyped), Empty)
-                      }
-                    ; { name = "f"
-                      ; required = false
-                      ; args = Cons (Ppx_sexp_conv_lib.Sexp.t_sexp_grammar.untyped, Empty)
-                      }
+                    [ No_tag
+                        { name = "a"
+                        ; required = false
+                        ; args = Cons (int_sexp_grammar.untyped, Empty)
+                        }
+                    ; No_tag { name = "b"; required = false; args = Empty }
+                    ; No_tag
+                        { name = "c"
+                        ; required = false
+                        ; args = Cons (float_sexp_grammar.untyped, Empty)
+                        }
+                    ; No_tag
+                        { name = "d"
+                        ; required = false
+                        ; args = Cons (List (Many string_sexp_grammar.untyped), Empty)
+                        }
+                    ; No_tag
+                        { name = "e"
+                        ; required = false
+                        ; args = Cons (List (Many bytes_sexp_grammar.untyped), Empty)
+                        }
+                    ; No_tag
+                        { name = "f"
+                        ; required = false
+                        ; args =
+                            Cons (Ppx_sexp_conv_lib.Sexp.t_sexp_grammar.untyped, Empty)
+                        }
                     ]
                 })))
   }
@@ -466,51 +482,62 @@ let (variant_attributes_sexp_grammar : variant_attributes Sexplib0.Sexp_grammar.
       Lazy
         (lazy
           (Variant
-             { name_kind = Capitalized
+             { case_sensitivity = Case_sensitive_except_first_character
              ; clauses =
-                 [ { name = "A"; clause_kind = Atom_clause }
-                 ; { name = "B"
-                   ; clause_kind = List_clause { args = Many int_sexp_grammar.untyped }
-                   }
-                 ; { name = "C"
-                   ; clause_kind =
-                       List_clause
-                         { args =
-                             Fields
-                               { allow_extra_fields = true
-                               ; fields =
-                                   [ { name = "a"
-                                     ; required = false
-                                     ; args = Cons (int_sexp_grammar.untyped, Empty)
-                                     }
-                                   ; { name = "b"; required = false; args = Empty }
-                                   ; { name = "c"
-                                     ; required = false
-                                     ; args = Cons (float_sexp_grammar.untyped, Empty)
-                                     }
-                                   ; { name = "d"
-                                     ; required = false
-                                     ; args =
-                                         Cons
-                                           (List (Many string_sexp_grammar.untyped), Empty)
-                                     }
-                                   ; { name = "e"
-                                     ; required = false
-                                     ; args =
-                                         Cons
-                                           (List (Many bytes_sexp_grammar.untyped), Empty)
-                                     }
-                                   ; { name = "f"
-                                     ; required = false
-                                     ; args =
-                                         Cons
-                                           ( Ppx_sexp_conv_lib.Sexp.t_sexp_grammar.untyped
-                                           , Empty )
-                                     }
-                                   ]
-                               }
-                         }
-                   }
+                 [ No_tag { name = "A"; clause_kind = Atom_clause }
+                 ; No_tag
+                     { name = "B"
+                     ; clause_kind = List_clause { args = Many int_sexp_grammar.untyped }
+                     }
+                 ; No_tag
+                     { name = "C"
+                     ; clause_kind =
+                         List_clause
+                           { args =
+                               Fields
+                                 { allow_extra_fields = true
+                                 ; fields =
+                                     [ No_tag
+                                         { name = "a"
+                                         ; required = false
+                                         ; args = Cons (int_sexp_grammar.untyped, Empty)
+                                         }
+                                     ; No_tag
+                                         { name = "b"; required = false; args = Empty }
+                                     ; No_tag
+                                         { name = "c"
+                                         ; required = false
+                                         ; args = Cons (float_sexp_grammar.untyped, Empty)
+                                         }
+                                     ; No_tag
+                                         { name = "d"
+                                         ; required = false
+                                         ; args =
+                                             Cons
+                                               ( List (Many string_sexp_grammar.untyped)
+                                               , Empty )
+                                         }
+                                     ; No_tag
+                                         { name = "e"
+                                         ; required = false
+                                         ; args =
+                                             Cons
+                                               ( List (Many bytes_sexp_grammar.untyped)
+                                               , Empty )
+                                         }
+                                     ; No_tag
+                                         { name = "f"
+                                         ; required = false
+                                         ; args =
+                                             Cons
+                                               ( Ppx_sexp_conv_lib.Sexp.t_sexp_grammar
+                                                 .untyped
+                                               , Empty )
+                                         }
+                                     ]
+                                 }
+                           }
+                     }
                  ]
              }))
   }
@@ -535,12 +562,13 @@ let (polymorphic_variant_attributes_sexp_grammar :
       Lazy
         (lazy
           (Variant
-             { name_kind = Any_case
+             { case_sensitivity = Case_sensitive
              ; clauses =
-                 [ { name = "A"; clause_kind = Atom_clause }
-                 ; { name = "B"
-                   ; clause_kind = List_clause { args = Many int_sexp_grammar.untyped }
-                   }
+                 [ No_tag { name = "A"; clause_kind = Atom_clause }
+                 ; No_tag
+                     { name = "B"
+                     ; clause_kind = List_clause { args = Many int_sexp_grammar.untyped }
+                     }
                  ]
              }))
   }
@@ -566,14 +594,17 @@ let (opaque_sexp_grammar : opaque Sexplib0.Sexp_grammar.t) =
              (Fields
                 { allow_extra_fields = false
                 ; fields =
-                    [ { name = "x"
-                      ; required = true
-                      ; args = Cons (Sexplib0.Sexp_conv.opaque_sexp_grammar.untyped, Empty)
-                      }
-                    ; { name = "y"
-                      ; required = true
-                      ; args = Cons (Sexplib0.Sexp_conv.fun_sexp_grammar.untyped, Empty)
-                      }
+                    [ No_tag
+                        { name = "x"
+                        ; required = true
+                        ; args =
+                            Cons (Sexplib0.Sexp_conv.opaque_sexp_grammar.untyped, Empty)
+                        }
+                    ; No_tag
+                        { name = "y"
+                        ; required = true
+                        ; args = Cons (Sexplib0.Sexp_conv.fun_sexp_grammar.untyped, Empty)
+                        }
                     ]
                 })))
   }

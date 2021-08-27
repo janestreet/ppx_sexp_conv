@@ -461,8 +461,9 @@ To workaround that error, simply copy the constraint on the type which has the
 * Deprecated syntax
 
 Originally, ~ppx_sexp_conv~ used special types instead of attributes. Those
-types are now deprecated. Here are the appropriate conversions to update from
-code using now-deprecated types to the newer attributes.
+types have been replaced with attributes. Here are the appropriate conversions
+to update from code using the old types to the new attributes.
+
 
 ** Opaque types
 

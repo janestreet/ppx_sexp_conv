@@ -13,10 +13,11 @@ module Allow_extra_fields = struct
                (Fields
                   { allow_extra_fields = true
                   ; fields =
-                      [ { name = "a"
-                        ; required = true
-                        ; args = Cons (int_sexp_grammar.untyped, Empty)
-                        }
+                      [ No_tag
+                          { name = "a"
+                          ; required = true
+                          ; args = Cons (int_sexp_grammar.untyped, Empty)
+                          }
                       ]
                   })))
     }
@@ -40,10 +41,11 @@ module Forbid_extra_fields = struct
                (Fields
                   { allow_extra_fields = false
                   ; fields =
-                      [ { name = "a"
-                        ; required = true
-                        ; args = Cons (int_sexp_grammar.untyped, Empty)
-                        }
+                      [ No_tag
+                          { name = "a"
+                          ; required = true
+                          ; args = Cons (int_sexp_grammar.untyped, Empty)
+                          }
                       ]
                   })))
     }
@@ -67,38 +69,42 @@ module Variant_type = struct
         Lazy
           (lazy
             (Variant
-               { name_kind = Capitalized
+               { case_sensitivity = Case_sensitive_except_first_character
                ; clauses =
-                   [ { name = "Allow_extra_fields"
-                     ; clause_kind =
-                         List_clause
-                           { args =
-                               Fields
-                                 { allow_extra_fields = true
-                                 ; fields =
-                                     [ { name = "foo"
-                                       ; required = true
-                                       ; args = Cons (int_sexp_grammar.untyped, Empty)
-                                       }
-                                     ]
-                                 }
-                           }
-                     }
-                   ; { name = "Forbid_extra_fields"
-                     ; clause_kind =
-                         List_clause
-                           { args =
-                               Fields
-                                 { allow_extra_fields = false
-                                 ; fields =
-                                     [ { name = "bar"
-                                       ; required = true
-                                       ; args = Cons (int_sexp_grammar.untyped, Empty)
-                                       }
-                                     ]
-                                 }
-                           }
-                     }
+                   [ No_tag
+                       { name = "Allow_extra_fields"
+                       ; clause_kind =
+                           List_clause
+                             { args =
+                                 Fields
+                                   { allow_extra_fields = true
+                                   ; fields =
+                                       [ No_tag
+                                           { name = "foo"
+                                           ; required = true
+                                           ; args = Cons (int_sexp_grammar.untyped, Empty)
+                                           }
+                                       ]
+                                   }
+                             }
+                       }
+                   ; No_tag
+                       { name = "Forbid_extra_fields"
+                       ; clause_kind =
+                           List_clause
+                             { args =
+                                 Fields
+                                   { allow_extra_fields = false
+                                   ; fields =
+                                       [ No_tag
+                                           { name = "bar"
+                                           ; required = true
+                                           ; args = Cons (int_sexp_grammar.untyped, Empty)
+                                           }
+                                       ]
+                                   }
+                             }
+                       }
                    ]
                }))
     }

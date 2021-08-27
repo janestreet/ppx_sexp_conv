@@ -22,12 +22,13 @@ module Recursive_group = struct
     fun _'a_sexp_grammar ->
     { untyped =
         Variant
-          { name_kind = Capitalized
+          { case_sensitivity = Case_sensitive_except_first_character
           ; clauses =
-              [ { name = "T"
-                ; clause_kind =
-                    List_clause { args = Cons (_'a_sexp_grammar.untyped, Empty) }
-                }
+              [ No_tag
+                  { name = "T"
+                  ; clause_kind =
+                      List_clause { args = Cons (_'a_sexp_grammar.untyped, Empty) }
+                  }
               ]
           }
     }
@@ -39,18 +40,19 @@ module Recursive_group = struct
     fun _'a_sexp_grammar ->
     { untyped =
         Variant
-          { name_kind = Capitalized
+          { case_sensitivity = Case_sensitive_except_first_character
           ; clauses =
-              [ { name = "U"
-                ; clause_kind =
-                    List_clause
-                      { args =
-                          Cons
-                            ( (option_sexp_grammar (t_sexp_grammar _'a_sexp_grammar))
-                              .untyped
-                            , Empty )
-                      }
-                }
+              [ No_tag
+                  { name = "U"
+                  ; clause_kind =
+                      List_clause
+                        { args =
+                            Cons
+                              ( (option_sexp_grammar (t_sexp_grammar _'a_sexp_grammar))
+                                .untyped
+                              , Empty )
+                        }
+                  }
               ]
           }
     }

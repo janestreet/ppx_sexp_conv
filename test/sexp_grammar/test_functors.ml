@@ -46,19 +46,20 @@ struct
              ; tyvars = [ "a" ]
              ; grammar =
                  Variant
-                   { name_kind = Capitalized
+                   { case_sensitivity = Case_sensitive_except_first_character
                    ; clauses =
-                       [ { name = "T"
-                         ; clause_kind =
-                             List_clause
-                               { args =
-                                   Cons
-                                     ( (u_sexp_grammar
-                                          (T.t_sexp_grammar { untyped = Tyvar "a" }))
-                                       .untyped
-                                     , Empty )
-                               }
-                         }
+                       [ No_tag
+                           { name = "T"
+                           ; clause_kind =
+                               List_clause
+                                 { args =
+                                     Cons
+                                       ( (u_sexp_grammar
+                                            (T.t_sexp_grammar { untyped = Tyvar "a" }))
+                                         .untyped
+                                       , Empty )
+                                 }
+                           }
                        ]
                    }
              }
@@ -66,20 +67,21 @@ struct
              ; tyvars = [ "a" ]
              ; grammar =
                  Variant
-                   { name_kind = Capitalized
+                   { case_sensitivity = Case_sensitive_except_first_character
                    ; clauses =
-                       [ { name = "U"
-                         ; clause_kind =
-                             List_clause
-                               { args =
-                                   Cons
-                                     ( (Maybe.t_sexp_grammar
-                                          (t_sexp_grammar
-                                             (T.t_sexp_grammar { untyped = Tyvar "a" })))
-                                       .untyped
-                                     , Empty )
-                               }
-                         }
+                       [ No_tag
+                           { name = "U"
+                           ; clause_kind =
+                               List_clause
+                                 { args =
+                                     Cons
+                                       ( (Maybe.t_sexp_grammar
+                                            (t_sexp_grammar
+                                               (T.t_sexp_grammar { untyped = Tyvar "a" })))
+                                         .untyped
+                                       , Empty )
+                                 }
+                           }
                        ]
                    }
              }
@@ -118,13 +120,14 @@ struct
     fun _'a_sexp_grammar ->
     { untyped =
         Variant
-          { name_kind = Capitalized
+          { case_sensitivity = Case_sensitive_except_first_character
           ; clauses =
-              [ { name = "V"
-                ; clause_kind =
-                    List_clause
-                      { args = Cons ((t_sexp_grammar _'a_sexp_grammar).untyped, Empty) }
-                }
+              [ No_tag
+                  { name = "V"
+                  ; clause_kind =
+                      List_clause
+                        { args = Cons ((t_sexp_grammar _'a_sexp_grammar).untyped, Empty) }
+                  }
               ]
           }
     }

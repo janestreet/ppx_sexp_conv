@@ -127,6 +127,38 @@ let allow_extra_fields_cd =
     ()
 ;;
 
+let tag_attribute_for_context context =
+  let key_equals_value =
+    Ast_pattern.(
+      pexp_apply (pexp_ident (lident (string "="))) (no_label __ ^:: no_label __ ^:: nil)
+      |> pack2)
+  in
+  let get_captured_values ast_pattern context expression =
+    Ast_pattern.to_func ast_pattern context expression.pexp_loc expression (fun x -> x)
+  in
+  let rec collect_sequence expression =
+    match expression.pexp_desc with
+    | Pexp_sequence (l, r) -> l :: collect_sequence r
+    | _ -> [ expression ]
+  in
+  let esequence ast_pattern =
+    Ast_pattern.of_func (fun context _loc expression k ->
+      collect_sequence expression
+      |> List.map ~f:(get_captured_values ast_pattern context)
+      |> k)
+  in
+  Attribute.declare
+    "sexp_grammar.tag"
+    context
+    Ast_pattern.(pstr (pstr_eval (esequence key_equals_value) nil ^:: nil))
+    (fun x -> x)
+;;
+
+let tag_type = tag_attribute_for_context Core_type
+let tag_ld = tag_attribute_for_context Label_declaration
+let tag_cd = tag_attribute_for_context Constructor_declaration
+let tag_poly = tag_attribute_for_context Rtag
+
 let invalid_attribute ~loc attr description =
   Location.raise_errorf
     ~loc

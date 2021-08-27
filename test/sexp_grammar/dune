@@ -1,5 +1,6 @@
 (library (name ppx_sexp_conv_test_sexp_grammar)
- (libraries base expect_test_helpers_core.expect_test_helpers_base)
+ (libraries base expect_test_helpers_core.expect_test_helpers_base
+  sexp_grammar)
  (preprocess (pps ppx_sexp_conv ppx_expect ppx_here)))
 
 (rule (targets regular_vs_polymorphic_variants.diff)

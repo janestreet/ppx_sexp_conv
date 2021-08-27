@@ -23,10 +23,6 @@ let create ~loc specific_getters ld ~if_no_attribute =
     [ get_attribute omit_nil ~f:(fun () -> Omit_nil)
     ; (fun ld ->
          match ld.pld_type with
-         | [%type: sexp_bool] -> Some (Sexp_bool, "sexp_bool")
-         | [%type: [%t? ty] sexp_option] -> Some (Sexp_option ty, "sexp_option")
-         | [%type: [%t? ty] sexp_list] -> Some (Sexp_list ty, "sexp_list")
-         | [%type: [%t? ty] sexp_array] -> Some (Sexp_array ty, "sexp_array")
          | ty when Option.is_some (Attribute.get bool ld) ->
            (match ty with
             | [%type: bool] -> Some (Sexp_bool, "[@sexp.bool]")
@@ -66,7 +62,6 @@ let create ~loc specific_getters ld ~if_no_attribute =
 let strip_attributes =
   object
     inherit Ast_traverse.map
-
     method! attributes _ = []
   end
 ;;

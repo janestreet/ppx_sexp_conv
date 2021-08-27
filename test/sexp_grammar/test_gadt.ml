@@ -9,15 +9,16 @@ let (t_sexp_grammar : t Sexplib0.Sexp_grammar.t) =
       Lazy
         (lazy
           (Variant
-             { name_kind = Capitalized
+             { case_sensitivity = Case_sensitive_except_first_character
              ; clauses =
-                 [ { name = "T"
-                   ; clause_kind =
-                       List_clause
-                         { args =
-                             Cons (Sexplib0.Sexp_conv.opaque_sexp_grammar.untyped, Empty)
-                         }
-                   }
+                 [ No_tag
+                     { name = "T"
+                     ; clause_kind =
+                         List_clause
+                           { args =
+                               Cons (Sexplib0.Sexp_conv.opaque_sexp_grammar.untyped, Empty)
+                           }
+                     }
                  ]
              }))
   }
@@ -34,8 +35,8 @@ let _ = fun (_ : nullary) -> ()
 let (nullary_sexp_grammar : nullary Sexplib0.Sexp_grammar.t) =
   { untyped =
       Variant
-        { name_kind = Capitalized
-        ; clauses = [ { name = "Nullary"; clause_kind = Atom_clause } ]
+        { case_sensitivity = Case_sensitive_except_first_character
+        ; clauses = [ No_tag { name = "Nullary"; clause_kind = Atom_clause } ]
         }
   }
 ;;
@@ -57,12 +58,13 @@ let (grammar_only_sexp_grammar :
   fun _'v_x__007__sexp_grammar ->
   { untyped =
       Variant
-        { name_kind = Capitalized
+        { case_sensitivity = Case_sensitive_except_first_character
         ; clauses =
-            [ { name = "Grammar_only"
-              ; clause_kind =
-                  List_clause { args = Cons (int_sexp_grammar.untyped, Empty) }
-              }
+            [ No_tag
+                { name = "Grammar_only"
+                ; clause_kind =
+                    List_clause { args = Cons (int_sexp_grammar.untyped, Empty) }
+                }
             ]
         }
   }

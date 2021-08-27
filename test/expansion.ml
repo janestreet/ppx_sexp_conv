@@ -1049,7 +1049,10 @@ module Binary = struct
   let _ = fun (_ : ('a, 'b) t) -> ()
 
   let t_of_sexp :
-    'a 'b. (Sexplib0.Sexp.t -> 'a) -> (Sexplib0.Sexp.t -> 'b) -> Sexplib0.Sexp.t
+    'a 'b.
+    (Sexplib0.Sexp.t -> 'a)
+    -> (Sexplib0.Sexp.t -> 'b)
+    -> Sexplib0.Sexp.t
     -> ('a, 'b) t
     =
     Either.t_of_sexp
@@ -1058,7 +1061,10 @@ module Binary = struct
   let _ = t_of_sexp
 
   let sexp_of_t :
-    'a 'b. ('a -> Sexplib0.Sexp.t) -> ('b -> Sexplib0.Sexp.t) -> ('a, 'b) t
+    'a 'b.
+    ('a -> Sexplib0.Sexp.t)
+    -> ('b -> Sexplib0.Sexp.t)
+    -> ('a, 'b) t
     -> Sexplib0.Sexp.t
     =
     Either.sexp_of_t
@@ -1096,7 +1102,10 @@ module Second_order = struct
   let _ = fun (_ : ('a, 'b) t) -> ()
 
   let t_of_sexp :
-    'a 'b. (Sexplib0.Sexp.t -> 'a) -> (Sexplib0.Sexp.t -> 'b) -> Sexplib0.Sexp.t
+    'a 'b.
+    (Sexplib0.Sexp.t -> 'a)
+    -> (Sexplib0.Sexp.t -> 'b)
+    -> Sexplib0.Sexp.t
     -> ('a, 'b) t
     =
     fun _of_a _of_b -> Sexplib0.Sexp_conv.fun_of_sexp
@@ -1105,7 +1114,10 @@ module Second_order = struct
   let _ = t_of_sexp
 
   let sexp_of_t :
-    'a 'b. ('a -> Sexplib0.Sexp.t) -> ('b -> Sexplib0.Sexp.t) -> ('a, 'b) t
+    'a 'b.
+    ('a -> Sexplib0.Sexp.t)
+    -> ('b -> Sexplib0.Sexp.t)
+    -> ('a, 'b) t
     -> Sexplib0.Sexp.t
     =
     fun _of_a _of_b _ -> Sexplib0.Sexp_conv.sexp_of_fun Sexplib0.Sexp_conv.ignore
@@ -1805,8 +1817,7 @@ module Record_with_special_types = struct
          else bnds
        in
        let bnds =
-         if
-           match v_c with
+         if match v_c with
            | [||] -> true
            | _ -> false
          then bnds
@@ -1816,8 +1827,7 @@ module Record_with_special_types = struct
            bnd :: bnds)
        in
        let bnds =
-         if
-           match v_b with
+         if match v_b with
            | [] -> true
            | _ -> false
          then bnds

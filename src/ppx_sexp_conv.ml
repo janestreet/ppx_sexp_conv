@@ -14,12 +14,19 @@ module Sexp_grammar = struct
   module E = Ppx_sexp_conv_expander.Sexp_grammar
 
   let name = "sexp_grammar"
-  let str_type_decl = Deriving.Generator.V2.make_noarg E.str_type_decl
+  let flags = Deriving.Args.(empty +> flag "tags_of_doc_comments")
+  let str_type_decl = Deriving.Generator.V2.make flags E.str_type_decl
   let sig_type_decl = Deriving.Generator.V2.make_noarg E.sig_type_decl
   let deriver = Deriving.add name ~sig_type_decl ~str_type_decl
 
+  (* We default to [tags_of_doc_comments=true] in this case, because doc comments in a
+     [%sexp_grammar] expression have no other purpose. *)
   let expr_extension =
-    Extension.V3.declare name Expression Ast_pattern.(ptyp __) E.core_type
+    Extension.V3.declare
+      name
+      Expression
+      Ast_pattern.(ptyp __)
+      (E.core_type ~tags_of_doc_comments:true)
   ;;
 
   let type_extension =
