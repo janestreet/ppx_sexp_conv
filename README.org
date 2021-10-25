@@ -163,6 +163,20 @@ as either present or absent, but not as containing a value.
   { enabled = false } => ()
 #+end_src
 
+The attributes =sexp.list= and =sexp.array= indicate that a list or array record
+field, respectively, can be omitted when it is empty.
+
+#+begin_src ocaml
+  type t =
+    { arr : int array [@sexp.array]
+    ; lst : int list [@sexp.list]
+    }
+  [@@deriving sexp]
+
+  { arr = [||]; lst = [] } => ()
+  { arr = [|1;2|]; lst = [3;4] } => ((arr (1 2)) (lst (3 4)))
+#+end_src
+
 *** Defaults
 
 More complex default values can be specified explicitly using several

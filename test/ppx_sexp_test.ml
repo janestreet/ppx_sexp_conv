@@ -1,6 +1,9 @@
 open Ppx_sexp_conv_lib
 open Conv
 
+(* Module names below are used in error messages being tested. *)
+[@@@warning "-unused-module"]
+
 module Sum_and_polymorphic_variants = struct
   type poly =
     [ `No_arg

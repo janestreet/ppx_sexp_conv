@@ -16,26 +16,23 @@ Exception:
 
 let _ = [%sexp_of: 'a]
 
-[%%expect
-  {|
+[%%expect {|
 Line _, characters _-_:
-Error: Type variables not allowed in [%sexp_of: ]. Please use locally abstract types instead.
+Error: ppx_sexp_conv: unbound type variable 'a
 |}]
 
 let _ = [%of_sexp: 'a]
 
-[%%expect
-  {|
+[%%expect {|
 Line _, characters _-_:
-Error: Type variables not allowed in [%of_sexp: ]. Please use locally abstract types instead.
+Error: ppx_sexp_conv: unbound type variable 'a
 |}]
 
 let _ = [%sexp (() : 'a)]
 
-[%%expect
-  {|
+[%%expect {|
 Line _, characters _-_:
-Error: Type variables not allowed in [%sexp_of: ]. Please use locally abstract types instead.
+Error: ppx_sexp_conv: unbound type variable 'a
 |}]
 
 type 'a t =

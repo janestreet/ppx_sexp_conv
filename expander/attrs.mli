@@ -4,10 +4,13 @@ open! Ppxlib
 (** [default], [drop_default], and [drop_if] attributes are annotated with expressions
     that should be lifted out of the scope of ppx-generated temporary variables. See the
     [Lifted] module. *)
+module To_lift : sig
+  type 'a t = { to_lift : 'a } [@@unboxed]
+end
 
-val default : (label_declaration, [ `lift of expression ]) Attribute.t
-val drop_default : (label_declaration, [ `lift of expression ] option) Attribute.t
-val drop_if : (label_declaration, [ `lift of expression ]) Attribute.t
+val default : (label_declaration, expression To_lift.t) Attribute.t
+val drop_default : (label_declaration, expression To_lift.t option) Attribute.t
+val drop_if : (label_declaration, expression To_lift.t) Attribute.t
 val drop_default_equal : (label_declaration, unit) Attribute.t
 val drop_default_compare : (label_declaration, unit) Attribute.t
 val drop_default_sexp : (label_declaration, unit) Attribute.t

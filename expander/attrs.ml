@@ -1,12 +1,18 @@
 open! Base
 open! Ppxlib
 
+module To_lift = struct
+  type 'a t = { to_lift : 'a } [@@unboxed]
+end
+
+open To_lift
+
 let default =
   Attribute.declare
     "sexp.default"
     Attribute.Context.label_declaration
     Ast_pattern.(pstr (pstr_eval __ nil ^:: nil))
-    (fun x -> `lift x)
+    (fun x -> { to_lift = x })
 ;;
 
 let drop_default =
@@ -16,7 +22,7 @@ let drop_default =
     Ast_pattern.(pstr (alt_option (pstr_eval __ nil ^:: nil) nil))
     (function
       | None -> None
-      | Some x -> Some (`lift x))
+      | Some x -> Some { to_lift = x })
 ;;
 
 let drop_default_equal =
@@ -48,7 +54,7 @@ let drop_if =
     "sexp.sexp_drop_if"
     Attribute.Context.label_declaration
     Ast_pattern.(pstr (pstr_eval __ nil ^:: nil))
-    (fun x -> `lift x)
+    (fun x -> { to_lift = x })
 ;;
 
 let opaque =

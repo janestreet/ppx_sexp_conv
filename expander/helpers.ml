@@ -20,14 +20,27 @@ let replace_variables_by_underscores =
   map#core_type
 ;;
 
-let rigid_type_var ~type_name x =
-  let prefix = "rigid_" in
-  if String.equal x type_name || String.is_prefix x ~prefix
-  then prefix ^ x ^ "_of_type_" ^ type_name
-  else x
+let make_rigid_types tps =
+  List.fold
+    tps
+    ~init:(Map.empty (module String))
+    ~f:(fun map tp ->
+      Map.update map tp.txt ~f:(function
+        | None -> Fresh_name.of_string_loc tp
+        | Some fresh ->
+          (* Ignore duplicate names, the typechecker will raise after expansion. *)
+          fresh))
 ;;
 
-let make_type_rigid ~type_name =
+let find_rigid_type ~loc ~rigid_types name =
+  match Map.find rigid_types name with
+  | Some tp -> Fresh_name.to_string_loc tp
+  | None ->
+    (* Ignore unbound type names, the typechecker will raise after expansion. *)
+    { txt = name; loc }
+;;
+
+let make_type_rigid ~rigid_types =
   let map =
     object
       inherit Ast_traverse.map as super
@@ -36,7 +49,8 @@ let make_type_rigid ~type_name =
         let ptyp_desc =
           match ty.ptyp_desc with
           | Ptyp_var s ->
-            Ptyp_constr (Located.lident ~loc:ty.ptyp_loc (rigid_type_var ~type_name s), [])
+            Ptyp_constr
+              (Located.map_lident (find_rigid_type ~loc:ty.ptyp_loc ~rigid_types s), [])
           | desc -> super#core_type_desc desc
         in
         { ty with ptyp_desc }
@@ -97,12 +111,12 @@ let constrained_function_binding
     in
     if use_rigid_variables
     then (
-      let type_name = td.ptype_name.txt in
+      let rigid_types = make_rigid_types tps in
       List.fold_right
         tps
         ~f:(fun tp body ->
-          pexp_newtype ~loc { txt = rigid_type_var ~type_name tp.txt; loc = tp.loc } body)
-        ~init:(pexp_constraint ~loc body (make_type_rigid ~type_name typ)))
+          pexp_newtype ~loc (find_rigid_type ~loc:tp.loc ~rigid_types tp.txt) body)
+        ~init:(pexp_constraint ~loc body (make_type_rigid ~rigid_types typ)))
     else if has_vars
     then body
     else pexp_constraint ~loc body typ

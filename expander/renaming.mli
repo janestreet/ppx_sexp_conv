@@ -25,18 +25,28 @@ open! Ppxlib
 
 type t
 
-val non_gadt : t
-val add_universally_bound : t -> string loc -> t
+(** Renaming for contexts outside a type declaration, such as expression extensions. *)
+val without_type : unit -> t
+
+(** Renaming for a type declaration. Adds [prefix] to bindings for type parameters. *)
+val of_type_declaration : type_declaration -> prefix:string -> t
+
+(** Adds a new name with the given [prefix] for a universally bound type variable. *)
+val add_universally_bound : t -> string loc -> prefix:string -> t
 
 module Binding_kind : sig
   type t =
-    | Universally_bound of string
+    | Universally_bound of Fresh_name.t
     | Existentially_bound
 end
 
-val binding_kind : t -> string -> Binding_kind.t
+(** Looks up the binding for a type variable. *)
+val binding_kind : t -> string -> loc:location -> Binding_kind.t
 
-val of_constructor_declaration
-  :  constructor_declaration
+(** Extends the renaming of a type declaration with GADT context for a constructor
+    declaration, if any. *)
+val with_constructor_declaration
+  :  t
+  -> constructor_declaration
   -> type_parameters:string list
   -> t

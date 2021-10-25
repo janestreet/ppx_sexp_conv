@@ -260,6 +260,6 @@ type _ t = T : int -> string t [@@deriving of_sexp]
   {|
 Line _, characters _-_:
 Error: This expression has type string t
-       but an expression was expected of type v_x__017_ t
-       Type string is not compatible with type v_x__017_
+       but an expression was expected of type v_x__181___192_ t
+       Type string is not compatible with type v_x__181___192_
 |}]

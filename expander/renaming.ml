@@ -2,32 +2,34 @@ open! Base
 open! Ppxlib
 
 type t =
-  | Gadt of (string, string loc) Result.t Map.M(String).t
-  | Non_gadt
-
-let non_gadt = Non_gadt
+  { universal : (Fresh_name.t, string loc) Result.t Map.M(String).t
+  ; existential : bool
+  }
 
 module Binding_kind = struct
   type t =
-    | Universally_bound of string
+    | Universally_bound of Fresh_name.t
     | Existentially_bound
 end
 
-let add_universally_bound (t : t) name : t =
-  let name = name.txt in
-  match t with
-  | Non_gadt -> Non_gadt
-  | Gadt map -> Gadt (Map.set ~key:name ~data:(Ok name) map)
+let add_universally_bound t name ~prefix =
+  { t with
+    universal =
+      Map.set
+        t.universal
+        ~key:name.txt
+        ~data:(Ok (Fresh_name.create (prefix ^ name.txt) ~loc:name.loc))
+  }
 ;;
 
-let binding_kind t var : Binding_kind.t =
-  match t with
-  | Non_gadt -> Universally_bound var
-  | Gadt map ->
-    (match Map.find map var with
-     | None -> Existentially_bound
-     | Some (Ok value) -> Universally_bound value
-     | Some (Error { loc; txt }) -> Location.raise_errorf ~loc "%s" txt)
+let binding_kind t var ~loc =
+  match Map.find t.universal var with
+  | None ->
+    if t.existential
+    then Binding_kind.Existentially_bound
+    else Location.raise_errorf ~loc "ppx_sexp_conv: unbound type variable '%s" var
+  | Some (Ok fresh) -> Binding_kind.Universally_bound fresh
+  | Some (Error { loc; txt }) -> Location.raise_errorf ~loc "%s" txt
 ;;
 
 (* Return a map translating type variables appearing in the return type of a GADT
@@ -50,14 +52,14 @@ let binding_kind t var : Binding_kind.t =
    variable cannot be mapped to a parameter of the type declaration, it will map to
    [Error] (for instance [A : 'a -> 'a list t]).
 
-   It returns [Non_gadt] on user error, to let the typer give the error message *)
-let of_constructor_declaration =
+   It returns [original] on user error, to let the typer give the error message *)
+let with_constructor_declaration original cd ~type_parameters:tps =
   (* Add all type variables of a type to a map. *)
   let add_typevars =
     object
-      inherit [(string, string loc) Result.t Map.M(String).t] Ast_traverse.fold as super
+      inherit [t] Ast_traverse.fold as super
 
-      method! core_type ty map =
+      method! core_type ty t =
         match ty.ptyp_desc with
         | Ptyp_var var ->
           let error =
@@ -65,37 +67,54 @@ let of_constructor_declaration =
             ; txt = "ppx_sexp_conv: variable is not a parameter of the type constructor"
             }
           in
-          Map.set map ~key:var ~data:(Error error)
-        | _ -> super#core_type ty map
+          { t with universal = Map.set t.universal ~key:var ~data:(Error error) }
+        | _ -> super#core_type ty t
     end
   in
-  let aux map tp_name tp_in_return_type =
+  let aux t tp_name tp_in_return_type =
     match tp_in_return_type.ptyp_desc with
     | Ptyp_var var ->
       let data =
-        if Map.mem map var
-        then (
-          let loc = tp_in_return_type.ptyp_loc in
-          Error { loc; txt = "ppx_sexp_conv: duplicate variable" })
-        else Ok tp_name
+        let loc = tp_in_return_type.ptyp_loc in
+        if Map.mem t.universal var
+        then Error { loc; txt = "ppx_sexp_conv: duplicate variable" }
+        else (
+          match Map.find original.universal tp_name with
+          | Some result -> result
+          | None -> Error { loc; txt = "ppx_sexp_conv: unbound type parameter" })
       in
-      Map.set map ~key:var ~data
-    | _ -> add_typevars#core_type tp_in_return_type map
+      { t with universal = Map.set t.universal ~key:var ~data }
+    | _ -> add_typevars#core_type tp_in_return_type t
   in
-  fun cd ~type_parameters:tps ->
-    match cd.pcd_res with
-    | None -> Non_gadt
-    | Some ty ->
-      (match ty.ptyp_desc with
-       | Ptyp_constr (_, params) ->
-         if List.length params <> List.length tps
-         then Non_gadt
-         else
-           Gadt
-             (Stdlib.ListLabels.fold_left2
-                tps
-                params
-                ~init:(Map.empty (module String))
-                ~f:aux)
-       | _ -> Non_gadt)
+  match cd.pcd_res with
+  | None -> original
+  | Some ty ->
+    (match ty.ptyp_desc with
+     | Ptyp_constr (_, params) ->
+       if List.length params <> List.length tps
+       then original
+       else
+         Stdlib.ListLabels.fold_left2
+           tps
+           params
+           ~init:{ existential = true; universal = Map.empty (module String) }
+           ~f:aux
+     | _ -> original)
 ;;
+
+let of_type_declaration decl ~prefix =
+  { existential = false
+  ; universal =
+      List.fold
+        decl.ptype_params
+        ~init:(Map.empty (module String))
+        ~f:(fun map param ->
+          let name = get_type_param_name param in
+          Map.update map name.txt ~f:(function
+            | None -> Ok (Fresh_name.create (prefix ^ name.txt) ~loc:name.loc)
+            | Some _ ->
+              Error { loc = name.loc; txt = "ppx_sexp_conv: duplicate variable" }))
+  }
+;;
+
+let without_type () = { existential = false; universal = Map.empty (module String) }
