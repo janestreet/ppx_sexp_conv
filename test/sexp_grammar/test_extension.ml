@@ -6,7 +6,7 @@ module type S = sig
   val t_sexp_grammar : [%sexp_grammar: int Map.M(String).t]
 end
 
-module F (M : S) : sig
+module _ (M : S) : sig
   val t_sexp_grammar : int Map.M(String).t Sexplib0.Sexp_grammar.t [@@warning "-32"]
 end =
   M

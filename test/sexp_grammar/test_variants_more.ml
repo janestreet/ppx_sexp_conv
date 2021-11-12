@@ -2,7 +2,7 @@ open Base
 
 [@@@warning "-37"]
 
-module Nested_inside_variant = struct
+module _ = struct
   type t = A of [ `A of int ] [@@deriving_inline sexp_grammar]
 
   let _ = fun (_ : t) -> ()
@@ -48,7 +48,7 @@ module Nested_inside_variant = struct
   [@@@end]
 end
 
-module Nested_inside_record = struct
+module _ = struct
   type t = { a : [ `A of int ] } [@@deriving_inline sexp_grammar]
 
   let _ = fun (_ : t) -> ()

@@ -1,6 +1,6 @@
 open! Base
 
-module Allow_extra_fields = struct
+module _ = struct
   type t = { a : int } [@@sexp.allow_extra_fields] [@@deriving_inline sexp_grammar]
 
   let _ = fun (_ : t) -> ()
@@ -28,7 +28,7 @@ module Allow_extra_fields = struct
   [@@@end]
 end
 
-module Forbid_extra_fields = struct
+module _ = struct
   type t = { a : int } [@@deriving_inline sexp_grammar]
 
   let _ = fun (_ : t) -> ()
@@ -56,7 +56,7 @@ module Forbid_extra_fields = struct
   [@@@end]
 end
 
-module Variant_type = struct
+module _ = struct
   type t =
     | Allow_extra_fields of { foo : int } [@sexp.allow_extra_fields]
     | Forbid_extra_fields of { bar : int }

@@ -1,6 +1,6 @@
 open Base
 
-module Sexp_grammar_tags = struct
+module _ = struct
   module type S = sig
     type t [@@deriving sexp_grammar]
   end

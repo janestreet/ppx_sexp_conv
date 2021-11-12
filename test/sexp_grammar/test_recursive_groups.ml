@@ -2,7 +2,7 @@ open Base
 
 [@@@warning "-37"]
 
-module One_type = struct
+module _ = struct
   type t = T of int [@@deriving_inline sexp_grammar]
 
   let _ = fun (_ : t) -> ()
@@ -29,7 +29,7 @@ module One_type = struct
   [@@@end]
 end
 
-module Two_types = struct
+module _ = struct
   type t =
     | T_int of int
     | T_u of u

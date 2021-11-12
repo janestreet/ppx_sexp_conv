@@ -134,6 +134,7 @@ let allow_extra_fields_cd =
 ;;
 
 let tag_attribute_for_context context =
+  let open Ast_pattern in
   let key_equals_value =
     Ast_pattern.(
       pexp_apply (pexp_ident (lident (string "="))) (no_label __ ^:: no_label __ ^:: nil)
@@ -156,7 +157,7 @@ let tag_attribute_for_context context =
   Attribute.declare
     "sexp_grammar.tag"
     context
-    Ast_pattern.(pstr (pstr_eval (esequence key_equals_value) nil ^:: nil))
+    (pstr (pstr_eval (esequence key_equals_value) nil ^:: nil))
     (fun x -> x)
 ;;
 

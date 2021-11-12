@@ -2,7 +2,7 @@ open Base
 
 [@@@warning "-37"]
 
-module Nullary = struct
+module _ = struct
   type 'a t =
     [ `A
     | `B
@@ -29,7 +29,7 @@ module Nullary = struct
   [@@@end]
 end
 
-module With_arguments = struct
+module _ = struct
   module With_sexp = struct
     type t =
       [ `A of int * int
@@ -92,7 +92,7 @@ module With_arguments = struct
   ;;
 end
 
-module Sexp_list = struct
+module _ = struct
   module With_sexp = struct
     type t =
       [ `Int of int

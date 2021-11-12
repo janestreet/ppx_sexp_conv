@@ -1,6 +1,6 @@
 open! Base
 
-module Simple_grammar = struct
+module _ = struct
   type t = int [@@deriving_inline sexp_grammar]
 
   let _ = fun (_ : t) -> ()
@@ -10,7 +10,7 @@ module Simple_grammar = struct
   [@@@deriving.end]
 end
 
-module Recursive_group = struct
+module _ = struct
   type 'a t = T of 'a
 
   and 'a u = U of 'a t option [@@deriving_inline sexp_grammar]
@@ -67,7 +67,7 @@ module Recursive_group = struct
   let _ = U None
 end
 
-module Functions = struct
+module _ = struct
   type ('a, 'b) t = 'a -> 'b [@@deriving_inline sexp_grammar]
 
   let _ = fun (_ : ('a, 'b) t) -> ()
