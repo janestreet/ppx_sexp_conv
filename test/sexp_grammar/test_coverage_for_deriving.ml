@@ -202,9 +202,9 @@ type _ phantom = int [@@deriving sexp] [@@deriving_inline sexp_grammar]
 let _ = fun (_ : _ phantom) -> ()
 
 let (phantom_sexp_grammar :
-       'v_x__101_ Sexplib0.Sexp_grammar.t -> 'v_x__101_ phantom Sexplib0.Sexp_grammar.t)
+       'a__101_ Sexplib0.Sexp_grammar.t -> 'a__101_ phantom Sexplib0.Sexp_grammar.t)
   =
-  fun _'v_x__101__sexp_grammar -> int_sexp_grammar
+  fun _'a__101__sexp_grammar -> int_sexp_grammar
 ;;
 
 let _ = phantom_sexp_grammar

@@ -136,8 +136,8 @@ include sig
   [@@@ocaml.warning "-32"]
 
   val phantom_sexp_grammar
-    :  'v_x__003_ Sexplib0.Sexp_grammar.t
-    -> 'v_x__003_ phantom Sexplib0.Sexp_grammar.t
+    :  'a__003_ Sexplib0.Sexp_grammar.t
+    -> 'a__003_ phantom Sexplib0.Sexp_grammar.t
 end
 [@@ocaml.doc "@inline"]
 

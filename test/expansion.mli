@@ -294,7 +294,7 @@ module Gadt : sig
   include sig
     [@@@ocaml.warning "-32"]
 
-    val sexp_of_t : ('v_x__001_ -> Sexplib0.Sexp.t) -> 'v_x__001_ t -> Sexplib0.Sexp.t
+    val sexp_of_t : ('a__001_ -> Sexplib0.Sexp.t) -> 'a__001_ t -> Sexplib0.Sexp.t
   end
   [@@ocaml.doc "@inline"]
 

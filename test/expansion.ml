@@ -1286,19 +1286,17 @@ module Gadt = struct
 
   let _ = fun (_ : _ t) -> ()
 
-  let sexp_of_t :
-    'v_x__285_. ('v_x__285_ -> Sexplib0.Sexp.t) -> 'v_x__285_ t -> Sexplib0.Sexp.t
+  let sexp_of_t : 'a__285_. ('a__285_ -> Sexplib0.Sexp.t) -> 'a__285_ t -> Sexplib0.Sexp.t
     =
-    fun (type v_x__285___291_)
-        : ((v_x__285___291_ -> Sexplib0.Sexp.t) -> v_x__285___291_ t -> Sexplib0.Sexp.t) ->
-      fun _of_v_x__285___286_ -> function
-        | A -> Sexplib0.Sexp.Atom "A"
-        | B arg0__287_ ->
-          let res0__288_ = sexp_of_int arg0__287_ in
-          Sexplib0.Sexp.List [ Sexplib0.Sexp.Atom "B"; res0__288_ ]
-        | C arg0__289_ ->
-          let res0__290_ = sexp_of_list (fun _ -> Sexplib0.Sexp.Atom "_") arg0__289_ in
-          Sexplib0.Sexp.List [ Sexplib0.Sexp.Atom "C"; res0__290_ ]
+    fun (type a__291_) : ((a__291_ -> Sexplib0.Sexp.t) -> a__291_ t -> Sexplib0.Sexp.t) ->
+    fun _of_a__286_ -> function
+      | A -> Sexplib0.Sexp.Atom "A"
+      | B arg0__287_ ->
+        let res0__288_ = sexp_of_int arg0__287_ in
+        Sexplib0.Sexp.List [ Sexplib0.Sexp.Atom "B"; res0__288_ ]
+      | C arg0__289_ ->
+        let res0__290_ = sexp_of_list (fun _ -> Sexplib0.Sexp.Atom "_") arg0__289_ in
+        Sexplib0.Sexp.List [ Sexplib0.Sexp.Atom "C"; res0__290_ ]
   ;;
 
   let _ = sexp_of_t

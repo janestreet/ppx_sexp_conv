@@ -52,10 +52,9 @@ type _ grammar_only = Grammar_only : int -> string grammar_only
 let _ = fun (_ : _ grammar_only) -> ()
 
 let (grammar_only_sexp_grammar :
-       'v_x__016_ Sexplib0.Sexp_grammar.t
-     -> 'v_x__016_ grammar_only Sexplib0.Sexp_grammar.t)
+       'a__016_ Sexplib0.Sexp_grammar.t -> 'a__016_ grammar_only Sexplib0.Sexp_grammar.t)
   =
-  fun _'v_x__016__sexp_grammar ->
+  fun _'a__016__sexp_grammar ->
   { untyped =
       Variant
         { case_sensitivity = Case_sensitive_except_first_character

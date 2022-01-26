@@ -9,11 +9,11 @@ let _ = fun (_ : u) -> ()
 
 let (t_sexp_grammar :
        'a Sexplib0.Sexp_grammar.t
-     -> 'v_x__001_ Sexplib0.Sexp_grammar.t
+     -> 'b__001_ Sexplib0.Sexp_grammar.t
      -> 'b Sexplib0.Sexp_grammar.t
-     -> ('a, 'v_x__001_, 'b) t Sexplib0.Sexp_grammar.t)
+     -> ('a, 'b__001_, 'b) t Sexplib0.Sexp_grammar.t)
   =
-  fun _'a_sexp_grammar _'v_x__001__sexp_grammar _'b_sexp_grammar ->
+  fun _'a_sexp_grammar _'b__001__sexp_grammar _'b_sexp_grammar ->
   { untyped =
       List (Cons (_'a_sexp_grammar.untyped, Cons (_'b_sexp_grammar.untyped, Empty)))
   }
