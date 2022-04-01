@@ -727,7 +727,7 @@ module Str_generate_sexp_of = struct
     let loc = ec.ptyexn_loc in
     let expr =
       match ec.ptyexn_constructor with
-      | { pext_name = cnstr; pext_kind = Pext_decl ([], extension_constructor_kind, None); _ }
+      | { pext_name = cnstr; pext_kind = Pext_decl (_, extension_constructor_kind, None); _ }
         ->
         let constr_lid = Located.map lident cnstr in
         branch_sum
@@ -748,8 +748,6 @@ module Str_generate_sexp_of = struct
               Conversion.to_expression
                 ~loc
                 (Conversion.of_lambda [ converter; assert_false ])]]
-      | { pext_name = cnstr; pext_kind = Pext_decl (_, extension_constructor_kind, None); _ } ->
-        Location.raise_errorf ~loc "sexp_of_exn/: Explicit binders for type variables aren't supported"
       | { pext_kind = Pext_decl (_, _, Some _); _ } ->
         Location.raise_errorf ~loc "sexp_of_exn/:"
       | { pext_kind = Pext_rebind _; _ } ->
