@@ -151,9 +151,11 @@ module _ = struct
 
   let%expect_test _ =
     print_s (With_sexp.sexp_of_t (`Int 1));
-    List.iter [ []; [ 1 ]; [ 1; 2 ] ] ~f:(fun l ->
-      print_s (With_sexp.sexp_of_t (`List l));
-      print_s (With_sexp.sexp_of_t (`Sexp_dot_list l)));
+    List.iter
+      [ []; [ 1 ]; [ 1; 2 ] ]
+      ~f:(fun l ->
+        print_s (With_sexp.sexp_of_t (`List l));
+        print_s (With_sexp.sexp_of_t (`Sexp_dot_list l)));
     [%expect
       {|
       (Int 1)

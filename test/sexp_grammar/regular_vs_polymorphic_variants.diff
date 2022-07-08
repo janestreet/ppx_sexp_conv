@@ -67,7 +67,7 @@
 -|    print_s (With_sexp.sexp_of_t (Int 1));
 +|    print_s (With_sexp.sexp_of_t (`Int 1));
 @|============================================================
--|      print_s (With_sexp.sexp_of_t (List l));
--|      print_s (With_sexp.sexp_of_t (Sexp_dot_list l)));
-+|      print_s (With_sexp.sexp_of_t (`List l));
-+|      print_s (With_sexp.sexp_of_t (`Sexp_dot_list l)));
+-|        print_s (With_sexp.sexp_of_t (List l));
+-|        print_s (With_sexp.sexp_of_t (Sexp_dot_list l)));
++|        print_s (With_sexp.sexp_of_t (`List l));
++|        print_s (With_sexp.sexp_of_t (`Sexp_dot_list l)));

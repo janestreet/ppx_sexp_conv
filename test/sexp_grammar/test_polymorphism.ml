@@ -1,7 +1,6 @@
 open! Base
 
 type ('a, _, 'b) t = 'a * 'b
-
 and u = (string, int, float) t [@@deriving_inline sexp_grammar]
 
 let _ = fun (_ : ('a, _, 'b) t) -> ()

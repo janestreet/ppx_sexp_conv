@@ -222,7 +222,8 @@ module Str_generate_sexp_of = struct
                       ; [%e Fresh_name.expression arg]
                       ]
                   in
-                  [%e Fresh_name.expression bnd] :: [%e Fresh_name.expression bnds])]
+                  ([%e Fresh_name.expression bnd] :: [%e Fresh_name.expression bnds]
+                   : _ Stdlib.List.t))]
             | Inspect_sexp is_empty_expr ->
               [%expr
                 let [%p Fresh_name.pattern arg] =
@@ -237,7 +238,8 @@ module Str_generate_sexp_of = struct
                       ; [%e Fresh_name.expression arg]
                       ]
                   in
-                  [%e Fresh_name.expression bnd] :: [%e Fresh_name.expression bnds])]]
+                  ([%e Fresh_name.expression bnd] :: [%e Fresh_name.expression bnds]
+                   : _ Stdlib.List.t))]]
         in
         [%e expr]]
     in
@@ -408,7 +410,8 @@ module Str_generate_sexp_of = struct
                     ; [%e Fresh_name.expression arg]
                     ]
                 in
-                [%e Fresh_name.expression bnd] :: [%e Fresh_name.expression bnds]
+                ([%e Fresh_name.expression bnd] :: [%e Fresh_name.expression bnds]
+                 : _ Stdlib.List.t)
             in
             [%e expr]]
         in
@@ -424,7 +427,8 @@ module Str_generate_sexp_of = struct
                 let [%p Fresh_name.pattern bnd] =
                   Sexplib0.Sexp.List [ Sexplib0.Sexp.Atom [%e estring ~loc name] ]
                 in
-                [%e Fresh_name.expression bnd] :: [%e Fresh_name.expression bnds])
+                ([%e Fresh_name.expression bnd] :: [%e Fresh_name.expression bnds]
+                 : _ Stdlib.List.t))
               else [%e Fresh_name.expression bnds]
             in
             [%e expr]]
@@ -494,11 +498,12 @@ module Str_generate_sexp_of = struct
             match [%e cnv_expr] with
             | Sexplib0.Sexp.List [] -> [%e Fresh_name.expression bnds]
             | [%p Fresh_name.pattern arg] ->
-              Sexplib0.Sexp.List
-                [ Sexplib0.Sexp.Atom [%e estring ~loc name]
-                ; [%e Fresh_name.expression arg]
-                ]
-              :: [%e Fresh_name.expression bnds]]
+              (Sexplib0.Sexp.List
+                 [ Sexplib0.Sexp.Atom [%e estring ~loc name]
+                 ; [%e Fresh_name.expression arg]
+                 ]
+               :: [%e Fresh_name.expression bnds]
+               : _ Stdlib.List.t)]
         in
         ( patt
         , [%expr
@@ -514,11 +519,12 @@ module Str_generate_sexp_of = struct
         let bnds_expr =
           [%expr
             let [%p Fresh_name.pattern arg] = [%e cnv_expr] in
-            Sexplib0.Sexp.List
-              [ Sexplib0.Sexp.Atom [%e estring ~loc name]
-              ; [%e Fresh_name.expression arg]
-              ]
-            :: [%e Fresh_name.expression bnds]]
+            (Sexplib0.Sexp.List
+               [ Sexplib0.Sexp.Atom [%e estring ~loc name]
+               ; [%e Fresh_name.expression arg]
+               ]
+             :: [%e Fresh_name.expression bnds]
+             : _ Stdlib.List.t)]
         in
         ( patt
         , [%expr
@@ -531,7 +537,7 @@ module Str_generate_sexp_of = struct
     >>| fun (patt, expr) ->
     ( ppat_record ~loc patt Closed
     , [%expr
-      let [%p Fresh_name.pattern bnds] = [] in
+      let [%p Fresh_name.pattern bnds] = ([] : _ Stdlib.List.t) in
       [%e expr]] )
   ;;
 
@@ -727,8 +733,10 @@ module Str_generate_sexp_of = struct
     let loc = ec.ptyexn_loc in
     let expr =
       match ec.ptyexn_constructor with
-      | { pext_name = cnstr; pext_kind = Pext_decl (extension_constructor_kind, None); _ }
-        ->
+      | { pext_name = cnstr
+        ; pext_kind = Pext_decl (_, extension_constructor_kind, None)
+        ; _
+        } ->
         let constr_lid = Located.map lident cnstr in
         branch_sum
           ec
@@ -748,7 +756,7 @@ module Str_generate_sexp_of = struct
               Conversion.to_expression
                 ~loc
                 (Conversion.of_lambda [ converter; assert_false ])]]
-      | { pext_kind = Pext_decl (_, Some _); _ } ->
+      | { pext_kind = Pext_decl (_, _, Some _); _ } ->
         Location.raise_errorf ~loc "sexp_of_exn/:"
       | { pext_kind = Pext_rebind _; _ } ->
         Location.raise_errorf ~loc "sexp_of_exn/rebind"

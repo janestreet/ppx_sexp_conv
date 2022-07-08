@@ -21,6 +21,9 @@ val constrained_function_binding
     sorted from outermost to innermost. *)
 val with_let : loc:location -> binds:value_binding list list -> expression -> expression
 
+(** Wraps an expression in [let open] containing type declarations, if non-empty. *)
+val with_types : loc:location -> types:type_declaration list -> expression -> expression
+
 (** Constructs a lambda of a fresh variable. Passes a reference to that variable as [arg]
     to construct the lambda's body. *)
 val fresh_lambda : loc:location -> (arg:expression -> expression) -> expression
@@ -34,3 +37,5 @@ val is_value_expression : expression -> bool
 (** Shadows [Ppxlib.really_recursive] with a version that respects the [[@opaque]]
     attribute. *)
 val really_recursive_respecting_opaque : rec_flag -> type_declaration list -> rec_flag
+
+val strip_attributes : Ast_traverse.map

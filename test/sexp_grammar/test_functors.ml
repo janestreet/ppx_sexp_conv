@@ -21,7 +21,6 @@ struct
   [@@@warning "-37"]
 
   type 'a t = T of 'a T.t u
-
   and 'a u = U of 'a T.t t Maybe.t [@@deriving_inline sexp_grammar]
 
   let _ = fun (_ : 'a t) -> ()

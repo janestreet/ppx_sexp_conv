@@ -31,6 +31,9 @@ val apply
 (** Wrap [t] in [let]-bindings. *)
 val bind : t -> value_binding list -> t
 
+(** Wrap [t] in [let open .. in] with type declarations. *)
+val bind_types : t -> type_declaration list -> t
+
 module Apply_all : sig
   type t =
     { bindings : value_binding list

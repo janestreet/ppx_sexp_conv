@@ -551,471 +551,333 @@ module Str_generate_of_sexp = struct
     Conversion.bind (type_of_sexp ~error_source ~typevars tp) bindings
   ;;
 
-  type field =
-    { ld : label_declaration
-    ; field_name : Fresh_name.t
-    ; value_name : Fresh_name.t
+  type record_poly_type =
+    { type_and_field_name : Fresh_name.t
+    ; params : string loc list
+    ; body : core_type
     }
 
-  let make_field ld =
-    let field_name = Fresh_name.of_string_loc ld.pld_name in
-    let value_name = Fresh_name.of_string_loc ld.pld_name in
-    { ld; field_name; value_name }
+  let record_poly_type field =
+    match field.pld_type.ptyp_desc with
+    | Ptyp_poly (params, body) ->
+      let type_and_field_name = Fresh_name.of_string_loc field.pld_name in
+      Some { type_and_field_name; params; body }
+    | _ -> None
   ;;
 
-  (* Generate code for extracting record fields *)
-  let mk_extract_fields
+  let record_field_conv field ~poly ~loc ~error_source ~typevars =
+    match poly with
+    | None ->
+      type_of_sexp ~error_source ~typevars field.pld_type |> Conversion.to_expression ~loc
+    | Some { type_and_field_name; params; body } ->
+      let fresh_sexp = Fresh_name.create "sexp" ~loc in
+      let fresh_params =
+        List.map params ~f:(fun { loc; txt } -> Fresh_name.create ~loc ("_" ^ txt))
+      in
+      let pat = Fresh_name.pattern fresh_sexp in
+      let body =
+        let label = Located.map_lident (Fresh_name.to_string_loc type_and_field_name) in
+        let typevars =
+          List.fold2_exn
+            params
+            fresh_params
+            ~init:typevars
+            ~f:(fun typevars param fresh -> Map.set typevars ~key:param.txt ~data:fresh)
+        in
+        let expr =
+          pexp_let
+            ~loc
+            Nonrecursive
+            (List.map fresh_params ~f:(fun fresh ->
+               let { loc; txt } = Fresh_name.to_string_loc fresh in
+               let expr =
+                 [%expr
+                   Sexplib0.Sexp_conv_error.record_poly_field_value [%e error_source ()]]
+               in
+               value_binding ~loc ~pat:(pvar ~loc txt) ~expr))
+            (Conversion.apply
+               (type_of_sexp ~error_source ~typevars body)
+               ~loc
+               (Fresh_name.expression fresh_sexp))
+        in
+        pexp_record ~loc [ label, expr ] None
+      in
+      eabstract ~loc [ pat ] body
+  ;;
+
+  let fields_arg_for_record_of_sexp poly_fields ~loc ~error_source ~typevars =
+    List.fold_right
+      poly_fields
+      ~init:(Lifted.return [%expr Empty])
+      ~f:(fun (poly, field) rest_lifted ->
+        rest_lifted
+        >>= fun rest_expr ->
+        let label_expr = estring ~loc:field.pld_name.loc field.pld_name.txt in
+        match Record_field_attrs.Of_sexp.create ~loc field with
+        | Specific Required ->
+          Lifted.return
+            [%expr
+              Field
+                { name = [%e label_expr]
+                ; kind = Required
+                ; conv = [%e record_field_conv field ~poly ~loc ~error_source ~typevars]
+                ; rest = [%e rest_expr]
+                }]
+        | Specific (Default lifted) ->
+          lifted
+          >>| fun default ->
+          [%expr
+            Field
+              { name = [%e label_expr]
+              ; kind = Default (fun () -> [%e default])
+              ; conv = [%e record_field_conv field ~poly ~loc ~error_source ~typevars]
+              ; rest = [%e rest_expr]
+              }]
+        | Omit_nil ->
+          Lifted.return
+            [%expr
+              Field
+                { name = [%e label_expr]
+                ; kind = Omit_nil
+                ; conv = [%e record_field_conv field ~poly ~loc ~error_source ~typevars]
+                ; rest = [%e rest_expr]
+                }]
+        | Sexp_bool ->
+          Lifted.return
+            [%expr
+              Field
+                { name = [%e label_expr]
+                ; kind = Sexp_bool
+                ; conv = ()
+                ; rest = [%e rest_expr]
+                }]
+        | Sexp_array core_type ->
+          let conv_expr =
+            type_of_sexp ~error_source ~typevars core_type
+            |> Conversion.to_expression ~loc
+          in
+          Lifted.return
+            [%expr
+              Field
+                { name = [%e label_expr]
+                ; kind = Sexp_array
+                ; conv = [%e conv_expr]
+                ; rest = [%e rest_expr]
+                }]
+        | Sexp_list core_type ->
+          let conv_expr =
+            type_of_sexp ~error_source ~typevars core_type
+            |> Conversion.to_expression ~loc
+          in
+          Lifted.return
+            [%expr
+              Field
+                { name = [%e label_expr]
+                ; kind = Sexp_list
+                ; conv = [%e conv_expr]
+                ; rest = [%e rest_expr]
+                }]
+        | Sexp_option core_type ->
+          let conv_expr =
+            type_of_sexp ~error_source ~typevars core_type
+            |> Conversion.to_expression ~loc
+          in
+          Lifted.return
+            [%expr
+              Field
+                { name = [%e label_expr]
+                ; kind = Sexp_option
+                ; conv = [%e conv_expr]
+                ; rest = [%e rest_expr]
+                }])
+  ;;
+
+  let index_of_field_arg_for_record_of_sexp fields ~loc =
+    let field_cases =
+      List.mapi fields ~f:(fun i (_, field) ->
+        let lhs = pstring ~loc:field.pld_name.loc field.pld_name.txt in
+        let rhs = eint ~loc i in
+        case ~lhs ~guard:None ~rhs)
+    in
+    let default_case = case ~lhs:(ppat_any ~loc) ~guard:None ~rhs:(eint ~loc (-1)) in
+    let cases = List.concat [ field_cases; [ default_case ] ] in
+    pexp_function ~loc cases
+  ;;
+
+  let create_arg_for_record_of_sexp td fields ~loc ~constructor =
+    let pat =
+      List.fold_right
+        fields
+        ~init:[%pat? ()]
+        ~f:(fun (poly, field) tail ->
+          let head =
+            let pat = pvar ~loc:field.pld_name.loc field.pld_name.txt in
+            match poly with
+            | None -> pat
+            | Some { type_and_field_name; _ } ->
+              (* Extract a polymorphic value from a polymorphic record defined explicitly
+                 for this purpose. *)
+              let label =
+                Located.map_lident (Fresh_name.to_string_loc type_and_field_name)
+              in
+              ppat_record ~loc [ label, pat ] Closed
+          in
+          ppat_tuple ~loc [ head; tail ])
+    in
+    let body =
+      let record_expr =
+        pexp_record
+          ~loc
+          (List.map fields ~f:(fun (_, field) ->
+             let label = Located.map_lident field.pld_name in
+             let expr = evar ~loc:field.pld_name.loc field.pld_name.txt in
+             label, expr))
+          None
+      in
+      match constructor with
+      | None -> record_expr
+      | Some label ->
+        (* variant constructor with inline record *)
+        pexp_construct ~loc label (Some record_expr)
+    in
+    let core_type =
+      ptyp_constr
+        ~loc
+        (Located.map_lident td.ptype_name)
+        (List.map td.ptype_params ~f:(fun (core_type, _) ->
+           ptyp_any ~loc:core_type.ptyp_loc))
+    in
+    eabstract ~loc [ pat ] (pexp_constraint ~loc body core_type)
+  ;;
+
+  let polymorphic_record_types_for_record_of_sexp fields ~loc =
+    (* Define fresh types to contain polymorphic values parsed from sexps. *)
+    List.filter_map fields ~f:(fun (poly, _) ->
+      match poly with
+      | Some { type_and_field_name; params; body } ->
+        let fresh_field =
+          label_declaration
+            ~loc
+            ~name:(Fresh_name.to_string_loc type_and_field_name)
+            ~mutable_:Immutable
+            ~type_:(strip_attributes#core_type (ptyp_poly ~loc params body))
+        in
+        let type_decl =
+          type_declaration
+            ~loc
+            ~name:(Fresh_name.to_string_loc type_and_field_name)
+            ~params:[]
+            ~cstrs:[]
+            ~kind:(Ptype_record [ fresh_field ])
+            ~private_:Public
+            ~manifest:None
+        in
+        Some
+          { type_decl with
+            ptype_attributes =
+              (* define unboxed types to avoid allocation *)
+              [ { attr_loc = loc
+                ; attr_name = { loc; txt = "unboxed" }
+                ; attr_payload = PStr []
+                }
+              ]
+          }
+      | None -> None)
+  ;;
+
+  let args_for_record_of_sexp
+        td
+        fields
+        ~loc
         ~error_source
         ~typevars
+        ~constructor
         ~allow_extra_fields
-        ~fresh_duplicates
-        ~fresh_extra
-        ~fresh_field_name
-        ~fresh_sexp
-        ~fresh__field_sexp
-        ~fresh__field_sexps
-        (loc, flds)
     =
-    let rec loop inits cases = function
-      | [] -> inits, cases
-      | fld :: more_flds ->
-        let loc = fld.ld.pld_name.loc in
-        let nm = fld.ld.pld_name.txt in
-        (match Record_field_attrs.Of_sexp.create ~loc fld.ld, fld.ld.pld_type with
-         | Sexp_bool, _ ->
-           let inits = [%expr false] :: inits in
-           let cases =
-             (pstring ~loc nm
-              --> [%expr
-                if Stdlib.( ! ) [%e Fresh_name.expression fld.field_name]
-                then
-                  Stdlib.( := )
-                    [%e Fresh_name.expression fresh_duplicates]
-                    ([%e Fresh_name.expression fresh_field_name]
-                     :: Stdlib.( ! ) [%e Fresh_name.expression fresh_duplicates])
-                else (
-                  match [%e Fresh_name.expression fresh__field_sexps] with
-                  | [] -> Stdlib.( := ) [%e Fresh_name.expression fld.field_name] true
-                  | _ :: _ ->
-                    Sexplib0.Sexp_conv_error.record_sexp_bool_with_payload
-                      [%e error_source ()]
-                      [%e Fresh_name.expression fresh_sexp])])
-             :: cases
-           in
-           loop inits cases more_flds
-         | Sexp_option tp, _
-         | ( ( Specific Required
-             | Specific (Default _)
-             | Omit_nil | Sexp_array _ | Sexp_list _ )
-           , tp ) ->
-           let inits = [%expr Stdlib.Option.None] :: inits in
-           let unrolled =
-             Conversion.apply
-               ~loc
-               (type_of_sexp ~error_source ~typevars tp)
-               (Fresh_name.expression fresh__field_sexp)
-           in
-           let fresh_fvalue = Fresh_name.create "fvalue" ~loc in
-           let cases =
-             (pstring ~loc nm
-              --> [%expr
-                match Stdlib.( ! ) [%e Fresh_name.expression fld.field_name] with
-                | Stdlib.Option.None ->
-                  let [%p Fresh_name.pattern fresh__field_sexp] =
-                    [%e Fresh_name.expression fresh__field_sexp] ()
-                  in
-                  let [%p Fresh_name.pattern fresh_fvalue] = [%e unrolled] in
-                  Stdlib.( := )
-                    [%e Fresh_name.expression fld.field_name]
-                    (Stdlib.Option.Some [%e Fresh_name.expression fresh_fvalue])
-                | Stdlib.Option.Some _ ->
-                  Stdlib.( := )
-                    [%e Fresh_name.expression fresh_duplicates]
-                    ([%e Fresh_name.expression fresh_field_name]
-                     :: Stdlib.( ! ) [%e Fresh_name.expression fresh_duplicates])])
-             :: cases
-           in
-           loop inits cases more_flds)
+    let caller_expr = error_source () in
+    let allow_extra_fields_expr = ebool ~loc allow_extra_fields in
+    let fields = List.map fields ~f:(fun field -> record_poly_type field, field) in
+    let index_of_field_expr = index_of_field_arg_for_record_of_sexp fields ~loc in
+    let create_expr = create_arg_for_record_of_sexp td fields ~loc ~constructor in
+    let fields_expr_lifted =
+      fields_arg_for_record_of_sexp fields ~loc ~error_source ~typevars
     in
-    let handle_extra =
-      [ ([%pat? _]
-         -->
-         if allow_extra_fields
-         then [%expr ()]
-         else
-           [%expr
-             if Stdlib.( ! ) Sexplib0.Sexp_conv.record_check_extra_fields
-             then
-               Stdlib.( := )
-                 [%e Fresh_name.expression fresh_extra]
-                 ([%e Fresh_name.expression fresh_field_name]
-                  :: Stdlib.( ! ) [%e Fresh_name.expression fresh_extra])
-             else ()])
+    fields_expr_lifted
+    >>| fun fields_expr ->
+    let types = polymorphic_record_types_for_record_of_sexp fields ~loc in
+    let args =
+      [ Labelled "caller", caller_expr
+      ; Labelled "fields", fields_expr
+      ; Labelled "index_of_field", index_of_field_expr
+      ; Labelled "allow_extra_fields", allow_extra_fields_expr
+      ; Labelled "create", create_expr
       ]
     in
-    loop [] handle_extra (List.rev flds)
-  ;;
-
-  (* Generate code for handling the result of matching record fields *)
-  let mk_handle_record_match_result
-        ~error_source
-        ~typevars
-        ~fresh_sexp
-        has_poly
-        (loc, flds)
-        ~wrap_expr
-    =
-    let has_nonopt_fields = ref false in
-    let res_tpls, bi_lst, good_patts =
-      let rec loop ((res_tpls, bi_lst, good_patts) as acc) = function
-        | ({ ld = { pld_name = { txt = nm; loc }; _ }; _ } as fld) :: more_flds ->
-          let fld_expr = [%expr Stdlib.( ! ) [%e Fresh_name.expression fld.field_name]] in
-          let mk_default () = bi_lst, Fresh_name.pattern fld.value_name :: good_patts in
-          let new_bi_lst, new_good_patts =
-            match Record_field_attrs.Of_sexp.create ~loc fld.ld with
-            | Specific (Default _)
-            | Sexp_bool | Sexp_option _ | Sexp_list _ | Sexp_array _ | Omit_nil ->
-              mk_default ()
-            | Specific Required ->
-              has_nonopt_fields := true;
-              ( [%expr
-                Sexplib0.Sexp_conv.( = ) [%e fld_expr] Stdlib.Option.None
-              , [%e estring ~loc nm]]
-                :: bi_lst
-              , [%pat? Stdlib.Option.Some [%p Fresh_name.pattern fld.value_name]]
-                :: good_patts )
-          in
-          let acc = fld_expr :: res_tpls, new_bi_lst, new_good_patts in
-          loop acc more_flds
-        | [] -> acc
-      in
-      loop ([], [], []) (List.rev flds)
-    in
-    let cnvt_value fld =
-      match Record_field_attrs.Of_sexp.create ~loc fld.ld with
-      | Sexp_list _ ->
-        let fresh_v = Fresh_name.create "v" ~loc in
-        [%expr
-          match [%e Fresh_name.expression fld.value_name] with
-          | Stdlib.Option.None -> []
-          | Stdlib.Option.Some [%p Fresh_name.pattern fresh_v] ->
-            [%e Fresh_name.expression fresh_v]]
-        |> Lifted.return
-      | Sexp_array _ ->
-        let fresh_v = Fresh_name.create "v" ~loc in
-        [%expr
-          match [%e Fresh_name.expression fld.value_name] with
-          | Stdlib.Option.None -> [||]
-          | Stdlib.Option.Some [%p Fresh_name.pattern fresh_v] ->
-            [%e Fresh_name.expression fresh_v]]
-        |> Lifted.return
-      | Specific (Default lifted_default) ->
-        lifted_default
-        >>= fun default ->
-        let fresh_v = Fresh_name.create "v" ~loc in
-        [%expr
-          match [%e Fresh_name.expression fld.value_name] with
-          | Stdlib.Option.None -> [%e default]
-          | Stdlib.Option.Some [%p Fresh_name.pattern fresh_v] ->
-            [%e Fresh_name.expression fresh_v]]
-        |> Lifted.return
-      | Sexp_bool | Sexp_option _ | Specific Required ->
-        Fresh_name.expression fld.value_name |> Lifted.return
-      | Omit_nil ->
-        let fresh_e = Fresh_name.create "e" ~loc in
-        let fresh_v = Fresh_name.create "v" ~loc in
-        [%expr
-          match [%e Fresh_name.expression fld.value_name] with
-          | Stdlib.Option.Some [%p Fresh_name.pattern fresh_v] ->
-            [%e Fresh_name.expression fresh_v]
-          | Stdlib.Option.None ->
-            (* We change the exception so it contains a sub-sexp of the
-               initial sexp, otherwise sexplib won't find the source location
-               for the error. *)
-            (try
-               [%e
-                 Conversion.apply
-                   ~loc
-                   (type_of_sexp ~error_source ~typevars fld.ld.pld_type)
-                   [%expr Sexplib0.Sexp.List []]]
-             with
-             | Sexplib0.Sexp_conv_error.Of_sexp_error ([%p Fresh_name.pattern fresh_e], _)
-               ->
-               Stdlib.raise
-                 (Sexplib0.Sexp_conv_error.Of_sexp_error
-                    ( [%e Fresh_name.expression fresh_e]
-                    , [%e Fresh_name.expression fresh_sexp] )))]
-        |> Lifted.return
-    in
-    let lifted_match_good_expr =
-      if has_poly
-      then List.map ~f:cnvt_value flds |> Lifted.all >>| pexp_tuple ~loc
-      else (
-        let cnvt fld =
-          cnvt_value fld >>| fun field -> Located.lident ~loc fld.ld.pld_name.txt, field
-        in
-        List.map ~f:cnvt flds
-        |> Lifted.all
-        >>| fun fields -> wrap_expr (pexp_record ~loc fields None))
-    in
-    let expr = pexp_tuple ~loc res_tpls in
-    let patt = ppat_tuple ~loc good_patts in
-    lifted_match_good_expr
-    >>| fun match_good_expr ->
-    if !has_nonopt_fields
-    then
-      pexp_match
-        ~loc
-        expr
-        [ patt --> match_good_expr
-        ; [%pat? _]
-          --> [%expr
-            Sexplib0.Sexp_conv_error.record_undefined_elements
-              [%e error_source ()]
-              [%e Fresh_name.expression fresh_sexp]
-              [%e elist ~loc bi_lst]]
-        ]
-    else pexp_match ~loc expr [ patt --> match_good_expr ]
-  ;;
-
-  (* Generate code for converting record fields *)
-  let mk_cnv_fields
-        ~error_source
-        ~typevars
-        ~allow_extra_fields
-        ~fresh_sexp
-        ~fresh_field_sexps
-        has_poly
-        (loc, flds)
-        ~wrap_expr
-    =
-    let fresh_duplicates = Fresh_name.create ~loc "duplicates" in
-    let fresh_extra = Fresh_name.create ~loc "extra" in
-    let fresh_field_name = Fresh_name.create ~loc "field_name" in
-    let fresh__field_sexp = Fresh_name.create ~loc "_field_sexp" in
-    let fresh__field_sexps = Fresh_name.create ~loc "_field_sexps" in
-    let expr_ref_inits, mc_fields =
-      mk_extract_fields
-        ~error_source
-        ~typevars
-        ~allow_extra_fields
-        ~fresh_duplicates
-        ~fresh_extra
-        ~fresh_field_name
-        ~fresh_sexp
-        ~fresh__field_sexp
-        ~fresh__field_sexps
-        (loc, flds)
-    in
-    let field_refs =
-      List.map2_exn flds expr_ref_inits ~f:(fun fld init ->
-        value_binding
-          ~loc
-          ~pat:(Fresh_name.pattern fld.field_name)
-          ~expr:[%expr Stdlib.ref [%e init]])
-    in
-    mk_handle_record_match_result
-      ~error_source
-      ~typevars
-      ~fresh_sexp
-      has_poly
-      (loc, flds)
-      ~wrap_expr
-    >>| fun result_expr ->
-    let fresh_iter = Fresh_name.create ~loc "iter" in
-    let fresh_tail = Fresh_name.create ~loc "tail" in
-    let fresh_x = Fresh_name.create ~loc "x" in
-    pexp_let
-      ~loc
-      Nonrecursive
-      (field_refs
-       @ [ value_binding
-             ~loc
-             ~pat:(Fresh_name.pattern fresh_duplicates)
-             ~expr:[%expr Stdlib.ref []]
-         ; value_binding
-             ~loc
-             ~pat:(Fresh_name.pattern fresh_extra)
-             ~expr:[%expr Stdlib.ref []]
-         ])
-      [%expr
-        let rec [%p Fresh_name.pattern fresh_iter] =
-          [%e
-            pexp_function
-              ~loc
-              [ [%pat?
-                       Sexplib0.Sexp.List
-                       (Sexplib0.Sexp.Atom [%p Fresh_name.pattern fresh_field_name]
-                        :: [%p
-                          ppat_alias
-                            ~loc
-                            [%pat? [] | [ _ ]]
-                            (Fresh_name.to_string_loc fresh__field_sexps)])
-                     :: [%p Fresh_name.pattern fresh_tail]]
-                --> [%expr
-                  let [%p Fresh_name.pattern fresh__field_sexp] =
-                    fun () ->
-                      match [%e Fresh_name.expression fresh__field_sexps] with
-                      | [ [%p Fresh_name.pattern fresh_x] ] ->
-                        [%e Fresh_name.expression fresh_x]
-                      | [] ->
-                        Sexplib0.Sexp_conv_error.record_only_pairs_expected
-                          [%e error_source ()]
-                          [%e Fresh_name.expression fresh_sexp]
-                      | _ -> assert false
-                  in
-                  [%e
-                    pexp_match ~loc (Fresh_name.expression fresh_field_name) mc_fields];
-                  [%e Fresh_name.expression fresh_iter]
-                    [%e Fresh_name.expression fresh_tail]]
-              ; [%pat?
-                       [%p
-                         ppat_alias
-                           ~loc
-                           [%pat? Sexplib0.Sexp.Atom _ | Sexplib0.Sexp.List _]
-                           (Fresh_name.to_string_loc fresh_sexp)]
-                     :: _]
-                --> [%expr
-                  Sexplib0.Sexp_conv_error.record_only_pairs_expected
-                    [%e error_source ()]
-                    [%e Fresh_name.expression fresh_sexp]]
-              ; [%pat? []] --> [%expr ()]
-              ]]
-        in
-        [%e Fresh_name.expression fresh_iter] [%e Fresh_name.expression fresh_field_sexps];
-        match Stdlib.( ! ) [%e Fresh_name.expression fresh_duplicates] with
-        | _ :: _ ->
-          Sexplib0.Sexp_conv_error.record_duplicate_fields
-            [%e error_source ()]
-            (Stdlib.( ! ) [%e Fresh_name.expression fresh_duplicates])
-            [%e Fresh_name.expression fresh_sexp]
-        | [] ->
-          (match Stdlib.( ! ) [%e Fresh_name.expression fresh_extra] with
-           | _ :: _ ->
-             Sexplib0.Sexp_conv_error.record_extra_fields
-               [%e error_source ()]
-               (Stdlib.( ! ) [%e Fresh_name.expression fresh_extra])
-               [%e Fresh_name.expression fresh_sexp]
-           | [] -> [%e result_expr])]
-  ;;
-
-  let is_poly (_, flds) =
-    List.exists flds ~f:(function
-      | { pld_type = { ptyp_desc = Ptyp_poly _; _ }; _ } -> true
-      | _ -> false)
-  ;;
-
-  let label_declaration_list_of_sexp
-        ~error_source
-        ~typevars
-        ~allow_extra_fields
-        ~fresh_sexp
-        ~fresh_field_sexps
-        loc
-        flds
-        ~wrap_expr
-    =
-    let has_poly = is_poly (loc, flds) in
-    let flds = List.map flds ~f:make_field in
-    mk_cnv_fields
-      ~error_source
-      ~typevars
-      ~allow_extra_fields
-      ~fresh_sexp
-      ~fresh_field_sexps
-      has_poly
-      (loc, flds)
-      ~wrap_expr
-    >>| fun cnv_fields ->
-    if has_poly
-    then (
-      let flds =
-        List.map flds ~f:(fun fld -> fld.ld, Fresh_name.of_string_loc fld.ld.pld_name)
-      in
-      let patt =
-        ppat_tuple ~loc (List.map flds ~f:(fun (_, fresh) -> Fresh_name.pattern fresh))
-      in
-      let record_def =
-        wrap_expr
-          (pexp_record
-             ~loc
-             (List.map flds ~f:(fun ({ pld_name = { txt = name; loc }; _ }, fresh) ->
-                Located.lident ~loc name, Fresh_name.expression fresh))
-             None)
-      in
-      pexp_let
-        ~loc
-        Nonrecursive
-        [ value_binding ~loc ~pat:patt ~expr:cnv_fields ]
-        record_def)
-    else cnv_fields
+    types, args
   ;;
 
   (* Generate matching code for records *)
-  let record_of_sexp ~error_source ~typevars ~allow_extra_fields (loc, flds) =
-    let fresh_sexp = Fresh_name.create "sexp" ~loc in
-    let fresh_field_sexps = Fresh_name.create "field_sexps" ~loc in
-    label_declaration_list_of_sexp
+  let record_of_sexp ~error_source ~typevars ~allow_extra_fields td (loc, flds) =
+    args_for_record_of_sexp
+      td
+      flds
+      ~loc
       ~error_source
       ~typevars
+      ~constructor:None
       ~allow_extra_fields
-      ~fresh_sexp
-      ~fresh_field_sexps
-      loc
-      flds
-      ~wrap_expr:(fun x -> x)
-    >>| fun success_expr ->
-    Conversion.of_lambda
-      [ ppat_alias
-          ~loc
-          [%pat? Sexplib0.Sexp.List [%p Fresh_name.pattern fresh_field_sexps]]
-          (Fresh_name.to_string_loc fresh_sexp)
-        --> success_expr
-      ; ppat_alias ~loc [%pat? Sexplib0.Sexp.Atom _] (Fresh_name.to_string_loc fresh_sexp)
-        --> [%expr
-          Sexplib0.Sexp_conv_error.record_list_instead_atom
-            [%e error_source ()]
-            [%e Fresh_name.expression fresh_sexp]]
-      ]
+    >>| fun (types, args) ->
+    let conv =
+      pexp_apply ~loc [%expr Sexplib0.Sexp_conv_record.record_of_sexp] args
+      |> Conversion.of_reference_exn
+    in
+    Conversion.bind_types conv types
   ;;
 
   (* Sum type conversions *)
 
   (* Generate matching code for well-formed S-expressions wrt. sum types *)
-  let mk_good_sum_matches ~error_source ~typevars (loc, cds) =
+  let mk_good_sum_matches ~error_source ~typevars td (_, cds) =
     List.map cds ~f:(fun cd ->
+      let loc = cd.pcd_loc in
       match cd with
-      | { pcd_name = cnstr; pcd_args = Pcstr_record fields; _ } ->
-        let lcstr = pstring ~loc (String.uncapitalize cnstr.txt) in
-        let str = pstring ~loc cnstr.txt in
-        let fresh_field_sexps = Fresh_name.create "field_sexps" ~loc in
-        let fresh_sexp = Fresh_name.create "sexp" ~loc in
-        let fresh__tag = Fresh_name.create "_tag" ~loc in
-        label_declaration_list_of_sexp
+      | { pcd_name = constructor; pcd_args = Pcstr_record fields; _ } ->
+        let allow_extra_fields =
+          Option.is_some (Attribute.get Attrs.allow_extra_fields_cd cd)
+        in
+        args_for_record_of_sexp
+          td
+          fields
+          ~loc
           ~error_source
           ~typevars
-          ~allow_extra_fields:
-            (Option.is_some (Attribute.get Attrs.allow_extra_fields_cd cd))
-          ~fresh_sexp
-          ~fresh_field_sexps
-          loc
-          fields
-          ~wrap_expr:(fun e ->
-            pexp_construct ~loc (Located.lident ~loc cnstr.txt) (Some e))
-        >>| fun expr ->
+          ~constructor:(Some (Located.map_lident constructor))
+          ~allow_extra_fields
+        >>| fun (types, args) ->
+        let string_pat =
+          let loc = constructor.loc in
+          ppat_or
+            ~loc
+            (pstring ~loc (String.uncapitalize constructor.txt))
+            (pstring ~loc constructor.txt)
+        in
+        let fresh_sexp = Fresh_name.create "sexp" ~loc in
+        let fresh_sexps = Fresh_name.create "sexps" ~loc in
         ppat_alias
           ~loc
           [%pat?
                  Sexplib0.Sexp.List
-                 (Sexplib0.Sexp.Atom
-                    [%p
-                      ppat_alias
-                        ~loc
-                        [%pat? [%p lcstr] | [%p str]]
-                        (Fresh_name.to_string_loc fresh__tag)]
-                  :: [%p Fresh_name.pattern fresh_field_sexps])]
+                 (Sexplib0.Sexp.Atom [%p string_pat] :: [%p Fresh_name.pattern fresh_sexps])]
           (Fresh_name.to_string_loc fresh_sexp)
-        --> expr
+        --> (pexp_apply
+               ~loc
+               [%expr Sexplib0.Sexp_conv_record.record_of_sexps]
+               (List.concat
+                  [ [ Labelled "context", Fresh_name.expression fresh_sexp ]
+                  ; args
+                  ; [ Nolabel, Fresh_name.expression fresh_sexps ]
+                  ])
+             |> with_types ~loc ~types)
       | { pcd_name = cnstr; pcd_args = Pcstr_tuple []; _ } ->
         Attrs.fail_if_allow_extra_field_cd ~loc cd;
         let lcstr = pstring ~loc (String.uncapitalize cnstr.txt) in
@@ -1086,9 +948,9 @@ module Str_generate_of_sexp = struct
   ;;
 
   (* Generate matching code for sum types *)
-  let sum_of_sexp ~error_source ~typevars (loc, alts) =
+  let sum_of_sexp ~error_source ~typevars td (loc, alts) =
     let fresh_sexp = Fresh_name.create "sexp" ~loc in
-    [ mk_good_sum_matches ~error_source ~typevars (loc, alts) |> Lifted.all
+    [ mk_good_sum_matches ~error_source ~typevars td (loc, alts) |> Lifted.all
     ; mk_bad_sum_matches ~error_source (loc, alts) |> Lifted.return
     ; [ ppat_alias
           ~loc
@@ -1157,13 +1019,14 @@ module Str_generate_of_sexp = struct
         match td.ptype_kind with
         | Ptype_variant alts ->
           Attrs.fail_if_allow_extra_field_td ~loc td;
-          sum_of_sexp ~error_source ~typevars (td.ptype_loc, alts)
+          sum_of_sexp ~error_source ~typevars td (td.ptype_loc, alts)
         | Ptype_record lbls ->
           record_of_sexp
             ~error_source
             ~typevars
             ~allow_extra_fields:
               (Option.is_some (Attribute.get Attrs.allow_extra_fields_td td))
+            td
             (loc, lbls)
         | Ptype_open ->
           Location.raise_errorf ~loc "ppx_sexp_conv: open types not supported"

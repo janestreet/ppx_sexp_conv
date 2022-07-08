@@ -125,7 +125,24 @@ let constrained_function_binding
 ;;
 
 let with_let ~loc ~binds body =
-  List.fold_right binds ~init:body ~f:(pexp_let ~loc Nonrecursive)
+  List.fold_right binds ~init:body ~f:(fun bind body ->
+    if List.is_empty bind then body else pexp_let ~loc Nonrecursive bind body)
+;;
+
+let with_types ~loc ~types body =
+  if List.is_empty types
+  then body
+  else
+    pexp_open
+      ~loc
+      (open_infos
+         ~loc
+         ~override:Fresh
+         ~expr:
+           (pmod_structure
+              ~loc
+              (List.map types ~f:(fun type_decl -> pstr_type ~loc Recursive [ type_decl ]))))
+      body
 ;;
 
 let fresh_lambda ~loc apply =
@@ -192,4 +209,45 @@ let really_recursive_respecting_opaque rec_flag tds =
   end)
   #go
     ()
+;;
+
+let strip_attributes =
+  object
+    inherit Ast_traverse.map
+
+    method! attribute attr =
+      Location.raise_errorf ~loc:attr.attr_loc "failed to strip attribute from syntax"
+
+    method! attributes _ = []
+
+    method! signature items =
+      List.filter items ~f:(fun item ->
+        match item.psig_desc with
+        | Psig_attribute _ -> false
+        | _ -> true)
+
+    method! structure items =
+      List.filter items ~f:(fun item ->
+        match item.pstr_desc with
+        | Pstr_attribute _ -> false
+        | _ -> true)
+
+    method! class_signature csig =
+      { csig with
+        pcsig_fields =
+          List.filter csig.pcsig_fields ~f:(fun field ->
+            match field.pctf_desc with
+            | Pctf_attribute _ -> false
+            | _ -> true)
+      }
+
+    method! class_structure cstr =
+      { cstr with
+        pcstr_fields =
+          List.filter cstr.pcstr_fields ~f:(fun field ->
+            match field.pcf_desc with
+            | Pcf_attribute _ -> false
+            | _ -> true)
+      }
+  end
 ;;

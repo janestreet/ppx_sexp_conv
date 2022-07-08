@@ -12,7 +12,6 @@ end
 
 module _ = struct
   type 'a t = T of 'a
-
   and 'a u = U of 'a t option [@@deriving_inline sexp_grammar]
 
   let _ = fun (_ : 'a t) -> ()
