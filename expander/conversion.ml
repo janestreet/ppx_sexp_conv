@@ -32,9 +32,15 @@ module Reference = struct
   let apply t ~loc arg = maybe_apply t ~loc (Some arg)
   let to_expression t ~loc = maybe_apply t ~loc None
 
-  let to_value_expression t ~loc =
+  let to_value_expression t ~loc ~rec_flag ~values_being_defined =
+    let may_refer_directly_to ident =
+      match rec_flag with
+      | Nonrecursive -> true
+      | Recursive -> not (Set.mem values_being_defined (Longident.name ident.txt))
+    in
     match t with
-    | { types = []; binds = []; ident; args = [] } -> pexp_ident ~loc ident
+    | { types = []; binds = []; ident; args = [] } when may_refer_directly_to ident ->
+      pexp_ident ~loc ident
     | _ -> fresh_lambda ~loc (fun ~arg -> apply t ~loc arg)
   ;;
 end
@@ -125,9 +131,10 @@ let to_expression t ~loc =
   | Lambda lambda -> Lambda.to_expression ~loc lambda
 ;;
 
-let to_value_expression t ~loc =
+let to_value_expression t ~loc ~rec_flag ~values_being_defined =
   match t with
-  | Reference reference -> Reference.to_value_expression ~loc reference
+  | Reference reference ->
+    Reference.to_value_expression ~loc ~rec_flag ~values_being_defined reference
   | Lambda lambda -> Lambda.to_value_expression ~loc lambda
 ;;
 

@@ -10,7 +10,7 @@ module _ = struct
 
   let _ = fun (_ : 'a t) -> ()
 
-  let (t_sexp_grammar : 'a Sexplib0.Sexp_grammar.t -> 'a t Sexplib0.Sexp_grammar.t) =
+  let t_sexp_grammar : 'a. 'a Sexplib0.Sexp_grammar.t -> 'a t Sexplib0.Sexp_grammar.t =
     fun _'a_sexp_grammar ->
     { untyped =
         Variant

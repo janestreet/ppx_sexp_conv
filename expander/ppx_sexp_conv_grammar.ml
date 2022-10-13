@@ -2,6 +2,14 @@ open! Base
 open! Ppxlib
 open Ast_builder.Default
 
+let copy =
+  object
+    inherit Ast_traverse.map
+    method! location loc = { loc with loc_ghost = true }
+    method! attributes _ = []
+  end
+;;
+
 let unsupported ~loc string =
   Location.raise_errorf ~loc "sexp_grammar: %s are unsupported" string
 ;;
@@ -19,24 +27,70 @@ let tag_of_doc_comment ~loc comment =
   , [%expr Atom [%e estring ~loc comment]] )
 ;;
 
-let with_tags grammar ~f ~loc ~tags ~comments =
-  let tags = List.concat [ List.map comments ~f:(tag_of_doc_comment ~loc); tags ] in
-  List.fold_right tags ~init:grammar ~f:(fun (key, value) grammar ->
-    f ~loc (ewith_tag ~loc ~key ~value grammar))
+module Tags = struct
+  type t =
+    { defined_using_tags : expression option
+    ; defined_using_tag : (expression * expression) list
+    }
+
+  let get x ~tags ~tag =
+    { defined_using_tags = Attribute.get tags x
+    ; defined_using_tag = Attribute.get tag x |> Option.value ~default:[]
+    }
+  ;;
+end
+
+let rec with_tag_assoc_list grammar ~loc ~tags_expr ~wrap_tag ~wrap_tags =
+  match tags_expr with
+  | [%expr []] -> grammar
+  | [%expr ([%e? key], [%e? value]) :: [%e? tags_expr]] ->
+    wrap_tag
+      ~loc
+      (ewith_tag
+         ~loc
+         ~key
+         ~value
+         (with_tag_assoc_list grammar ~loc ~tags_expr ~wrap_tag ~wrap_tags))
+  | _ -> wrap_tags grammar ~loc ~tags_expr
 ;;
 
-let with_tags_as_list grammar ~loc ~tags ~comments =
-  with_tags (eno_tag ~loc grammar) ~f:etag ~loc ~tags ~comments
+let with_tags grammar ~wrap_tag ~wrap_tags ~loc ~(tags : Tags.t) ~comments =
+  let tags_from_comments = List.map comments ~f:(tag_of_doc_comment ~loc) in
+  let init =
+    match tags.defined_using_tags with
+    | None -> grammar
+    | Some tags_expr -> with_tag_assoc_list grammar ~loc ~tags_expr ~wrap_tag ~wrap_tags
+  in
+  List.fold_right
+    (List.concat [ tags_from_comments; tags.defined_using_tag ])
+    ~init
+    ~f:(fun (key, value) grammar -> wrap_tag ~loc (ewith_tag ~loc ~key ~value grammar))
+;;
+
+let with_tags_as_list grammar ~core_type ~loc ~tags ~comments =
+  let wrap_tags grammar ~loc ~tags_expr =
+    [%expr
+      Sexplib0.Sexp_conv.sexp_grammar_with_tag_list
+        ([%e grammar] : [%t core_type] Sexplib0.Sexp_grammar.with_tag_list)
+        ~tags:[%e tags_expr]]
+  in
+  with_tags (eno_tag ~loc grammar) ~wrap_tag:etag ~wrap_tags ~loc ~tags ~comments
 ;;
 
 let with_tags_as_grammar grammar ~loc ~tags ~comments =
-  with_tags grammar ~f:etagged ~loc ~tags ~comments
+  let wrap_tags grammar ~loc ~tags_expr =
+    [%expr Sexplib0.Sexp_conv.sexp_grammar_with_tags [%e grammar] ~tags:[%e tags_expr]]
+  in
+  with_tags grammar ~wrap_tag:etagged ~wrap_tags ~loc ~tags ~comments
 ;;
 
 let grammar_name name = name ^ "_sexp_grammar"
 let tyvar_grammar_name name = grammar_name ("_'" ^ name)
 let estr { loc; txt } = estring ~loc txt
-let grammar_type ~loc core_type = [%type: [%t core_type] Sexplib0.Sexp_grammar.t]
+
+let grammar_type ~loc core_type =
+  [%type: [%t copy#core_type core_type] Sexplib0.Sexp_grammar.t]
+;;
 
 let abstract_grammar ~ctxt ~loc id =
   let module_name =
@@ -47,7 +101,7 @@ let abstract_grammar ~ctxt ~loc id =
 
 let arrow_grammar ~loc = [%expr Sexplib0.Sexp_conv.fun_sexp_grammar.untyped]
 let opaque_grammar ~loc = [%expr Sexplib0.Sexp_conv.opaque_sexp_grammar.untyped]
-let wildcard_grammar ~loc = [%expr Any "_"]
+let any_grammar ~loc name = [%expr Any [%e estring ~loc name]]
 let list_grammar ~loc expr = [%expr List [%e expr]]
 let many_grammar ~loc expr = [%expr Many [%e expr]]
 let fields_grammar ~loc expr = [%expr Fields [%e expr]]
@@ -66,6 +120,10 @@ let typed_grammar ~loc expr =
   match expr with
   | [%expr [%e? typed].untyped] -> typed
   | _ -> [%expr { untyped = [%e expr] }]
+;;
+
+let annotated_grammar ~loc expr core_type =
+  pexp_constraint ~loc expr (grammar_type ~loc core_type)
 ;;
 
 let defn_expr ~loc ~tycon ~tyvars ~grammar =
@@ -91,13 +149,17 @@ module Variant_clause_type = struct
   type t =
     { name : label loc
     ; comments : string list
-    ; tags : (expression * expression) list
+    ; tags : Tags.t
     ; clause_kind : expression
     }
 
   let to_grammar_expr { name; comments; tags; clause_kind } ~loc =
     [%expr { name = [%e estr name]; clause_kind = [%e clause_kind] }]
-    |> with_tags_as_list ~loc:name.loc ~comments ~tags
+    |> with_tags_as_list
+         ~loc:name.loc
+         ~comments
+         ~tags
+         ~core_type:[%type: Sexplib0.Sexp_grammar.clause]
   ;;
 end
 
@@ -163,27 +225,53 @@ let attr_doc_comments attributes ~tags_of_doc_comments =
 ;;
 
 let grammar_of_type_tags core_type grammar ~tags_of_doc_comments =
-  let tags = Attribute.get Attrs.tag_type core_type |> Option.value ~default:[] in
+  let tags = Tags.get core_type ~tags:Attrs.tags_type ~tag:Attrs.tag_type in
   let loc = core_type.ptyp_loc in
   let comments = attr_doc_comments ~tags_of_doc_comments core_type.ptyp_attributes in
   with_tags_as_grammar grammar ~loc ~tags ~comments
 ;;
 
 let grammar_of_field_tags field grammar ~tags_of_doc_comments =
-  let tags = Attribute.get Attrs.tag_ld field |> Option.value ~default:[] in
+  let tags = Tags.get field ~tags:Attrs.tags_ld ~tag:Attrs.tag_ld in
   let loc = field.pld_loc in
   let comments = attr_doc_comments ~tags_of_doc_comments field.pld_attributes in
-  with_tags_as_list grammar ~loc ~tags ~comments
+  with_tags_as_list
+    grammar
+    ~loc
+    ~tags
+    ~comments
+    ~core_type:[%type: Sexplib0.Sexp_grammar.field]
 ;;
 
 let rec grammar_of_type core_type ~rec_flag ~tags_of_doc_comments =
   let loc = core_type.ptyp_loc in
   let grammar =
-    match Attribute.get Attrs.opaque core_type with
-    | Some () -> opaque_grammar ~loc
+    let from_attribute =
+      match
+        ( Attribute.get Attrs.grammar_custom core_type
+        , Attribute.get Attrs.grammar_any core_type )
+      with
+      | Some _, Some _ ->
+        Some
+          [%expr
+            [%ocaml.warning
+              "[@sexp_grammar.custom] and [@sexp_grammar.any] are mutually exclusive"]]
+      | Some expr, None ->
+        Some (untyped_grammar ~loc (annotated_grammar ~loc expr core_type))
+      | None, Some maybe_name ->
+        Some (any_grammar ~loc (Option.value maybe_name ~default:"ANY"))
+      | None, None ->
+        (* only check [[@sexp.opaque]] if neither other attribute is present, so that it
+           only counts as using the attribute when we actually base the grammar on it *)
+        (match Attribute.get Attrs.opaque core_type with
+         | Some () -> Some (opaque_grammar ~loc)
+         | None -> None)
+    in
+    match from_attribute with
+    | Some expr -> expr
     | None ->
       (match core_type.ptyp_desc with
-       | Ptyp_any -> wildcard_grammar ~loc
+       | Ptyp_any -> any_grammar ~loc "_"
        | Ptyp_var name ->
          (match rec_flag with
           | Recursive ->
@@ -225,7 +313,7 @@ let rec grammar_of_type core_type ~rec_flag ~tags_of_doc_comments =
 and grammar_of_polymorphic_variant ~loc ~rec_flag ~tags_of_doc_comments rows =
   let inherits, clauses =
     List.partition_map rows ~f:(fun row : (_, Variant_clause_type.t) Either.t ->
-      let tags = Attribute.get Attrs.tag_poly row |> Option.value ~default:[] in
+      let tags = Tags.get row ~tags:Attrs.tags_poly ~tag:Attrs.tag_poly in
       let comments = attr_doc_comments ~tags_of_doc_comments row.prf_attributes in
       match Attribute.get Attrs.list_poly row with
       | Some () ->
@@ -308,7 +396,7 @@ let grammar_of_variant ~loc ~rec_flag ~tags_of_doc_comments clause_decls =
   let clauses =
     List.map clause_decls ~f:(fun clause : Variant_clause_type.t ->
       let loc = clause.pcd_loc in
-      let tags = Attribute.get Attrs.tag_cd clause |> Option.value ~default:[] in
+      let tags = Tags.get clause ~tags:Attrs.tags_cd ~tag:Attrs.tag_cd in
       let comments = attr_doc_comments ~tags_of_doc_comments clause.pcd_attributes in
       match Attribute.get Attrs.list_variant clause with
       | Some () ->
@@ -389,7 +477,10 @@ let pattern_of_td td =
   ppat_constraint
     ~loc
     (pvar ~loc (grammar_name txt))
-    (combinator_type_of_type_declaration td ~f:grammar_type)
+    (ptyp_poly
+       ~loc
+       (List.map td.ptype_params ~f:get_type_param_name)
+       (combinator_type_of_type_declaration td ~f:grammar_type))
 ;;
 
 (* Any grammar expression that is purely a constant does no work, and does not need to be

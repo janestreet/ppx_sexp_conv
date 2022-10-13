@@ -92,6 +92,96 @@ module _ = struct
             (grammar (List Empty))))))) |}]
   ;;
 
+  let%expect_test "@tags attribute" =
+    (* literal constant *)
+    show_grammar
+      (module struct
+        type t = (unit[@tags [ "y", Atom "Y"; "z", Atom "Z" ]]) [@@deriving sexp_grammar]
+      end);
+    [%expect
+      {|
+      (Tagged (
+        (key   y)
+        (value Y)
+        (grammar (
+          Tagged (
+            (key   z)
+            (value Z)
+            (grammar (List Empty))))))) |}];
+    (* non-constant expression *)
+    show_grammar
+      (module struct
+        type t =
+          (unit
+           [@tags List.concat [ [ "x", Sexp.Atom "X" ]; [ "y", Atom "Y"; "z", Atom "Z" ] ]])
+        [@@deriving sexp_grammar]
+      end);
+    [%expect
+      {|
+      (Tagged (
+        (key   x)
+        (value X)
+        (grammar (
+          Tagged (
+            (key   y)
+            (value Y)
+            (grammar (
+              Tagged (
+                (key   z)
+                (value Z)
+                (grammar (List Empty)))))))))) |}];
+    (* cons onto non-constant expression *)
+    show_grammar
+      (module struct
+        type t =
+          (unit
+           [@tags
+             ("w", Sexp.Atom "W")
+             :: List.concat [ [ "x", Sexp.Atom "X" ]; [ "y", Atom "Y"; "z", Atom "Z" ] ]])
+        [@@deriving sexp_grammar]
+      end);
+    [%expect
+      {|
+      (Tagged (
+        (key   w)
+        (value W)
+        (grammar (
+          Tagged (
+            (key   x)
+            (value X)
+            (grammar (
+              Tagged (
+                (key   y)
+                (value Y)
+                (grammar (
+                  Tagged (
+                    (key   z)
+                    (value Z)
+                    (grammar (List Empty))))))))))))) |}];
+    (* empty *)
+    show_grammar
+      (module struct
+        type t = (unit[@tags List.concat []]) [@@deriving sexp_grammar]
+      end);
+    [%expect {| (List Empty) |}];
+    (* with [@tag] *)
+    show_grammar
+      (module struct
+        type t = (unit[@tag "a" = Atom "A"] [@tags [ "b", Atom "B" ]])
+        [@@deriving sexp_grammar]
+      end);
+    [%expect
+      {|
+      (Tagged (
+        (key   a)
+        (value A)
+        (grammar (
+          Tagged (
+            (key   b)
+            (value B)
+            (grammar (List Empty))))))) |}]
+  ;;
+
   let%expect_test "doc comments - variant clauses" =
     show_grammar
       (module struct

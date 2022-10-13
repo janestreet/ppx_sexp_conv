@@ -28,7 +28,13 @@ val allow_extra_fields_cd : (constructor_declaration, unit) Attribute.t
 val invalid_attribute : loc:Location.t -> (_, _) Attribute.t -> string -> 'a
 val fail_if_allow_extra_field_cd : loc:Location.t -> constructor_declaration -> unit
 val fail_if_allow_extra_field_td : loc:Location.t -> type_declaration -> unit
+val grammar_any : (core_type, string option) Attribute.t
+val grammar_custom : (core_type, expression) Attribute.t
 val tag_type : (core_type, (expression * expression) list) Attribute.t
 val tag_ld : (label_declaration, (expression * expression) list) Attribute.t
 val tag_cd : (constructor_declaration, (expression * expression) list) Attribute.t
 val tag_poly : (row_field, (expression * expression) list) Attribute.t
+val tags_type : (core_type, expression) Attribute.t
+val tags_ld : (label_declaration, expression) Attribute.t
+val tags_cd : (constructor_declaration, expression) Attribute.t
+val tags_poly : (row_field, expression) Attribute.t

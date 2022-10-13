@@ -609,7 +609,7 @@ module Mutually_recursive = struct
     ; b : b
     }
 
-  and c = int [@@deriving_inline sexp]
+  and c = a [@@deriving_inline sexp]
 
   let _ = fun (_ : a) -> ()
   let _ = fun (_ : b) -> ()
@@ -694,7 +694,7 @@ module Mutually_recursive = struct
          x__131_
        : Sexplib0.Sexp.t -> b)
 
-  and c_of_sexp = (int_of_sexp : Sexplib0.Sexp.t -> c)
+  and c_of_sexp = (fun x__133_ -> a_of_sexp x__133_ : Sexplib0.Sexp.t -> c)
 
   let _ = a_of_sexp
   and _ = b_of_sexp
@@ -703,46 +703,46 @@ module Mutually_recursive = struct
   let rec sexp_of_a =
     (function
       | A -> Sexplib0.Sexp.Atom "A"
-      | B arg0__133_ ->
-        let res0__134_ = sexp_of_b arg0__133_ in
-        Sexplib0.Sexp.List [ Sexplib0.Sexp.Atom "B"; res0__134_ ]
-      | C { a = a__136_; b = b__138_; c = c__140_ } ->
-        let bnds__135_ = ([] : _ Stdlib.List.t) in
-        let bnds__135_ =
-          let arg__141_ = sexp_of_c c__140_ in
-          (Sexplib0.Sexp.List [ Sexplib0.Sexp.Atom "c"; arg__141_ ] :: bnds__135_
+      | B arg0__134_ ->
+        let res0__135_ = sexp_of_b arg0__134_ in
+        Sexplib0.Sexp.List [ Sexplib0.Sexp.Atom "B"; res0__135_ ]
+      | C { a = a__137_; b = b__139_; c = c__141_ } ->
+        let bnds__136_ = ([] : _ Stdlib.List.t) in
+        let bnds__136_ =
+          let arg__142_ = sexp_of_c c__141_ in
+          (Sexplib0.Sexp.List [ Sexplib0.Sexp.Atom "c"; arg__142_ ] :: bnds__136_
            : _ Stdlib.List.t)
         in
-        let bnds__135_ =
-          let arg__139_ = sexp_of_b b__138_ in
-          (Sexplib0.Sexp.List [ Sexplib0.Sexp.Atom "b"; arg__139_ ] :: bnds__135_
+        let bnds__136_ =
+          let arg__140_ = sexp_of_b b__139_ in
+          (Sexplib0.Sexp.List [ Sexplib0.Sexp.Atom "b"; arg__140_ ] :: bnds__136_
            : _ Stdlib.List.t)
         in
-        let bnds__135_ =
-          let arg__137_ = sexp_of_a a__136_ in
-          (Sexplib0.Sexp.List [ Sexplib0.Sexp.Atom "a"; arg__137_ ] :: bnds__135_
+        let bnds__136_ =
+          let arg__138_ = sexp_of_a a__137_ in
+          (Sexplib0.Sexp.List [ Sexplib0.Sexp.Atom "a"; arg__138_ ] :: bnds__136_
            : _ Stdlib.List.t)
         in
-        Sexplib0.Sexp.List (Sexplib0.Sexp.Atom "C" :: bnds__135_)
+        Sexplib0.Sexp.List (Sexplib0.Sexp.Atom "C" :: bnds__136_)
         : a -> Sexplib0.Sexp.t)
 
   and sexp_of_b =
-    (fun { a = a__143_; b = b__145_ } ->
-       let bnds__142_ = ([] : _ Stdlib.List.t) in
-       let bnds__142_ =
-         let arg__146_ = sexp_of_b b__145_ in
-         (Sexplib0.Sexp.List [ Sexplib0.Sexp.Atom "b"; arg__146_ ] :: bnds__142_
+    (fun { a = a__144_; b = b__146_ } ->
+       let bnds__143_ = ([] : _ Stdlib.List.t) in
+       let bnds__143_ =
+         let arg__147_ = sexp_of_b b__146_ in
+         (Sexplib0.Sexp.List [ Sexplib0.Sexp.Atom "b"; arg__147_ ] :: bnds__143_
           : _ Stdlib.List.t)
        in
-       let bnds__142_ =
-         let arg__144_ = sexp_of_a a__143_ in
-         (Sexplib0.Sexp.List [ Sexplib0.Sexp.Atom "a"; arg__144_ ] :: bnds__142_
+       let bnds__143_ =
+         let arg__145_ = sexp_of_a a__144_ in
+         (Sexplib0.Sexp.List [ Sexplib0.Sexp.Atom "a"; arg__145_ ] :: bnds__143_
           : _ Stdlib.List.t)
        in
-       Sexplib0.Sexp.List bnds__142_
+       Sexplib0.Sexp.List bnds__143_
        : b -> Sexplib0.Sexp.t)
 
-  and sexp_of_c = (sexp_of_int : c -> Sexplib0.Sexp.t)
+  and sexp_of_c = (fun x__148_ -> sexp_of_a x__148_ : c -> Sexplib0.Sexp.t)
 
   let _ = sexp_of_a
   and _ = sexp_of_b
@@ -772,31 +772,31 @@ module Re_export = struct
   let _ = fun (_ : t) -> ()
 
   let rec t_of_sexp =
-    (let error_source__150_ = "expansion.ml.Re_export.t" in
+    (let error_source__152_ = "expansion.ml.Re_export.t" in
      function
      | Sexplib0.Sexp.List
-         (Sexplib0.Sexp.Atom (("banana" | "Banana") as _tag__153_) :: sexp_args__154_) as
-       _sexp__152_ ->
-       (match sexp_args__154_ with
-        | [ arg0__155_ ] ->
-          let res0__156_ = t_of_sexp arg0__155_ in
-          Banana res0__156_
+         (Sexplib0.Sexp.Atom (("banana" | "Banana") as _tag__155_) :: sexp_args__156_) as
+       _sexp__154_ ->
+       (match sexp_args__156_ with
+        | [ arg0__157_ ] ->
+          let res0__158_ = t_of_sexp arg0__157_ in
+          Banana res0__158_
         | _ ->
           Sexplib0.Sexp_conv_error.stag_incorrect_n_args
-            error_source__150_
-            _tag__153_
-            _sexp__152_)
+            error_source__152_
+            _tag__155_
+            _sexp__154_)
      | Sexplib0.Sexp.Atom ("orange" | "Orange") -> Orange
-     | Sexplib0.Sexp.Atom ("banana" | "Banana") as sexp__151_ ->
-       Sexplib0.Sexp_conv_error.stag_takes_args error_source__150_ sexp__151_
-     | Sexplib0.Sexp.List (Sexplib0.Sexp.Atom ("orange" | "Orange") :: _) as sexp__151_ ->
-       Sexplib0.Sexp_conv_error.stag_no_args error_source__150_ sexp__151_
-     | Sexplib0.Sexp.List (Sexplib0.Sexp.List _ :: _) as sexp__149_ ->
-       Sexplib0.Sexp_conv_error.nested_list_invalid_sum error_source__150_ sexp__149_
-     | Sexplib0.Sexp.List [] as sexp__149_ ->
-       Sexplib0.Sexp_conv_error.empty_list_invalid_sum error_source__150_ sexp__149_
-     | sexp__149_ ->
-       Sexplib0.Sexp_conv_error.unexpected_stag error_source__150_ sexp__149_
+     | Sexplib0.Sexp.Atom ("banana" | "Banana") as sexp__153_ ->
+       Sexplib0.Sexp_conv_error.stag_takes_args error_source__152_ sexp__153_
+     | Sexplib0.Sexp.List (Sexplib0.Sexp.Atom ("orange" | "Orange") :: _) as sexp__153_ ->
+       Sexplib0.Sexp_conv_error.stag_no_args error_source__152_ sexp__153_
+     | Sexplib0.Sexp.List (Sexplib0.Sexp.List _ :: _) as sexp__151_ ->
+       Sexplib0.Sexp_conv_error.nested_list_invalid_sum error_source__152_ sexp__151_
+     | Sexplib0.Sexp.List [] as sexp__151_ ->
+       Sexplib0.Sexp_conv_error.empty_list_invalid_sum error_source__152_ sexp__151_
+     | sexp__151_ ->
+       Sexplib0.Sexp_conv_error.unexpected_stag error_source__152_ sexp__151_
        : Sexplib0.Sexp.t -> t)
   ;;
 
@@ -804,9 +804,9 @@ module Re_export = struct
 
   let rec sexp_of_t =
     (function
-      | Banana arg0__157_ ->
-        let res0__158_ = sexp_of_t arg0__157_ in
-        Sexplib0.Sexp.List [ Sexplib0.Sexp.Atom "Banana"; res0__158_ ]
+      | Banana arg0__159_ ->
+        let res0__160_ = sexp_of_t arg0__159_ in
+        Sexplib0.Sexp.List [ Sexplib0.Sexp.Atom "Banana"; res0__160_ ]
       | Orange -> Sexplib0.Sexp.Atom "Orange"
                   : t -> Sexplib0.Sexp.t)
   ;;
@@ -822,13 +822,13 @@ module Unary = struct
   let _ = fun (_ : 'a t) -> ()
 
   let t_of_sexp : 'a. (Sexplib0.Sexp.t -> 'a) -> Sexplib0.Sexp.t -> 'a t =
-    fun _of_a__159_ x__161_ -> option_of_sexp (list_of_sexp _of_a__159_) x__161_
+    fun _of_a__161_ x__163_ -> option_of_sexp (list_of_sexp _of_a__161_) x__163_
   ;;
 
   let _ = t_of_sexp
 
   let sexp_of_t : 'a. ('a -> Sexplib0.Sexp.t) -> 'a t -> Sexplib0.Sexp.t =
-    fun _of_a__162_ x__163_ -> sexp_of_option (sexp_of_list _of_a__162_) x__163_
+    fun _of_a__164_ x__165_ -> sexp_of_option (sexp_of_list _of_a__164_) x__165_
   ;;
 
   let _ = sexp_of_t
@@ -874,13 +874,13 @@ module First_order = struct
   let _ = fun (_ : 'a t) -> ()
 
   let t_of_sexp : 'a. (Sexplib0.Sexp.t -> 'a) -> Sexplib0.Sexp.t -> 'a t =
-    fun _of_a__171_ -> Sexplib0.Sexp_conv.fun_of_sexp
+    fun _of_a__173_ -> Sexplib0.Sexp_conv.fun_of_sexp
   ;;
 
   let _ = t_of_sexp
 
   let sexp_of_t : 'a. ('a -> Sexplib0.Sexp.t) -> 'a t -> Sexplib0.Sexp.t =
-    fun _of_a__173_ _ -> Sexplib0.Sexp_conv.sexp_of_fun Sexplib0.Sexp_conv.ignore
+    fun _of_a__175_ _ -> Sexplib0.Sexp_conv.sexp_of_fun Sexplib0.Sexp_conv.ignore
   ;;
 
   let _ = sexp_of_t
@@ -901,7 +901,7 @@ module Second_order = struct
     -> Sexplib0.Sexp.t
     -> ('a, 'b) t
     =
-    fun _of_a__174_ _of_b__175_ -> Sexplib0.Sexp_conv.fun_of_sexp
+    fun _of_a__176_ _of_b__177_ -> Sexplib0.Sexp_conv.fun_of_sexp
   ;;
 
   let _ = t_of_sexp
@@ -913,7 +913,7 @@ module Second_order = struct
     -> ('a, 'b) t
     -> Sexplib0.Sexp.t
     =
-    fun _of_a__177_ _of_b__178_ _ ->
+    fun _of_a__179_ _of_b__180_ _ ->
     Sexplib0.Sexp_conv.sexp_of_fun Sexplib0.Sexp_conv.ignore
   ;;
 
@@ -948,17 +948,17 @@ module Gadt = struct
 
   let _ = fun (_ : _ t) -> ()
 
-  let sexp_of_t : 'a__180_. ('a__180_ -> Sexplib0.Sexp.t) -> 'a__180_ t -> Sexplib0.Sexp.t
+  let sexp_of_t : 'a__182_. ('a__182_ -> Sexplib0.Sexp.t) -> 'a__182_ t -> Sexplib0.Sexp.t
     =
-    fun (type a__186_) : ((a__186_ -> Sexplib0.Sexp.t) -> a__186_ t -> Sexplib0.Sexp.t) ->
-    fun _of_a__181_ -> function
+    fun (type a__188_) : ((a__188_ -> Sexplib0.Sexp.t) -> a__188_ t -> Sexplib0.Sexp.t) ->
+    fun _of_a__183_ -> function
       | A -> Sexplib0.Sexp.Atom "A"
-      | B arg0__182_ ->
-        let res0__183_ = sexp_of_int arg0__182_ in
-        Sexplib0.Sexp.List [ Sexplib0.Sexp.Atom "B"; res0__183_ ]
-      | C arg0__184_ ->
-        let res0__185_ = sexp_of_list (fun _ -> Sexplib0.Sexp.Atom "_") arg0__184_ in
-        Sexplib0.Sexp.List [ Sexplib0.Sexp.Atom "C"; res0__185_ ]
+      | B arg0__184_ ->
+        let res0__185_ = sexp_of_int arg0__184_ in
+        Sexplib0.Sexp.List [ Sexplib0.Sexp.Atom "B"; res0__185_ ]
+      | C arg0__186_ ->
+        let res0__187_ = sexp_of_list (fun _ -> Sexplib0.Sexp.Atom "_") arg0__186_ in
+        Sexplib0.Sexp.List [ Sexplib0.Sexp.Atom "C"; res0__187_ ]
   ;;
 
   let _ = sexp_of_t
@@ -976,88 +976,88 @@ module Recursive_record_containing_variant = struct
   let _ = fun (_ : t) -> ()
 
   let rec t_of_sexp =
-    (let (default__189_ : [ `B ]) = `B in
-     let error_source__188_ = "expansion.ml.Recursive_record_containing_variant.t" in
-     fun x__205_ ->
+    (let (default__191_ : [ `B ]) = `B in
+     let error_source__190_ = "expansion.ml.Recursive_record_containing_variant.t" in
+     fun x__207_ ->
        Sexplib0.Sexp_conv_record.record_of_sexp
-         ~caller:error_source__188_
+         ~caller:error_source__190_
          ~fields:
            (Field
               { name = "a"
               ; kind = Required
               ; conv =
-                  (fun sexp__204_ ->
+                  (fun sexp__206_ ->
                      try
-                       match sexp__204_ with
-                       | Sexplib0.Sexp.Atom atom__197_ as _sexp__199_ ->
-                         (match atom__197_ with
+                       match sexp__206_ with
+                       | Sexplib0.Sexp.Atom atom__199_ as _sexp__201_ ->
+                         (match atom__199_ with
                           | "A" ->
                             Sexplib0.Sexp_conv_error.ptag_takes_args
-                              error_source__188_
-                              _sexp__199_
+                              error_source__190_
+                              _sexp__201_
                           | _ -> Sexplib0.Sexp_conv_error.no_variant_match ())
                        | Sexplib0.Sexp.List
-                           (Sexplib0.Sexp.Atom atom__197_ :: sexp_args__200_) as
-                         _sexp__199_ ->
-                         (match atom__197_ with
-                          | "A" as _tag__201_ ->
-                            (match sexp_args__200_ with
-                             | [ arg0__202_ ] ->
-                               let res0__203_ = t_of_sexp arg0__202_ in
-                               `A res0__203_
+                           (Sexplib0.Sexp.Atom atom__199_ :: sexp_args__202_) as
+                         _sexp__201_ ->
+                         (match atom__199_ with
+                          | "A" as _tag__203_ ->
+                            (match sexp_args__202_ with
+                             | [ arg0__204_ ] ->
+                               let res0__205_ = t_of_sexp arg0__204_ in
+                               `A res0__205_
                              | _ ->
                                Sexplib0.Sexp_conv_error.ptag_incorrect_n_args
-                                 error_source__188_
-                                 _tag__201_
-                                 _sexp__199_)
+                                 error_source__190_
+                                 _tag__203_
+                                 _sexp__201_)
                           | _ -> Sexplib0.Sexp_conv_error.no_variant_match ())
-                       | Sexplib0.Sexp.List (Sexplib0.Sexp.List _ :: _) as sexp__198_ ->
+                       | Sexplib0.Sexp.List (Sexplib0.Sexp.List _ :: _) as sexp__200_ ->
                          Sexplib0.Sexp_conv_error.nested_list_invalid_poly_var
-                           error_source__188_
-                           sexp__198_
-                       | Sexplib0.Sexp.List [] as sexp__198_ ->
+                           error_source__190_
+                           sexp__200_
+                       | Sexplib0.Sexp.List [] as sexp__200_ ->
                          Sexplib0.Sexp_conv_error.empty_list_invalid_poly_var
-                           error_source__188_
-                           sexp__198_
+                           error_source__190_
+                           sexp__200_
                      with
                      | Sexplib0.Sexp_conv_error.No_variant_match ->
                        Sexplib0.Sexp_conv_error.no_matching_variant_found
-                         error_source__188_
-                         sexp__204_)
+                         error_source__190_
+                         sexp__206_)
               ; rest =
                   Field
                     { name = "b"
-                    ; kind = Default (fun () -> default__189_)
+                    ; kind = Default (fun () -> default__191_)
                     ; conv =
-                        (fun sexp__195_ ->
+                        (fun sexp__197_ ->
                            try
-                             match sexp__195_ with
-                             | Sexplib0.Sexp.Atom atom__191_ as _sexp__193_ ->
-                               (match atom__191_ with
+                             match sexp__197_ with
+                             | Sexplib0.Sexp.Atom atom__193_ as _sexp__195_ ->
+                               (match atom__193_ with
                                 | "B" -> `B
                                 | _ -> Sexplib0.Sexp_conv_error.no_variant_match ())
-                             | Sexplib0.Sexp.List (Sexplib0.Sexp.Atom atom__191_ :: _) as
-                               _sexp__193_ ->
-                               (match atom__191_ with
+                             | Sexplib0.Sexp.List (Sexplib0.Sexp.Atom atom__193_ :: _) as
+                               _sexp__195_ ->
+                               (match atom__193_ with
                                 | "B" ->
                                   Sexplib0.Sexp_conv_error.ptag_no_args
-                                    error_source__188_
-                                    _sexp__193_
+                                    error_source__190_
+                                    _sexp__195_
                                 | _ -> Sexplib0.Sexp_conv_error.no_variant_match ())
-                             | Sexplib0.Sexp.List (Sexplib0.Sexp.List _ :: _) as sexp__192_
+                             | Sexplib0.Sexp.List (Sexplib0.Sexp.List _ :: _) as sexp__194_
                                ->
                                Sexplib0.Sexp_conv_error.nested_list_invalid_poly_var
-                                 error_source__188_
-                                 sexp__192_
-                             | Sexplib0.Sexp.List [] as sexp__192_ ->
+                                 error_source__190_
+                                 sexp__194_
+                             | Sexplib0.Sexp.List [] as sexp__194_ ->
                                Sexplib0.Sexp_conv_error.empty_list_invalid_poly_var
-                                 error_source__188_
-                                 sexp__192_
+                                 error_source__190_
+                                 sexp__194_
                            with
                            | Sexplib0.Sexp_conv_error.No_variant_match ->
                              Sexplib0.Sexp_conv_error.no_matching_variant_found
-                               error_source__188_
-                               sexp__195_)
+                               error_source__190_
+                               sexp__197_)
                     ; rest = Empty
                     }
               })
@@ -1067,34 +1067,34 @@ module Recursive_record_containing_variant = struct
            | _ -> -1)
          ~allow_extra_fields:false
          ~create:(fun (a, (b, ())) : t -> { a; b })
-         x__205_
+         x__207_
        : Sexplib0.Sexp.t -> t)
   ;;
 
   let _ = t_of_sexp
 
   let rec sexp_of_t =
-    (let (default__212_ : [ `B ]) = `B
-     and (drop_default__211_ : [ `B ] -> [ `B ] -> Stdlib.Bool.t) = Poly.equal in
-     fun { a = a__207_; b = b__213_ } ->
-       let bnds__206_ = ([] : _ Stdlib.List.t) in
-       let bnds__206_ =
-         if drop_default__211_ default__212_ b__213_
-         then bnds__206_
+    (let (default__214_ : [ `B ]) = `B
+     and (drop_default__213_ : [ `B ] -> [ `B ] -> Stdlib.Bool.t) = Poly.equal in
+     fun { a = a__209_; b = b__215_ } ->
+       let bnds__208_ = ([] : _ Stdlib.List.t) in
+       let bnds__208_ =
+         if drop_default__213_ default__214_ b__215_
+         then bnds__208_
          else (
-           let arg__215_ = (fun `B -> Sexplib0.Sexp.Atom "B") b__213_ in
-           let bnd__214_ = Sexplib0.Sexp.List [ Sexplib0.Sexp.Atom "b"; arg__215_ ] in
-           (bnd__214_ :: bnds__206_ : _ Stdlib.List.t))
+           let arg__217_ = (fun `B -> Sexplib0.Sexp.Atom "B") b__215_ in
+           let bnd__216_ = Sexplib0.Sexp.List [ Sexplib0.Sexp.Atom "b"; arg__217_ ] in
+           (bnd__216_ :: bnds__208_ : _ Stdlib.List.t))
        in
-       let bnds__206_ =
-         let arg__208_ =
-           let (`A v__209_) = a__207_ in
-           Sexplib0.Sexp.List [ Sexplib0.Sexp.Atom "A"; sexp_of_t v__209_ ]
+       let bnds__208_ =
+         let arg__210_ =
+           let (`A v__211_) = a__209_ in
+           Sexplib0.Sexp.List [ Sexplib0.Sexp.Atom "A"; sexp_of_t v__211_ ]
          in
-         (Sexplib0.Sexp.List [ Sexplib0.Sexp.Atom "a"; arg__208_ ] :: bnds__206_
+         (Sexplib0.Sexp.List [ Sexplib0.Sexp.Atom "a"; arg__210_ ] :: bnds__208_
           : _ Stdlib.List.t)
        in
-       Sexplib0.Sexp.List bnds__206_
+       Sexplib0.Sexp.List bnds__208_
        : t -> Sexplib0.Sexp.t)
   ;;
 
@@ -1114,53 +1114,53 @@ module Poly_record = struct
   let _ = fun (_ : t) -> ()
 
   let t_of_sexp =
-    (let error_source__217_ = "expansion.ml.Poly_record.t" in
-     fun x__227_ ->
+    (let error_source__219_ = "expansion.ml.Poly_record.t" in
+     fun x__229_ ->
        let open struct
-         type a__218_ = { a__218_ : 'a. 'a list } [@@unboxed]
-         type b__219_ = { b__219_ : 'b. 'b option } [@@unboxed]
-         type c__220_ = { c__220_ : 'c. 'c } [@@unboxed]
+         type a__220_ = { a__220_ : 'a. 'a list } [@@unboxed]
+         type b__221_ = { b__221_ : 'b. 'b option } [@@unboxed]
+         type c__222_ = { c__222_ : 'c. 'c } [@@unboxed]
        end in
        Sexplib0.Sexp_conv_record.record_of_sexp
-         ~caller:error_source__217_
+         ~caller:error_source__219_
          ~fields:
            (Field
               { name = "a"
               ; kind = Required
               ; conv =
-                  (fun sexp__225_ ->
-                     { a__218_ =
-                         (let _a__226_ =
+                  (fun sexp__227_ ->
+                     { a__220_ =
+                         (let _a__228_ =
                             Sexplib0.Sexp_conv_error.record_poly_field_value
-                              error_source__217_
+                              error_source__219_
                           in
-                          list_of_sexp _a__226_ sexp__225_)
+                          list_of_sexp _a__228_ sexp__227_)
                      })
               ; rest =
                   Field
                     { name = "b"
                     ; kind = Required
                     ; conv =
-                        (fun sexp__223_ ->
-                           { b__219_ =
-                               (let _b__224_ =
+                        (fun sexp__225_ ->
+                           { b__221_ =
+                               (let _b__226_ =
                                   Sexplib0.Sexp_conv_error.record_poly_field_value
-                                    error_source__217_
+                                    error_source__219_
                                 in
-                                option_of_sexp _b__224_ sexp__223_)
+                                option_of_sexp _b__226_ sexp__225_)
                            })
                     ; rest =
                         Field
                           { name = "c"
                           ; kind = Required
                           ; conv =
-                              (fun sexp__221_ ->
-                                 { c__220_ =
-                                     (let _c__222_ =
+                              (fun sexp__223_ ->
+                                 { c__222_ =
+                                     (let _c__224_ =
                                         Sexplib0.Sexp_conv_error.record_poly_field_value
-                                          error_source__217_
+                                          error_source__219_
                                       in
-                                      _c__222_ sexp__221_)
+                                      _c__224_ sexp__223_)
                                  })
                           ; rest = Empty
                           }
@@ -1172,42 +1172,42 @@ module Poly_record = struct
            | "c" -> 2
            | _ -> -1)
          ~allow_extra_fields:false
-         ~create:(fun ({ a__218_ = a }, ({ b__219_ = b }, ({ c__220_ = c }, ()))) : t ->
+         ~create:(fun ({ a__220_ = a }, ({ b__221_ = b }, ({ c__222_ = c }, ()))) : t ->
            { a; b; c })
-         x__227_
+         x__229_
        : Sexplib0.Sexp.t -> t)
   ;;
 
   let _ = t_of_sexp
 
   let sexp_of_t =
-    (fun { a = a__229_; b = b__232_; c = c__235_ } ->
-       let bnds__228_ = ([] : _ Stdlib.List.t) in
-       let bnds__228_ =
-         let arg__236_ =
-           let _of_c__237_ = Sexplib0.Sexp_conv.sexp_of_opaque in
-           _of_c__237_ c__235_
+    (fun { a = a__231_; b = b__234_; c = c__237_ } ->
+       let bnds__230_ = ([] : _ Stdlib.List.t) in
+       let bnds__230_ =
+         let arg__238_ =
+           let _of_c__239_ = Sexplib0.Sexp_conv.sexp_of_opaque in
+           _of_c__239_ c__237_
          in
-         (Sexplib0.Sexp.List [ Sexplib0.Sexp.Atom "c"; arg__236_ ] :: bnds__228_
+         (Sexplib0.Sexp.List [ Sexplib0.Sexp.Atom "c"; arg__238_ ] :: bnds__230_
           : _ Stdlib.List.t)
        in
-       let bnds__228_ =
-         let arg__233_ =
-           let _of_b__234_ = Sexplib0.Sexp_conv.sexp_of_opaque in
-           sexp_of_option _of_b__234_ b__232_
+       let bnds__230_ =
+         let arg__235_ =
+           let _of_b__236_ = Sexplib0.Sexp_conv.sexp_of_opaque in
+           sexp_of_option _of_b__236_ b__234_
          in
-         (Sexplib0.Sexp.List [ Sexplib0.Sexp.Atom "b"; arg__233_ ] :: bnds__228_
+         (Sexplib0.Sexp.List [ Sexplib0.Sexp.Atom "b"; arg__235_ ] :: bnds__230_
           : _ Stdlib.List.t)
        in
-       let bnds__228_ =
-         let arg__230_ =
-           let _of_a__231_ = Sexplib0.Sexp_conv.sexp_of_opaque in
-           sexp_of_list _of_a__231_ a__229_
+       let bnds__230_ =
+         let arg__232_ =
+           let _of_a__233_ = Sexplib0.Sexp_conv.sexp_of_opaque in
+           sexp_of_list _of_a__233_ a__231_
          in
-         (Sexplib0.Sexp.List [ Sexplib0.Sexp.Atom "a"; arg__230_ ] :: bnds__228_
+         (Sexplib0.Sexp.List [ Sexplib0.Sexp.Atom "a"; arg__232_ ] :: bnds__230_
           : _ Stdlib.List.t)
        in
-       Sexplib0.Sexp.List bnds__228_
+       Sexplib0.Sexp.List bnds__230_
        : t -> Sexplib0.Sexp.t)
   ;;
 
@@ -1230,39 +1230,39 @@ module Record_with_defaults = struct
   let _ = fun (_ : t) -> ()
 
   let t_of_sexp =
-    (let (default__240_ : int) = 0
-     and (default__241_ : int) = 0
-     and (default__242_ : int) = 0
+    (let (default__242_ : int) = 0
      and (default__243_ : int) = 0
-     and (default__244_ : int) = 0 in
-     let error_source__239_ = "expansion.ml.Record_with_defaults.t" in
-     fun x__245_ ->
+     and (default__244_ : int) = 0
+     and (default__245_ : int) = 0
+     and (default__246_ : int) = 0 in
+     let error_source__241_ = "expansion.ml.Record_with_defaults.t" in
+     fun x__247_ ->
        Sexplib0.Sexp_conv_record.record_of_sexp
-         ~caller:error_source__239_
+         ~caller:error_source__241_
          ~fields:
            (Field
               { name = "a"
-              ; kind = Default (fun () -> default__244_)
+              ; kind = Default (fun () -> default__246_)
               ; conv = int_of_sexp
               ; rest =
                   Field
                     { name = "b"
-                    ; kind = Default (fun () -> default__243_)
+                    ; kind = Default (fun () -> default__245_)
                     ; conv = int_of_sexp
                     ; rest =
                         Field
                           { name = "c"
-                          ; kind = Default (fun () -> default__242_)
+                          ; kind = Default (fun () -> default__244_)
                           ; conv = int_of_sexp
                           ; rest =
                               Field
                                 { name = "d"
-                                ; kind = Default (fun () -> default__241_)
+                                ; kind = Default (fun () -> default__243_)
                                 ; conv = int_of_sexp
                                 ; rest =
                                     Field
                                       { name = "e"
-                                      ; kind = Default (fun () -> default__240_)
+                                      ; kind = Default (fun () -> default__242_)
                                       ; conv = int_of_sexp
                                       ; rest =
                                           Field
@@ -1286,67 +1286,67 @@ module Record_with_defaults = struct
            | _ -> -1)
          ~allow_extra_fields:false
          ~create:(fun (a, (b, (c, (d, (e, (f, ())))))) : t -> { a; b; c; d; e; f })
-         x__245_
+         x__247_
        : Sexplib0.Sexp.t -> t)
   ;;
 
   let _ = t_of_sexp
 
   let sexp_of_t =
-    (let (default__250_ : int) = 0
-     and (default__255_ : int) = 0
-     and (default__260_ : int) = 0
-     and (default__266_ : int) = 0
-     and (drop_default__265_ : int -> int -> Stdlib.Bool.t) = ( = )
-     and (drop_if__271_ : Stdlib.Unit.t -> int -> Stdlib.Bool.t) = fun () -> ( = ) 0 in
-     fun { a = a__247_; b = b__251_; c = c__256_; d = d__261_; e = e__267_; f = f__272_ } ->
-       let bnds__246_ = ([] : _ Stdlib.List.t) in
-       let bnds__246_ =
-         if (drop_if__271_ ()) f__272_
-         then bnds__246_
+    (let (default__252_ : int) = 0
+     and (default__257_ : int) = 0
+     and (default__262_ : int) = 0
+     and (default__268_ : int) = 0
+     and (drop_default__267_ : int -> int -> Stdlib.Bool.t) = ( = )
+     and (drop_if__273_ : Stdlib.Unit.t -> int -> Stdlib.Bool.t) = fun () -> ( = ) 0 in
+     fun { a = a__249_; b = b__253_; c = c__258_; d = d__263_; e = e__269_; f = f__274_ } ->
+       let bnds__248_ = ([] : _ Stdlib.List.t) in
+       let bnds__248_ =
+         if (drop_if__273_ ()) f__274_
+         then bnds__248_
          else (
-           let arg__274_ = sexp_of_int f__272_ in
-           let bnd__273_ = Sexplib0.Sexp.List [ Sexplib0.Sexp.Atom "f"; arg__274_ ] in
-           (bnd__273_ :: bnds__246_ : _ Stdlib.List.t))
+           let arg__276_ = sexp_of_int f__274_ in
+           let bnd__275_ = Sexplib0.Sexp.List [ Sexplib0.Sexp.Atom "f"; arg__276_ ] in
+           (bnd__275_ :: bnds__248_ : _ Stdlib.List.t))
        in
-       let bnds__246_ =
-         if drop_default__265_ default__266_ e__267_
-         then bnds__246_
+       let bnds__248_ =
+         if drop_default__267_ default__268_ e__269_
+         then bnds__248_
          else (
-           let arg__269_ = sexp_of_int e__267_ in
-           let bnd__268_ = Sexplib0.Sexp.List [ Sexplib0.Sexp.Atom "e"; arg__269_ ] in
-           (bnd__268_ :: bnds__246_ : _ Stdlib.List.t))
+           let arg__271_ = sexp_of_int e__269_ in
+           let bnd__270_ = Sexplib0.Sexp.List [ Sexplib0.Sexp.Atom "e"; arg__271_ ] in
+           (bnd__270_ :: bnds__248_ : _ Stdlib.List.t))
        in
-       let bnds__246_ =
-         let arg__263_ = sexp_of_int d__261_ in
-         if Sexplib0.Sexp_conv.( = ) (sexp_of_int default__260_) arg__263_
-         then bnds__246_
+       let bnds__248_ =
+         let arg__265_ = sexp_of_int d__263_ in
+         if Sexplib0.Sexp_conv.( = ) (sexp_of_int default__262_) arg__265_
+         then bnds__248_
          else (
-           let bnd__262_ = Sexplib0.Sexp.List [ Sexplib0.Sexp.Atom "d"; arg__263_ ] in
-           (bnd__262_ :: bnds__246_ : _ Stdlib.List.t))
+           let bnd__264_ = Sexplib0.Sexp.List [ Sexplib0.Sexp.Atom "d"; arg__265_ ] in
+           (bnd__264_ :: bnds__248_ : _ Stdlib.List.t))
        in
-       let bnds__246_ =
-         if [%equal: int] default__255_ c__256_
-         then bnds__246_
+       let bnds__248_ =
+         if [%equal: int] default__257_ c__258_
+         then bnds__248_
          else (
-           let arg__258_ = sexp_of_int c__256_ in
-           let bnd__257_ = Sexplib0.Sexp.List [ Sexplib0.Sexp.Atom "c"; arg__258_ ] in
-           (bnd__257_ :: bnds__246_ : _ Stdlib.List.t))
+           let arg__260_ = sexp_of_int c__258_ in
+           let bnd__259_ = Sexplib0.Sexp.List [ Sexplib0.Sexp.Atom "c"; arg__260_ ] in
+           (bnd__259_ :: bnds__248_ : _ Stdlib.List.t))
        in
-       let bnds__246_ =
-         if [%compare.equal: int] default__250_ b__251_
-         then bnds__246_
+       let bnds__248_ =
+         if [%compare.equal: int] default__252_ b__253_
+         then bnds__248_
          else (
-           let arg__253_ = sexp_of_int b__251_ in
-           let bnd__252_ = Sexplib0.Sexp.List [ Sexplib0.Sexp.Atom "b"; arg__253_ ] in
-           (bnd__252_ :: bnds__246_ : _ Stdlib.List.t))
+           let arg__255_ = sexp_of_int b__253_ in
+           let bnd__254_ = Sexplib0.Sexp.List [ Sexplib0.Sexp.Atom "b"; arg__255_ ] in
+           (bnd__254_ :: bnds__248_ : _ Stdlib.List.t))
        in
-       let bnds__246_ =
-         let arg__248_ = sexp_of_int a__247_ in
-         (Sexplib0.Sexp.List [ Sexplib0.Sexp.Atom "a"; arg__248_ ] :: bnds__246_
+       let bnds__248_ =
+         let arg__250_ = sexp_of_int a__249_ in
+         (Sexplib0.Sexp.List [ Sexplib0.Sexp.Atom "a"; arg__250_ ] :: bnds__248_
           : _ Stdlib.List.t)
        in
-       Sexplib0.Sexp.List bnds__246_
+       Sexplib0.Sexp.List bnds__248_
        : t -> Sexplib0.Sexp.t)
   ;;
 
@@ -1367,10 +1367,10 @@ module Record_with_special_types = struct
   let _ = fun (_ : t) -> ()
 
   let t_of_sexp =
-    (let error_source__282_ = "expansion.ml.Record_with_special_types.t" in
-     fun x__283_ ->
+    (let error_source__284_ = "expansion.ml.Record_with_special_types.t" in
+     fun x__285_ ->
        Sexplib0.Sexp_conv_record.record_of_sexp
-         ~caller:error_source__282_
+         ~caller:error_source__284_
          ~fields:
            (Field
               { name = "a"
@@ -1400,51 +1400,51 @@ module Record_with_special_types = struct
            | _ -> -1)
          ~allow_extra_fields:false
          ~create:(fun (a, (b, (c, (d, ())))) : t -> { a; b; c; d })
-         x__283_
+         x__285_
        : Sexplib0.Sexp.t -> t)
   ;;
 
   let _ = t_of_sexp
 
   let sexp_of_t =
-    (fun { a = a__285_; b = b__290_; c = c__294_; d = d__297_ } ->
-       let bnds__284_ = ([] : _ Stdlib.List.t) in
-       let bnds__284_ =
-         if d__297_
+    (fun { a = a__287_; b = b__292_; c = c__296_; d = d__299_ } ->
+       let bnds__286_ = ([] : _ Stdlib.List.t) in
+       let bnds__286_ =
+         if d__299_
          then (
-           let bnd__298_ = Sexplib0.Sexp.List [ Sexplib0.Sexp.Atom "d" ] in
-           (bnd__298_ :: bnds__284_ : _ Stdlib.List.t))
-         else bnds__284_
+           let bnd__300_ = Sexplib0.Sexp.List [ Sexplib0.Sexp.Atom "d" ] in
+           (bnd__300_ :: bnds__286_ : _ Stdlib.List.t))
+         else bnds__286_
        in
-       let bnds__284_ =
-         if match c__294_ with
+       let bnds__286_ =
+         if match c__296_ with
            | [||] -> true
            | _ -> false
-         then bnds__284_
+         then bnds__286_
          else (
-           let arg__296_ = (sexp_of_array sexp_of_int) c__294_ in
-           let bnd__295_ = Sexplib0.Sexp.List [ Sexplib0.Sexp.Atom "c"; arg__296_ ] in
-           (bnd__295_ :: bnds__284_ : _ Stdlib.List.t))
+           let arg__298_ = (sexp_of_array sexp_of_int) c__296_ in
+           let bnd__297_ = Sexplib0.Sexp.List [ Sexplib0.Sexp.Atom "c"; arg__298_ ] in
+           (bnd__297_ :: bnds__286_ : _ Stdlib.List.t))
        in
-       let bnds__284_ =
-         if match b__290_ with
+       let bnds__286_ =
+         if match b__292_ with
            | [] -> true
            | _ -> false
-         then bnds__284_
+         then bnds__286_
          else (
-           let arg__292_ = (sexp_of_list sexp_of_int) b__290_ in
-           let bnd__291_ = Sexplib0.Sexp.List [ Sexplib0.Sexp.Atom "b"; arg__292_ ] in
-           (bnd__291_ :: bnds__284_ : _ Stdlib.List.t))
+           let arg__294_ = (sexp_of_list sexp_of_int) b__292_ in
+           let bnd__293_ = Sexplib0.Sexp.List [ Sexplib0.Sexp.Atom "b"; arg__294_ ] in
+           (bnd__293_ :: bnds__286_ : _ Stdlib.List.t))
        in
-       let bnds__284_ =
-         match a__285_ with
-         | Stdlib.Option.None -> bnds__284_
-         | Stdlib.Option.Some v__286_ ->
-           let arg__288_ = sexp_of_int v__286_ in
-           let bnd__287_ = Sexplib0.Sexp.List [ Sexplib0.Sexp.Atom "a"; arg__288_ ] in
-           (bnd__287_ :: bnds__284_ : _ Stdlib.List.t)
+       let bnds__286_ =
+         match a__287_ with
+         | Stdlib.Option.None -> bnds__286_
+         | Stdlib.Option.Some v__288_ ->
+           let arg__290_ = sexp_of_int v__288_ in
+           let bnd__289_ = Sexplib0.Sexp.List [ Sexplib0.Sexp.Atom "a"; arg__290_ ] in
+           (bnd__289_ :: bnds__286_ : _ Stdlib.List.t)
        in
-       Sexplib0.Sexp.List bnds__284_
+       Sexplib0.Sexp.List bnds__286_
        : t -> Sexplib0.Sexp.t)
   ;;
 
@@ -1465,10 +1465,10 @@ module Record_with_omit_nil = struct
   let _ = fun (_ : t) -> ()
 
   let t_of_sexp =
-    (let error_source__300_ = "expansion.ml.Record_with_omit_nil.t" in
-     fun x__301_ ->
+    (let error_source__302_ = "expansion.ml.Record_with_omit_nil.t" in
+     fun x__303_ ->
        Sexplib0.Sexp_conv_record.record_of_sexp
-         ~caller:error_source__300_
+         ~caller:error_source__302_
          ~fields:
            (Field
               { name = "a"
@@ -1502,44 +1502,44 @@ module Record_with_omit_nil = struct
            | _ -> -1)
          ~allow_extra_fields:false
          ~create:(fun (a, (b, (c, (d, ())))) : t -> { a; b; c; d })
-         x__301_
+         x__303_
        : Sexplib0.Sexp.t -> t)
   ;;
 
   let _ = t_of_sexp
 
   let sexp_of_t =
-    (fun { a = a__303_; b = b__305_; c = c__307_; d = d__309_ } ->
-       let bnds__302_ = ([] : _ Stdlib.List.t) in
-       let bnds__302_ =
-         match sexp_of_int d__309_ with
-         | Sexplib0.Sexp.List [] -> bnds__302_
+    (fun { a = a__305_; b = b__307_; c = c__309_; d = d__311_ } ->
+       let bnds__304_ = ([] : _ Stdlib.List.t) in
+       let bnds__304_ =
+         match sexp_of_int d__311_ with
+         | Sexplib0.Sexp.List [] -> bnds__304_
+         | arg__312_ ->
+           (Sexplib0.Sexp.List [ Sexplib0.Sexp.Atom "d"; arg__312_ ] :: bnds__304_
+            : _ Stdlib.List.t)
+       in
+       let bnds__304_ =
+         match sexp_of_unit c__309_ with
+         | Sexplib0.Sexp.List [] -> bnds__304_
          | arg__310_ ->
-           (Sexplib0.Sexp.List [ Sexplib0.Sexp.Atom "d"; arg__310_ ] :: bnds__302_
+           (Sexplib0.Sexp.List [ Sexplib0.Sexp.Atom "c"; arg__310_ ] :: bnds__304_
             : _ Stdlib.List.t)
        in
-       let bnds__302_ =
-         match sexp_of_unit c__307_ with
-         | Sexplib0.Sexp.List [] -> bnds__302_
+       let bnds__304_ =
+         match sexp_of_list sexp_of_int b__307_ with
+         | Sexplib0.Sexp.List [] -> bnds__304_
          | arg__308_ ->
-           (Sexplib0.Sexp.List [ Sexplib0.Sexp.Atom "c"; arg__308_ ] :: bnds__302_
+           (Sexplib0.Sexp.List [ Sexplib0.Sexp.Atom "b"; arg__308_ ] :: bnds__304_
             : _ Stdlib.List.t)
        in
-       let bnds__302_ =
-         match sexp_of_list sexp_of_int b__305_ with
-         | Sexplib0.Sexp.List [] -> bnds__302_
+       let bnds__304_ =
+         match sexp_of_option sexp_of_int a__305_ with
+         | Sexplib0.Sexp.List [] -> bnds__304_
          | arg__306_ ->
-           (Sexplib0.Sexp.List [ Sexplib0.Sexp.Atom "b"; arg__306_ ] :: bnds__302_
+           (Sexplib0.Sexp.List [ Sexplib0.Sexp.Atom "a"; arg__306_ ] :: bnds__304_
             : _ Stdlib.List.t)
        in
-       let bnds__302_ =
-         match sexp_of_option sexp_of_int a__303_ with
-         | Sexplib0.Sexp.List [] -> bnds__302_
-         | arg__304_ ->
-           (Sexplib0.Sexp.List [ Sexplib0.Sexp.Atom "a"; arg__304_ ] :: bnds__302_
-            : _ Stdlib.List.t)
-       in
-       Sexplib0.Sexp.List bnds__302_
+       Sexplib0.Sexp.List bnds__304_
        : t -> Sexplib0.Sexp.t)
   ;;
 
@@ -1554,28 +1554,28 @@ module Variant_with_sexp_list = struct
   let _ = fun (_ : t) -> ()
 
   let t_of_sexp =
-    (let error_source__313_ = "expansion.ml.Variant_with_sexp_list.t" in
+    (let error_source__315_ = "expansion.ml.Variant_with_sexp_list.t" in
      function
      | Sexplib0.Sexp.List
-         (Sexplib0.Sexp.Atom (("a" | "A") as _tag__316_) :: sexp_args__317_) as
-       _sexp__315_ -> A (Sexplib0.Sexp_conv.list_map int_of_sexp sexp_args__317_)
-     | Sexplib0.Sexp.Atom ("a" | "A") as sexp__314_ ->
-       Sexplib0.Sexp_conv_error.stag_takes_args error_source__313_ sexp__314_
-     | Sexplib0.Sexp.List (Sexplib0.Sexp.List _ :: _) as sexp__312_ ->
-       Sexplib0.Sexp_conv_error.nested_list_invalid_sum error_source__313_ sexp__312_
-     | Sexplib0.Sexp.List [] as sexp__312_ ->
-       Sexplib0.Sexp_conv_error.empty_list_invalid_sum error_source__313_ sexp__312_
-     | sexp__312_ ->
-       Sexplib0.Sexp_conv_error.unexpected_stag error_source__313_ sexp__312_
+         (Sexplib0.Sexp.Atom (("a" | "A") as _tag__318_) :: sexp_args__319_) as
+       _sexp__317_ -> A (Sexplib0.Sexp_conv.list_map int_of_sexp sexp_args__319_)
+     | Sexplib0.Sexp.Atom ("a" | "A") as sexp__316_ ->
+       Sexplib0.Sexp_conv_error.stag_takes_args error_source__315_ sexp__316_
+     | Sexplib0.Sexp.List (Sexplib0.Sexp.List _ :: _) as sexp__314_ ->
+       Sexplib0.Sexp_conv_error.nested_list_invalid_sum error_source__315_ sexp__314_
+     | Sexplib0.Sexp.List [] as sexp__314_ ->
+       Sexplib0.Sexp_conv_error.empty_list_invalid_sum error_source__315_ sexp__314_
+     | sexp__314_ ->
+       Sexplib0.Sexp_conv_error.unexpected_stag error_source__315_ sexp__314_
        : Sexplib0.Sexp.t -> t)
   ;;
 
   let _ = t_of_sexp
 
   let sexp_of_t =
-    (fun (A l__318_) ->
+    (fun (A l__320_) ->
        Sexplib0.Sexp.List
-         (Sexplib0.Sexp.Atom "A" :: Sexplib0.Sexp_conv.list_map sexp_of_int l__318_)
+         (Sexplib0.Sexp.Atom "A" :: Sexplib0.Sexp_conv.list_map sexp_of_int l__320_)
        : t -> Sexplib0.Sexp.t)
   ;;
 
@@ -1590,41 +1590,41 @@ module Poly_variant_with_sexp_list = struct
   let _ = fun (_ : t) -> ()
 
   let __t_of_sexp__ =
-    (let error_source__325_ = "expansion.ml.Poly_variant_with_sexp_list.t" in
+    (let error_source__327_ = "expansion.ml.Poly_variant_with_sexp_list.t" in
      function
-     | Sexplib0.Sexp.Atom atom__320_ as _sexp__322_ ->
-       (match atom__320_ with
-        | "A" -> Sexplib0.Sexp_conv_error.ptag_takes_args error_source__325_ _sexp__322_
+     | Sexplib0.Sexp.Atom atom__322_ as _sexp__324_ ->
+       (match atom__322_ with
+        | "A" -> Sexplib0.Sexp_conv_error.ptag_takes_args error_source__327_ _sexp__324_
         | _ -> Sexplib0.Sexp_conv_error.no_variant_match ())
-     | Sexplib0.Sexp.List (Sexplib0.Sexp.Atom atom__320_ :: sexp_args__323_) as
-       _sexp__322_ ->
-       (match atom__320_ with
-        | "A" as _tag__324_ -> `A (Sexplib0.Sexp_conv.list_map int_of_sexp sexp_args__323_)
+     | Sexplib0.Sexp.List (Sexplib0.Sexp.Atom atom__322_ :: sexp_args__325_) as
+       _sexp__324_ ->
+       (match atom__322_ with
+        | "A" as _tag__326_ -> `A (Sexplib0.Sexp_conv.list_map int_of_sexp sexp_args__325_)
         | _ -> Sexplib0.Sexp_conv_error.no_variant_match ())
-     | Sexplib0.Sexp.List (Sexplib0.Sexp.List _ :: _) as sexp__321_ ->
-       Sexplib0.Sexp_conv_error.nested_list_invalid_poly_var error_source__325_ sexp__321_
-     | Sexplib0.Sexp.List [] as sexp__321_ ->
-       Sexplib0.Sexp_conv_error.empty_list_invalid_poly_var error_source__325_ sexp__321_
+     | Sexplib0.Sexp.List (Sexplib0.Sexp.List _ :: _) as sexp__323_ ->
+       Sexplib0.Sexp_conv_error.nested_list_invalid_poly_var error_source__327_ sexp__323_
+     | Sexplib0.Sexp.List [] as sexp__323_ ->
+       Sexplib0.Sexp_conv_error.empty_list_invalid_poly_var error_source__327_ sexp__323_
        : Sexplib0.Sexp.t -> t)
   ;;
 
   let _ = __t_of_sexp__
 
   let t_of_sexp =
-    (let error_source__327_ = "expansion.ml.Poly_variant_with_sexp_list.t" in
-     fun sexp__326_ ->
-       try __t_of_sexp__ sexp__326_ with
+    (let error_source__329_ = "expansion.ml.Poly_variant_with_sexp_list.t" in
+     fun sexp__328_ ->
+       try __t_of_sexp__ sexp__328_ with
        | Sexplib0.Sexp_conv_error.No_variant_match ->
-         Sexplib0.Sexp_conv_error.no_matching_variant_found error_source__327_ sexp__326_
+         Sexplib0.Sexp_conv_error.no_matching_variant_found error_source__329_ sexp__328_
          : Sexplib0.Sexp.t -> t)
   ;;
 
   let _ = t_of_sexp
 
   let sexp_of_t =
-    (fun (`A l__328_) ->
+    (fun (`A l__330_) ->
        Sexplib0.Sexp.List
-         (Sexplib0.Sexp.Atom "A" :: Sexplib0.Sexp_conv.list_map sexp_of_int l__328_)
+         (Sexplib0.Sexp.Atom "A" :: Sexplib0.Sexp_conv.list_map sexp_of_int l__330_)
        : t -> Sexplib0.Sexp.t)
   ;;
 
@@ -1639,31 +1639,31 @@ module Record_allowing_extra_fields = struct
   let _ = fun (_ : t) -> ()
 
   let t_of_sexp =
-    (let error_source__330_ = "expansion.ml.Record_allowing_extra_fields.t" in
-     fun x__331_ ->
+    (let error_source__332_ = "expansion.ml.Record_allowing_extra_fields.t" in
+     fun x__333_ ->
        Sexplib0.Sexp_conv_record.record_of_sexp
-         ~caller:error_source__330_
+         ~caller:error_source__332_
          ~fields:(Field { name = "a"; kind = Required; conv = int_of_sexp; rest = Empty })
          ~index_of_field:(function
            | "a" -> 0
            | _ -> -1)
          ~allow_extra_fields:true
          ~create:(fun (a, ()) : t -> { a })
-         x__331_
+         x__333_
        : Sexplib0.Sexp.t -> t)
   ;;
 
   let _ = t_of_sexp
 
   let sexp_of_t =
-    (fun { a = a__333_ } ->
-       let bnds__332_ = ([] : _ Stdlib.List.t) in
-       let bnds__332_ =
-         let arg__334_ = sexp_of_int a__333_ in
-         (Sexplib0.Sexp.List [ Sexplib0.Sexp.Atom "a"; arg__334_ ] :: bnds__332_
+    (fun { a = a__335_ } ->
+       let bnds__334_ = ([] : _ Stdlib.List.t) in
+       let bnds__334_ =
+         let arg__336_ = sexp_of_int a__335_ in
+         (Sexplib0.Sexp.List [ Sexplib0.Sexp.Atom "a"; arg__336_ ] :: bnds__334_
           : _ Stdlib.List.t)
        in
-       Sexplib0.Sexp.List bnds__332_
+       Sexplib0.Sexp.List bnds__334_
        : t -> Sexplib0.Sexp.t)
   ;;
 
@@ -1678,14 +1678,14 @@ module Opaque = struct
   let _ = fun (_ : t) -> ()
 
   let t_of_sexp =
-    (fun x__336_ -> list_of_sexp Sexplib0.Sexp_conv.opaque_of_sexp x__336_
+    (fun x__338_ -> list_of_sexp Sexplib0.Sexp_conv.opaque_of_sexp x__338_
                     : Sexplib0.Sexp.t -> t)
   ;;
 
   let _ = t_of_sexp
 
   let sexp_of_t =
-    (fun x__337_ -> sexp_of_list Sexplib0.Sexp_conv.sexp_of_opaque x__337_
+    (fun x__339_ -> sexp_of_list Sexplib0.Sexp_conv.sexp_of_opaque x__339_
                     : t -> Sexplib0.Sexp.t)
   ;;
 

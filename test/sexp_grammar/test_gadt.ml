@@ -51,8 +51,9 @@ type _ grammar_only = Grammar_only : int -> string grammar_only
 
 let _ = fun (_ : _ grammar_only) -> ()
 
-let (grammar_only_sexp_grammar :
-       'a__016_ Sexplib0.Sexp_grammar.t -> 'a__016_ grammar_only Sexplib0.Sexp_grammar.t)
+let grammar_only_sexp_grammar :
+  'a__016_.
+  'a__016_ Sexplib0.Sexp_grammar.t -> 'a__016_ grammar_only Sexplib0.Sexp_grammar.t
   =
   fun _'a__016__sexp_grammar ->
   { untyped =

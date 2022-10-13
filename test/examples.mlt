@@ -56,3 +56,9 @@ module Record_with_defaults = struct
 end
 
 [%%expect {||}]
+
+module Polymorphic_recursion = struct
+  type 'a t = T of 'a t t [@@deriving sexp_grammar]
+end
+
+[%%expect {||}]

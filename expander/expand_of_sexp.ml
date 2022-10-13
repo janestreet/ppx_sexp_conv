@@ -989,7 +989,7 @@ module Str_generate_of_sexp = struct
 
   (* Generate code from type definitions *)
 
-  let td_of_sexp ~typevars ~loc:_ ~poly ~path ~rec_flag td =
+  let td_of_sexp ~typevars ~loc:_ ~poly ~path ~rec_flag ~values_being_defined td =
     let tps = List.map td.ptype_params ~f:get_type_param_name in
     let { ptype_name = { txt = type_name; loc = _ }; ptype_loc = loc; _ } = td in
     let full_type =
@@ -1045,7 +1045,7 @@ module Str_generate_of_sexp = struct
       in
       (* Prevent violation of value restriction, problems with recursive types, and
          toplevel effects by eta-expanding function definitions *)
-      body >>| Conversion.to_value_expression ~loc
+      body >>| Conversion.to_value_expression ~loc ~rec_flag ~values_being_defined
     in
     let external_name = type_name ^ "_of_sexp" in
     let internal_name = "__" ^ type_name ^ "_of_sexp__" in
@@ -1128,6 +1128,10 @@ module Str_generate_of_sexp = struct
       | [ _ ] -> true
       | _ -> false
     in
+    let values_being_defined =
+      List.map tds ~f:(fun td -> td.ptype_name.txt ^ "_of_sexp")
+      |> Set.of_list (module String)
+    in
     if singleton
     then (
       let rec_flag = really_recursive_respecting_opaque rec_flag tds in
@@ -1137,7 +1141,7 @@ module Str_generate_of_sexp = struct
           List.concat_map tds ~f:(fun td ->
             let typevars = typevars td in
             let internals, externals =
-              td_of_sexp ~typevars ~loc ~poly ~path ~rec_flag td
+              td_of_sexp ~typevars ~loc ~poly ~path ~rec_flag ~values_being_defined td
             in
             internals @ externals)
         in
@@ -1146,7 +1150,7 @@ module Str_generate_of_sexp = struct
         List.concat_map tds ~f:(fun td ->
           let typevars = typevars td in
           let internals, externals =
-            td_of_sexp ~typevars ~loc ~poly ~path ~rec_flag td
+            td_of_sexp ~typevars ~loc ~poly ~path ~rec_flag ~values_being_defined td
           in
           pstr_value_list ~loc Nonrecursive internals
           @ pstr_value_list ~loc Nonrecursive externals))
@@ -1155,7 +1159,7 @@ module Str_generate_of_sexp = struct
         List.concat_map tds ~f:(fun td ->
           let typevars = typevars td in
           let internals, externals =
-            td_of_sexp ~typevars ~poly ~loc ~path ~rec_flag td
+            td_of_sexp ~typevars ~poly ~loc ~path ~rec_flag ~values_being_defined td
           in
           internals @ externals)
       in
@@ -1173,7 +1177,10 @@ module Str_generate_of_sexp = struct
     in
     with_error_source ~loc ~full_type_name (fun ~error_source ->
       type_of_sexp ~error_source ~typevars:(Map.empty (module String)) core_type
-      |> Conversion.to_value_expression ~loc
+      |> Conversion.to_value_expression
+           ~loc
+           ~rec_flag:Nonrecursive
+           ~values_being_defined:(Set.empty (module String))
       |> Merlin_helpers.hide_expression
       |> Lifted.return)
   ;;

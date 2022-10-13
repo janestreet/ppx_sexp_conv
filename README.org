@@ -66,13 +66,30 @@ putting underscores for that type name.
 
 If =ppx_sexp_conv= can derive =of_sexp=, it can also generate a description of
 the sexps that the resulting =t_of_sexp= would accept.  This is the sexp grammar.
-See =Sexplib0.Sexp_grammar= for details.
+See =Sexplib0.Sexp_grammar= for details. Use =[@@deriving sexp_grammar]= to derive
+the grammar for a type.
 
 It is possible to construct sexp grammars directly from type expressions, e.g.,
 
 #+BEGIN_SRC ocaml
 [%sexp_grammar: (int, bool array) Either.t Base.Map.M(String).t]
 #+END_SRC
+
+** Tagging grammars
+
+Use =[@sexp_grammar.tag key = value]=, where =(key : string)= and =(value :
+Sexp.t)=, to annotate a grammar with a tag that can be inspected at runtime.
+
+** Custom grammars
+
+Use =[@sexp_grammar.custom grammar]= to override a type's sexp grammar with
+=grammar=.
+
+** Stub grammars
+
+Annotate a type with =[@sexp_grammar.any]= to use a stub grammar that accepts
+any sexp. Alternately, write =[@sexp_grammar.any desc]= where =(desc : string)=
+to use =desc= as a human-readable description for the stub grammar.
 
 * Conversion rules
 

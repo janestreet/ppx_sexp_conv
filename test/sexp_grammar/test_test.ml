@@ -17,7 +17,7 @@ module _ = struct
   let _ = fun (_ : 'a t) -> ()
   let _ = fun (_ : 'a u) -> ()
 
-  let (t_sexp_grammar : 'a Sexplib0.Sexp_grammar.t -> 'a t Sexplib0.Sexp_grammar.t) =
+  let t_sexp_grammar : 'a. 'a Sexplib0.Sexp_grammar.t -> 'a t Sexplib0.Sexp_grammar.t =
     fun _'a_sexp_grammar ->
     { untyped =
         Variant
@@ -35,7 +35,7 @@ module _ = struct
 
   let _ = t_sexp_grammar
 
-  let (u_sexp_grammar : 'a Sexplib0.Sexp_grammar.t -> 'a u Sexplib0.Sexp_grammar.t) =
+  let u_sexp_grammar : 'a. 'a Sexplib0.Sexp_grammar.t -> 'a u Sexplib0.Sexp_grammar.t =
     fun _'a_sexp_grammar ->
     { untyped =
         Variant
@@ -71,10 +71,11 @@ module _ = struct
 
   let _ = fun (_ : ('a, 'b) t) -> ()
 
-  let (t_sexp_grammar :
-         'a Sexplib0.Sexp_grammar.t
-       -> 'b Sexplib0.Sexp_grammar.t
-       -> ('a, 'b) t Sexplib0.Sexp_grammar.t)
+  let t_sexp_grammar :
+    'a 'b.
+    'a Sexplib0.Sexp_grammar.t
+    -> 'b Sexplib0.Sexp_grammar.t
+    -> ('a, 'b) t Sexplib0.Sexp_grammar.t
     =
     fun _'a_sexp_grammar _'b_sexp_grammar -> Sexplib0.Sexp_conv.fun_sexp_grammar
   ;;

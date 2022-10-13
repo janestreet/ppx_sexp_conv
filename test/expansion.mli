@@ -172,7 +172,7 @@ module Mutually_recursive : sig
     ; b : b
     }
 
-  and c = int [@@deriving_inline sexp]
+  and c = a [@@deriving_inline sexp]
 
   include sig
     [@@@ocaml.warning "-32"]

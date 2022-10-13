@@ -38,6 +38,11 @@ module Str_generate_sexp_of = struct
       | Nonrec -> Nonrecursive
       | Rec _ -> Recursive
     ;;
+
+    let to_values_being_defined = function
+      | Nonrec -> Set.empty (module String)
+      | Rec types -> Set.map (module String) types ~f:(fun s -> "sexp_of_" ^ s)
+    ;;
   end
 
   let sexp_of_type_constr ~loc id args =
@@ -695,7 +700,12 @@ module Str_generate_sexp_of = struct
       else
         (* Prevent violation of value restriction, problems with recursive types, and
            top-level effects by eta-expanding function definitions *)
-        Conversion.to_value_expression ~loc body
+        Conversion.to_value_expression
+          ~loc
+          ~rec_flag:(Types_being_defined.to_rec_flag types_being_defined)
+          ~values_being_defined:
+            (Types_being_defined.to_values_being_defined types_being_defined)
+          body
     in
     let typ = Sig_generate_sexp_of.mk_type td in
     let func_name = "sexp_of_" ^ type_name in
@@ -712,7 +722,7 @@ module Str_generate_sexp_of = struct
       eta_reduce_if_possible_and_nonrec ~rec_flag (eabstract ~loc patts body)
     in
     let body = Lifted.let_bind_user_expressions ~loc body in
-    [ constrained_function_binding loc td typ ~tps ~func_name body ]
+    constrained_function_binding loc td typ ~tps ~func_name body
   ;;
 
   let sexp_of_tds ~loc ~path:_ (rec_flag, tds) =
@@ -723,7 +733,7 @@ module Str_generate_sexp_of = struct
       | Recursive ->
         Rec (Set.of_list (module String) (List.map tds ~f:(fun td -> td.ptype_name.txt)))
     in
-    let bindings = List.concat_map tds ~f:(sexp_of_td ~types_being_defined) in
+    let bindings = List.map tds ~f:(sexp_of_td ~types_being_defined) in
     pstr_value_list ~loc rec_flag bindings
   ;;
 
@@ -768,7 +778,10 @@ module Str_generate_sexp_of = struct
   let sexp_of_core_type core_type =
     let loc = { core_type.ptyp_loc with loc_ghost = true } in
     sexp_of_type ~renaming:(Renaming.without_type ()) core_type
-    |> Conversion.to_value_expression ~loc
+    |> Conversion.to_value_expression
+         ~loc
+         ~rec_flag:Nonrecursive
+         ~values_being_defined:(Set.empty (module String))
     |> Merlin_helpers.hide_expression
   ;;
 end

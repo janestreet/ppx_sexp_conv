@@ -133,6 +133,22 @@ let allow_extra_fields_cd =
     ()
 ;;
 
+let grammar_custom =
+  Attribute.declare
+    "sexp_grammar.custom"
+    Attribute.Context.core_type
+    Ast_pattern.(single_expr_payload __)
+    (fun x -> x)
+;;
+
+let grammar_any =
+  Attribute.declare
+    "sexp_grammar.any"
+    Attribute.Context.core_type
+    Ast_pattern.(alt_option (single_expr_payload (estring __)) (pstr nil))
+    (fun x -> x)
+;;
+
 let tag_attribute_for_context context =
   let open Ast_pattern in
   let key_equals_value =
@@ -165,6 +181,19 @@ let tag_type = tag_attribute_for_context Core_type
 let tag_ld = tag_attribute_for_context Label_declaration
 let tag_cd = tag_attribute_for_context Constructor_declaration
 let tag_poly = tag_attribute_for_context Rtag
+
+let tags_attribute_for_context context =
+  Attribute.declare
+    "sexp_grammar.tags"
+    context
+    Ast_pattern.(single_expr_payload __)
+    (fun x -> x)
+;;
+
+let tags_type = tags_attribute_for_context Core_type
+let tags_ld = tags_attribute_for_context Label_declaration
+let tags_cd = tags_attribute_for_context Constructor_declaration
+let tags_poly = tags_attribute_for_context Rtag
 
 let invalid_attribute ~loc attr description =
   Location.raise_errorf
