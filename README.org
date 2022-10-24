@@ -366,10 +366,18 @@ conversions.  This may be, because we do not have S-expression
 converters for them, or because we do not want to apply them in a
 particular type context. /e.g./ to hide large, unimportant parts of
 configurations.  To prevent the preprocessor from generating calls to
-converters, simply apply the attribute =sexp.opaque= to the type, /e.g./:
+converters, simply apply the attribute =sexp.opaque= to the type.  If the type
+is for a record field, it will likely need parentheses to avoid applying the
+attribute to the record field itself, /e.g./:
 
 #+begin_src ocaml
   type foo = int * (stuff [@sexp.opaque]) [@@deriving sexp]
+
+  type bar =
+    { a : int
+    ; b : (stuff [@sexp.opaque])
+    }
+  [@@deriving sexp]
 #+end_src
 
 Thus, there is no need to specify converters for type =stuff=, and if
