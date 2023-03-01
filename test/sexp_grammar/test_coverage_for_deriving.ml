@@ -291,7 +291,7 @@ include struct
           : 'a. 'a Sexplib0.Sexp_grammar.t -> 'a tree Sexplib0.Sexp_grammar.t
           =
           fun _'a_sexp_grammar ->
-            { untyped = Tycon ("tree", [ _'a_sexp_grammar.untyped ]) }
+            { untyped = Recursive ("tree", [ _'a_sexp_grammar.untyped ]) }
          in
          [ { tycon = "tree"
            ; tyvars = [ "a" ]
@@ -329,8 +329,7 @@ include struct
     =
     fun _'a_sexp_grammar ->
     { untyped =
-        Recursive
-          (Tycon ("tree", [ _'a_sexp_grammar.untyped ]), Stdlib.Lazy.force grammars__118_)
+        Tycon ("tree", [ _'a_sexp_grammar.untyped ], Stdlib.Lazy.force grammars__118_)
     }
   ;;
 
@@ -357,9 +356,9 @@ include struct
     let (grammars__131_ : Sexplib0.Sexp_grammar.defn Stdlib.List.t Stdlib.Lazy.t) =
       lazy
         (let (alpha_sexp_grammar : alpha Sexplib0.Sexp_grammar.t) =
-           { untyped = Tycon ("alpha", []) }
+           { untyped = Recursive ("alpha", []) }
          and (beta_sexp_grammar : beta Sexplib0.Sexp_grammar.t) =
-           { untyped = Tycon ("beta", []) }
+           { untyped = Recursive ("beta", []) }
          in
          [ { tycon = "alpha"; tyvars = []; grammar = int_sexp_grammar.untyped }
          ; { tycon = "beta"
@@ -390,14 +389,10 @@ include struct
   end
 
   let (alpha_sexp_grammar : alpha Sexplib0.Sexp_grammar.t) =
-    { untyped =
-        Lazy (lazy (Recursive (Tycon ("alpha", []), Stdlib.Lazy.force grammars__131_)))
-    }
+    { untyped = Lazy (lazy (Tycon ("alpha", [], Stdlib.Lazy.force grammars__131_))) }
 
   and (beta_sexp_grammar : beta Sexplib0.Sexp_grammar.t) =
-    { untyped =
-        Lazy (lazy (Recursive (Tycon ("beta", []), Stdlib.Lazy.force grammars__131_)))
-    }
+    { untyped = Lazy (lazy (Tycon ("beta", [], Stdlib.Lazy.force grammars__131_))) }
   ;;
 
   let _ = alpha_sexp_grammar

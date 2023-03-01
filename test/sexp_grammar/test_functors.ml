@@ -34,12 +34,12 @@ struct
             : 'a. 'a Sexplib0.Sexp_grammar.t -> 'a t Sexplib0.Sexp_grammar.t
             =
             fun _'a_sexp_grammar ->
-              { untyped = Tycon ("t", [ _'a_sexp_grammar.untyped ]) }
+              { untyped = Recursive ("t", [ _'a_sexp_grammar.untyped ]) }
            and u_sexp_grammar
              : 'a. 'a Sexplib0.Sexp_grammar.t -> 'a u Sexplib0.Sexp_grammar.t
              =
              fun _'a_sexp_grammar ->
-               { untyped = Tycon ("u", [ _'a_sexp_grammar.untyped ]) }
+               { untyped = Recursive ("u", [ _'a_sexp_grammar.untyped ]) }
            in
            [ { tycon = "t"
              ; tyvars = [ "a" ]
@@ -93,15 +93,13 @@ struct
     let t_sexp_grammar : 'a. 'a Sexplib0.Sexp_grammar.t -> 'a t Sexplib0.Sexp_grammar.t =
       fun _'a_sexp_grammar ->
       { untyped =
-          Recursive
-            (Tycon ("t", [ _'a_sexp_grammar.untyped ]), Stdlib.Lazy.force grammars__001_)
+          Tycon ("t", [ _'a_sexp_grammar.untyped ], Stdlib.Lazy.force grammars__001_)
       }
 
     and u_sexp_grammar : 'a. 'a Sexplib0.Sexp_grammar.t -> 'a u Sexplib0.Sexp_grammar.t =
       fun _'a_sexp_grammar ->
       { untyped =
-          Recursive
-            (Tycon ("u", [ _'a_sexp_grammar.untyped ]), Stdlib.Lazy.force grammars__001_)
+          Tycon ("u", [ _'a_sexp_grammar.untyped ], Stdlib.Lazy.force grammars__001_)
       }
     ;;
 

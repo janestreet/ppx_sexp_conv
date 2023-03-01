@@ -106,8 +106,12 @@ let list_grammar ~loc expr = [%expr List [%e expr]]
 let many_grammar ~loc expr = [%expr Many [%e expr]]
 let fields_grammar ~loc expr = [%expr Fields [%e expr]]
 let tyvar_grammar ~loc expr = [%expr Tyvar [%e expr]]
-let tycon_grammar ~loc name args = [%expr Tycon ([%e name], [%e args])]
-let recursive_grammar ~loc grammar defns = [%expr Recursive ([%e grammar], [%e defns])]
+let recursive_grammar ~loc name args = [%expr Recursive ([%e name], [%e args])]
+
+let tycon_grammar ~loc tycon_name params defns =
+  [%expr Tycon ([%e tycon_name], [%e params], [%e defns])]
+;;
+
 let defns_type ~loc = [%type: Sexplib0.Sexp_grammar.defn Stdlib.List.t Stdlib.Lazy.t]
 
 let untyped_grammar ~loc expr =
@@ -549,7 +553,7 @@ let recursive_grammar_tycons tds =
     let loc = td.ptype_loc in
     let pat = pattern_of_td td in
     let expr =
-      tycon_grammar
+      recursive_grammar
         ~loc
         (estr td.ptype_name)
         (List.map td.ptype_params ~f:(fun param ->
@@ -590,9 +594,10 @@ let recursive_grammar_expr ~defns_name td =
         tyvar_grammar_name txt |> evar ~loc |> untyped_grammar ~loc)
       |> elist ~loc
     in
-    recursive_grammar
+    tycon_grammar
       ~loc
-      (tycon_grammar ~loc (estr td.ptype_name) tyvars)
+      (estr td.ptype_name)
+      tyvars
       (evar ~loc defns_name |> force_expr ~loc)
     |> lazy_grammar td ~loc
     |> typed_grammar ~loc

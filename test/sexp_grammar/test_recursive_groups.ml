@@ -47,9 +47,9 @@ module _ = struct
       let (grammars__001_ : Sexplib0.Sexp_grammar.defn Stdlib.List.t Stdlib.Lazy.t) =
         lazy
           (let (t_sexp_grammar : t Sexplib0.Sexp_grammar.t) =
-             { untyped = Tycon ("t", []) }
+             { untyped = Recursive ("t", []) }
            and (u_sexp_grammar : u Sexplib0.Sexp_grammar.t) =
-             { untyped = Tycon ("u", []) }
+             { untyped = Recursive ("u", []) }
            in
            [ { tycon = "t"
              ; tyvars = []
@@ -98,14 +98,10 @@ module _ = struct
     end
 
     let (t_sexp_grammar : t Sexplib0.Sexp_grammar.t) =
-      { untyped =
-          Lazy (lazy (Recursive (Tycon ("t", []), Stdlib.Lazy.force grammars__001_)))
-      }
+      { untyped = Lazy (lazy (Tycon ("t", [], Stdlib.Lazy.force grammars__001_))) }
 
     and (u_sexp_grammar : u Sexplib0.Sexp_grammar.t) =
-      { untyped =
-          Lazy (lazy (Recursive (Tycon ("u", []), Stdlib.Lazy.force grammars__001_)))
-      }
+      { untyped = Lazy (lazy (Tycon ("u", [], Stdlib.Lazy.force grammars__001_))) }
     ;;
 
     let _ = t_sexp_grammar
