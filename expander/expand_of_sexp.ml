@@ -168,7 +168,8 @@ module Str_generate_of_sexp = struct
     | { ptyp_desc = Ptyp_var parm; _ } ->
       (match Map.find typevars parm with
        | Some fresh -> Conversion.of_reference_exn (Fresh_name.expression fresh)
-       | None -> Location.raise_errorf ~loc "ppx_sexp_conv: unbound type variable '%s" parm)
+       | None ->
+         Location.raise_errorf ~loc "ppx_sexp_conv: unbound type variable '%s" parm)
     | { ptyp_desc = Ptyp_constr (id, args); _ } ->
       let args =
         List.map args ~f:(fun arg ->

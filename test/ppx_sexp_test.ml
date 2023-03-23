@@ -667,7 +667,6 @@ module Opaque = struct
 
   let sexp = Sexplib.Sexp.of_string "(<opaque> <opaque>)"
   let t = [ 1; 2 ]
-
   let%test _ = sexp_of_t t = sexp
 
   let%test _ =
@@ -680,7 +679,6 @@ module Opaque = struct
 
   let sexp = Sexplib.Sexp.of_string "<opaque>"
   let u = `A 1
-
   let%test _ = sexp_of_u u = sexp
 
   let%test _ =
@@ -695,13 +693,10 @@ module Optional = struct
 
   let sexp = Sexplib.Sexp.of_string "()"
   let t = { optional = None }
-
   let%test _ = t_of_sexp sexp = t
   let%test _ = sexp_of_t t = sexp
-
   let sexp = Sexplib.Sexp.of_string "((optional 5))"
   let t = { optional = Some 5 }
-
   let%test _ = t_of_sexp sexp = t
   let%test _ = sexp_of_t t = sexp
 end
@@ -715,13 +710,10 @@ module Nonempty = struct
 
   let sexp = Sexplib.Sexp.of_string "()"
   let t = { list = []; array = [||] }
-
   let%test _ = t_of_sexp sexp = t
   let%test _ = sexp_of_t t = sexp
-
   let sexp = Sexplib.Sexp.of_string "((list (1 2 3)) (array (3 2 1)))"
   let t = { list = [ 1; 2; 3 ]; array = [| 3; 2; 1 |] }
-
   let%test _ = t_of_sexp sexp = t
   let%test _ = sexp_of_t t = sexp
 end
@@ -731,13 +723,10 @@ module Boolean = struct
 
   let sexp = Sexplib.Sexp.of_string "()"
   let t = { no_arg = false }
-
   let%test _ = t_of_sexp sexp = t
   let%test _ = sexp_of_t t = sexp
-
   let sexp = Sexplib.Sexp.of_string "((no_arg))"
   let t = { no_arg = true }
-
   let%test _ = t_of_sexp sexp = t
   let%test _ = sexp_of_t t = sexp
 
@@ -761,7 +750,6 @@ module Inline = struct
 
   let sexp = Sexplib.Sexp.of_string "(A 1 2 3)"
   let t = A [ 1; 2; 3 ]
-
   let%test _ = t_of_sexp sexp = t
   let%test _ = sexp_of_t t = sexp
 
@@ -769,7 +757,6 @@ module Inline = struct
 
   let sexp = Sexplib.Sexp.of_string "(A 1 2 3)"
   let u = `A [ 1; 2; 3 ]
-
   let%test _ = u_of_sexp sexp = u
   let%test _ = sexp_of_u u = sexp
 end
@@ -858,7 +845,6 @@ module Allow_extra_fields = struct
 
     let sexp = Sexplib.Sexp.of_string "((a 1))"
     let sexp_extra = Sexplib.Sexp.of_string "((a 1)(b 2))"
-
     let%test _ = t2_of_sexp sexp = t2_of_sexp sexp_extra
     let%test _ = t1_of_sexp sexp = t2_of_sexp sexp
     let%test _ = should_raise t1_of_sexp sexp_extra
@@ -882,7 +868,6 @@ module Allow_extra_fields = struct
 
     let sexp = Sexplib.Sexp.of_string "(A (a (0)))"
     let sexp_extra = Sexplib.Sexp.of_string "(A (a (0))(b 2))"
-
     let%test _ = t2_of_sexp sexp = t2_of_sexp sexp_extra
     let%test _ = t1_of_sexp sexp = t2_of_sexp sexp
     let%test _ = should_raise t1_of_sexp sexp_extra

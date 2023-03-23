@@ -338,8 +338,8 @@ module Str_generate_sexp_of = struct
               "[@sexp_drop_default] is deprecated: please use \
                one of:\n\
                - [@sexp_drop_default f] and give an explicit \
-               equality function ([f = Poly.(=)] corresponds \
-               to the old behavior)\n\
+               equality function ([f = Poly.(=)] corresponds to \
+               the old behavior)\n\
                - [@sexp_drop_default.compare] if the type \
                supports [%compare]\n\
                - [@sexp_drop_default.equal] if the type \
@@ -571,7 +571,8 @@ module Str_generate_sexp_of = struct
     | Pcstr_tuple pcd_args ->
       (match pcd_args with
        | [] ->
-         ppat_construct ~loc constr_lid None --> [%expr Sexplib0.Sexp.Atom [%e constr_str]]
+         ppat_construct ~loc constr_lid None
+         --> [%expr Sexplib0.Sexp.Atom [%e constr_str]]
          |> Lifted.return
        | args ->
          (match args with

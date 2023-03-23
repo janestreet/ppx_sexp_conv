@@ -286,7 +286,10 @@ let rec grammar_of_type core_type ~rec_flag ~tags_of_doc_comments =
           | Nonrecursive ->
             (* Outside recursive [defn]s, type variables are passed in as function
                arguments. *)
-            unapplied_type_constr_conv ~loc ~f:tyvar_grammar_name (Located.lident ~loc name)
+            unapplied_type_constr_conv
+              ~loc
+              ~f:tyvar_grammar_name
+              (Located.lident ~loc name)
             |> untyped_grammar ~loc)
        | Ptyp_arrow _ -> arrow_grammar ~loc
        | Ptyp_tuple list ->
@@ -296,8 +299,7 @@ let rec grammar_of_type core_type ~rec_flag ~tags_of_doc_comments =
        | Ptyp_constr (id, args) ->
          List.map args ~f:(fun core_type ->
            let loc = core_type.ptyp_loc in
-           grammar_of_type ~rec_flag ~tags_of_doc_comments core_type
-           |> typed_grammar ~loc)
+           grammar_of_type ~rec_flag ~tags_of_doc_comments core_type |> typed_grammar ~loc)
          |> type_constr_conv ~loc ~f:grammar_name id
          |> untyped_grammar ~loc
        | Ptyp_object _ -> unsupported ~loc "object types"
@@ -367,16 +369,14 @@ let record_expr ~loc ~rec_flag ~tags_of_doc_comments ~extra_attr syntax fields =
         | Specific Required | Specific (Default _) | Omit_nil ->
           [%expr
             Cons
-              ( [%e grammar_of_type ~tags_of_doc_comments ~rec_flag field.pld_type]
-              , Empty )]
+              ([%e grammar_of_type ~tags_of_doc_comments ~rec_flag field.pld_type], Empty)]
         | Sexp_bool -> [%expr Empty]
         | Sexp_option ty ->
           [%expr Cons ([%e grammar_of_type ~tags_of_doc_comments ~rec_flag ty], Empty)]
         | Sexp_list ty | Sexp_array ty ->
           [%expr
             Cons
-              ( List (Many [%e grammar_of_type ~tags_of_doc_comments ~rec_flag ty])
-              , Empty )]
+              (List (Many [%e grammar_of_type ~tags_of_doc_comments ~rec_flag ty]), Empty)]
       in
       [%expr
         { name = [%e estr field.pld_name]
@@ -409,11 +409,7 @@ let grammar_of_variant ~loc ~rec_flag ~tags_of_doc_comments clause_decls =
            let args =
              many_grammar ~loc (grammar_of_type ty ~rec_flag ~tags_of_doc_comments)
            in
-           { name = clause.pcd_name
-           ; comments
-           ; tags
-           ; clause_kind = list_clause ~loc args
-           }
+           { name = clause.pcd_name; comments; tags; clause_kind = list_clause ~loc args }
          | _ -> Attrs.invalid_attribute ~loc Attrs.list_variant "_ list")
       | None ->
         (match clause.pcd_args with
@@ -425,11 +421,7 @@ let grammar_of_variant ~loc ~rec_flag ~tags_of_doc_comments clause_decls =
                ~loc
                (List.map args ~f:(grammar_of_type ~rec_flag ~tags_of_doc_comments))
            in
-           { name = clause.pcd_name
-           ; comments
-           ; tags
-           ; clause_kind = list_clause ~loc args
-           }
+           { name = clause.pcd_name; comments; tags; clause_kind = list_clause ~loc args }
          | Pcstr_record fields ->
            let args =
              record_expr
@@ -441,11 +433,7 @@ let grammar_of_variant ~loc ~rec_flag ~tags_of_doc_comments clause_decls =
                fields
              |> fields_grammar ~loc
            in
-           { name = clause.pcd_name
-           ; comments
-           ; tags
-           ; clause_kind = list_clause ~loc args
-           }))
+           { name = clause.pcd_name; comments; tags; clause_kind = list_clause ~loc args }))
   in
   variant_grammars
     ~loc

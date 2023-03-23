@@ -1599,7 +1599,8 @@ module Poly_variant_with_sexp_list = struct
      | Sexplib0.Sexp.List (Sexplib0.Sexp.Atom atom__322_ :: sexp_args__325_) as
        _sexp__324_ ->
        (match atom__322_ with
-        | "A" as _tag__326_ -> `A (Sexplib0.Sexp_conv.list_map int_of_sexp sexp_args__325_)
+        | "A" as _tag__326_ ->
+          `A (Sexplib0.Sexp_conv.list_map int_of_sexp sexp_args__325_)
         | _ -> Sexplib0.Sexp_conv_error.no_variant_match ())
      | Sexplib0.Sexp.List (Sexplib0.Sexp.List _ :: _) as sexp__323_ ->
        Sexplib0.Sexp_conv_error.nested_list_invalid_poly_var error_source__327_ sexp__323_
