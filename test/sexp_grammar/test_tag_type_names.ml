@@ -112,7 +112,7 @@ module _ = struct
             : 'a. 'a Sexplib0.Sexp_grammar.t -> 'a t Sexplib0.Sexp_grammar.t
             =
             fun _'a_sexp_grammar ->
-              { untyped = Recursive ("t", [ _'a_sexp_grammar.untyped ]) }
+            { untyped = Recursive ("t", [ _'a_sexp_grammar.untyped ]) }
            in
            [ { tycon = "t"
              ; tyvars = [ "a" ]

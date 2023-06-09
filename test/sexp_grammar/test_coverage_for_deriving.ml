@@ -291,7 +291,7 @@ include struct
           : 'a. 'a Sexplib0.Sexp_grammar.t -> 'a tree Sexplib0.Sexp_grammar.t
           =
           fun _'a_sexp_grammar ->
-            { untyped = Recursive ("tree", [ _'a_sexp_grammar.untyped ]) }
+          { untyped = Recursive ("tree", [ _'a_sexp_grammar.untyped ]) }
          in
          [ { tycon = "tree"
            ; tyvars = [ "a" ]
