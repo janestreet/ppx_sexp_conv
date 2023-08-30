@@ -202,22 +202,22 @@ module Str_generate_of_sexp = struct
       --> pexp_let ~loc Nonrecursive bindings (pexp_tuple ~loc converted)
     ; Fresh_name.pattern fresh_sexp
       --> [%expr
-        Sexplib0.Sexp_conv_error.tuple_of_size_n_expected
-          [%e error_source ()]
-          [%e eint ~loc n]
-          [%e Fresh_name.expression fresh_sexp]]
+            Sexplib0.Sexp_conv_error.tuple_of_size_n_expected
+              [%e error_source ()]
+              [%e eint ~loc n]
+              [%e Fresh_name.expression fresh_sexp]]
     ]
 
   (* Generate code for matching included variant types *)
   and handle_variant_inh
-        ~error_source
-        ~typevars
-        ~fresh_atom
-        ~fresh__sexp
-        full_type
-        ~match_last
-        other_matches
-        inh
+    ~error_source
+    ~typevars
+    ~fresh_atom
+    ~fresh__sexp
+    full_type
+    ~match_last
+    other_matches
+    inh
     =
     let loc = inh.ptyp_loc in
     let func_expr = type_of_sexp ~error_source ~typevars ~internal:true inh in
@@ -236,7 +236,7 @@ module Str_generate_of_sexp = struct
               ~loc
               [%expr
                 ([%e Conversion.to_expression ~loc app]
-                 :> [%t replace_variables_by_underscores full_type])]
+                  :> [%t replace_variables_by_underscores full_type])]
               match_exc
       ]
     in
@@ -244,14 +244,14 @@ module Str_generate_of_sexp = struct
 
   (* Generate code for matching atomic variants *)
   and mk_variant_match_atom
-        ~error_source
-        ~typevars
-        ~fresh_atom
-        ~fresh__sexp
-        loc
-        full_type
-        rev_atoms_inhs
-        rev_structs
+    ~error_source
+    ~typevars
+    ~fresh_atom
+    ~fresh__sexp
+    loc
+    full_type
+    rev_atoms_inhs
+    rev_structs
     =
     let coll (other_matches, match_last) = function
       | `A (loc, cnstr) ->
@@ -280,16 +280,16 @@ module Str_generate_of_sexp = struct
 
   (* Match arguments of constructors (variants or sum types) *)
   and mk_cnstr_args_match
-        ~error_source
-        ~typevars
-        ~loc
-        ~is_variant
-        ~fresh__sexp
-        ~fresh__tag
-        ~fresh_sexp_args
-        cnstr
-        tps
-        row
+    ~error_source
+    ~typevars
+    ~loc
+    ~is_variant
+    ~fresh__sexp
+    ~fresh__tag
+    ~fresh_sexp_args
+    cnstr
+    tps
+    row
     =
     let cnstr vars_expr =
       if is_variant
@@ -351,15 +351,15 @@ module Str_generate_of_sexp = struct
 
   (* Generate code for matching structured variants *)
   and mk_variant_match_struct
-        ~error_source
-        ~typevars
-        ~fresh_atom
-        ~fresh__sexp
-        ~fresh_sexp_args
-        loc
-        full_type
-        rev_structs_inhs
-        rev_atoms
+    ~error_source
+    ~typevars
+    ~fresh_atom
+    ~fresh__sexp
+    ~fresh_sexp_args
+    loc
+    full_type
+    rev_structs_inhs
+    rev_atoms
     =
     let has_structs_ref = ref false in
     let coll (other_matches, match_last) = function
@@ -448,9 +448,9 @@ module Str_generate_of_sexp = struct
     ; ppat_alias
         ~loc
         [%pat?
-               Sexplib0.Sexp.List
-               (Sexplib0.Sexp.Atom [%p Fresh_name.pattern fresh_atom]
-                :: [%p maybe_sexp_args_patt])]
+          Sexplib0.Sexp.List
+            (Sexplib0.Sexp.Atom [%p Fresh_name.pattern fresh_atom]
+            :: [%p maybe_sexp_args_patt])]
         (Fresh_name.to_string_loc fresh__sexp)
       --> match_struct
     ; ppat_alias
@@ -458,14 +458,14 @@ module Str_generate_of_sexp = struct
         [%pat? Sexplib0.Sexp.List (Sexplib0.Sexp.List _ :: _)]
         (Fresh_name.to_string_loc fresh_sexp)
       --> [%expr
-        Sexplib0.Sexp_conv_error.nested_list_invalid_poly_var
-          [%e error_source ()]
-          [%e Fresh_name.expression fresh_sexp]]
+            Sexplib0.Sexp_conv_error.nested_list_invalid_poly_var
+              [%e error_source ()]
+              [%e Fresh_name.expression fresh_sexp]]
     ; ppat_alias ~loc [%pat? Sexplib0.Sexp.List []] (Fresh_name.to_string_loc fresh_sexp)
       --> [%expr
-        Sexplib0.Sexp_conv_error.empty_list_invalid_poly_var
-          [%e error_source ()]
-          [%e Fresh_name.expression fresh_sexp]]
+            Sexplib0.Sexp_conv_error.empty_list_invalid_poly_var
+              [%e error_source ()]
+              [%e Fresh_name.expression fresh_sexp]]
     ]
 
   (* Generate matching code for variants *)
@@ -483,11 +483,11 @@ module Str_generate_of_sexp = struct
           let call =
             [%expr
               ([%e
-                Conversion.to_expression
-                  ~loc
-                  (type_of_sexp ~error_source ~typevars ~internal:true inh)]
+                 Conversion.to_expression
+                   ~loc
+                   (type_of_sexp ~error_source ~typevars ~internal:true inh)]
                  [%e Fresh_name.expression fresh_sexp]
-               :> [%t replace_variables_by_underscores full_type])]
+                :> [%t replace_variables_by_underscores full_type])]
           in
           match row_fields with
           | [] -> call
@@ -516,11 +516,11 @@ module Str_generate_of_sexp = struct
       Conversion.of_lambda
         [ Fresh_name.pattern fresh_sexp
           --> [%expr
-            try [%e pexp_match ~loc (Fresh_name.expression fresh_sexp) top_match] with
-            | Sexplib0.Sexp_conv_error.No_variant_match ->
-              Sexplib0.Sexp_conv_error.no_matching_variant_found
-                [%e error_source ()]
-                [%e Fresh_name.expression fresh_sexp]]
+                try [%e pexp_match ~loc (Fresh_name.expression fresh_sexp) top_match] with
+                | Sexplib0.Sexp_conv_error.No_variant_match ->
+                  Sexplib0.Sexp_conv_error.no_matching_variant_found
+                    [%e error_source ()]
+                    [%e Fresh_name.expression fresh_sexp]]
         ])
     else Conversion.of_lambda top_match
 
@@ -787,13 +787,13 @@ module Str_generate_of_sexp = struct
   ;;
 
   let args_for_record_of_sexp
-        td
-        fields
-        ~loc
-        ~error_source
-        ~typevars
-        ~constructor
-        ~allow_extra_fields
+    td
+    fields
+    ~loc
+    ~error_source
+    ~typevars
+    ~constructor
+    ~allow_extra_fields
     =
     let caller_expr = error_source () in
     let allow_extra_fields_expr = ebool ~loc allow_extra_fields in
@@ -867,8 +867,8 @@ module Str_generate_of_sexp = struct
         ppat_alias
           ~loc
           [%pat?
-                 Sexplib0.Sexp.List
-                 (Sexplib0.Sexp.Atom [%p string_pat] :: [%p Fresh_name.pattern fresh_sexps])]
+            Sexplib0.Sexp.List
+              (Sexplib0.Sexp.Atom [%p string_pat] :: [%p Fresh_name.pattern fresh_sexps])]
           (Fresh_name.to_string_loc fresh_sexp)
         --> (pexp_apply
                ~loc
@@ -896,14 +896,14 @@ module Str_generate_of_sexp = struct
         ppat_alias
           ~loc
           [%pat?
-                 Sexplib0.Sexp.List
-                 (Sexplib0.Sexp.Atom
-                    [%p
-                      ppat_alias
-                        ~loc
-                        [%pat? [%p lcstr] | [%p str]]
-                        (Fresh_name.to_string_loc fresh__tag)]
-                  :: [%p Fresh_name.pattern fresh_sexp_args])]
+            Sexplib0.Sexp.List
+              (Sexplib0.Sexp.Atom
+                 [%p
+                   ppat_alias
+                     ~loc
+                     [%pat? [%p lcstr] | [%p str]]
+                     (Fresh_name.to_string_loc fresh__tag)]
+              :: [%p Fresh_name.pattern fresh_sexp_args])]
           (Fresh_name.to_string_loc fresh__sexp)
         --> mk_cnstr_args_match
               ~error_source
@@ -932,9 +932,9 @@ module Str_generate_of_sexp = struct
           [%pat? Sexplib0.Sexp.List (Sexplib0.Sexp.Atom ([%p lcstr] | [%p str]) :: _)]
           (Fresh_name.to_string_loc fresh_sexp)
         --> [%expr
-          Sexplib0.Sexp_conv_error.stag_no_args
-            [%e error_source ()]
-            [%e Fresh_name.expression fresh_sexp]]
+              Sexplib0.Sexp_conv_error.stag_no_args
+                [%e error_source ()]
+                [%e Fresh_name.expression fresh_sexp]]
       | { pcd_name = cnstr; pcd_args = Pcstr_tuple (_ :: _) | Pcstr_record _; _ } ->
         let lcstr = pstring ~loc (String.uncapitalize cnstr.txt) in
         let str = pstring ~loc cnstr.txt in
@@ -943,9 +943,9 @@ module Str_generate_of_sexp = struct
           [%pat? Sexplib0.Sexp.Atom ([%p lcstr] | [%p str])]
           (Fresh_name.to_string_loc fresh_sexp)
         --> [%expr
-          Sexplib0.Sexp_conv_error.stag_takes_args
-            [%e error_source ()]
-            [%e Fresh_name.expression fresh_sexp]])
+              Sexplib0.Sexp_conv_error.stag_takes_args
+                [%e error_source ()]
+                [%e Fresh_name.expression fresh_sexp]])
   ;;
 
   (* Generate matching code for sum types *)
@@ -958,22 +958,22 @@ module Str_generate_of_sexp = struct
           [%pat? Sexplib0.Sexp.List (Sexplib0.Sexp.List _ :: _)]
           (Fresh_name.to_string_loc fresh_sexp)
         --> [%expr
-          Sexplib0.Sexp_conv_error.nested_list_invalid_sum
-            [%e error_source ()]
-            [%e Fresh_name.expression fresh_sexp]]
+              Sexplib0.Sexp_conv_error.nested_list_invalid_sum
+                [%e error_source ()]
+                [%e Fresh_name.expression fresh_sexp]]
       ; ppat_alias
           ~loc
           [%pat? Sexplib0.Sexp.List []]
           (Fresh_name.to_string_loc fresh_sexp)
         --> [%expr
-          Sexplib0.Sexp_conv_error.empty_list_invalid_sum
-            [%e error_source ()]
-            [%e Fresh_name.expression fresh_sexp]]
+              Sexplib0.Sexp_conv_error.empty_list_invalid_sum
+                [%e error_source ()]
+                [%e Fresh_name.expression fresh_sexp]]
       ; Fresh_name.pattern fresh_sexp
         --> [%expr
-          Sexplib0.Sexp_conv_error.unexpected_stag
-            [%e error_source ()]
-            [%e Fresh_name.expression fresh_sexp]]
+              Sexplib0.Sexp_conv_error.unexpected_stag
+                [%e error_source ()]
+                [%e Fresh_name.expression fresh_sexp]]
       ]
       |> Lifted.return
     ]
@@ -1077,9 +1077,9 @@ module Str_generate_of_sexp = struct
           let no_variant_match_mc =
             [ [%pat? Sexplib0.Sexp_conv_error.No_variant_match]
               --> [%expr
-                Sexplib0.Sexp_conv_error.no_matching_variant_found
-                  [%e error_source ()]
-                  [%e Fresh_name.expression fresh_sexp]]
+                    Sexplib0.Sexp_conv_error.no_matching_variant_found
+                      [%e error_source ()]
+                      [%e Fresh_name.expression fresh_sexp]]
             ]
           in
           let internal_call =

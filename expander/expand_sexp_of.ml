@@ -117,22 +117,22 @@ module Str_generate_sexp_of = struct
            let name = Fresh_name.create "l" ~loc in
            ppat_variant ~loc cnstr (Some (Fresh_name.pattern name))
            --> [%expr
-             Sexplib0.Sexp.List
-               (Sexplib0.Sexp.Atom [%e estring ~loc cnstr]
-                :: Sexplib0.Sexp_conv.list_map
-                     [%e cnv_expr]
-                     [%e Fresh_name.expression name])]
+                 Sexplib0.Sexp.List
+                   (Sexplib0.Sexp.Atom [%e estring ~loc cnstr]
+                    :: Sexplib0.Sexp_conv.list_map
+                         [%e cnv_expr]
+                         [%e Fresh_name.expression name])]
          | _ -> Attrs.invalid_attribute ~loc Attrs.list_poly "_ list")
       | Rtag ({ txt = cnstr; _ }, _, [ [%type: [%t? tp] sexp_list] ]) ->
         let cnv_expr = Conversion.to_expression ~loc (sexp_of_type ~renaming tp) in
         let name = Fresh_name.create "l" ~loc in
         ppat_variant ~loc cnstr (Some (Fresh_name.pattern name))
         --> [%expr
-          Sexplib0.Sexp.List
-            (Sexplib0.Sexp.Atom [%e estring ~loc cnstr]
-             :: Sexplib0.Sexp_conv.list_map
-                  [%e cnv_expr]
-                  [%e Fresh_name.expression name])]
+              Sexplib0.Sexp.List
+                (Sexplib0.Sexp.Atom [%e estring ~loc cnstr]
+                 :: Sexplib0.Sexp_conv.list_map
+                      [%e cnv_expr]
+                      [%e Fresh_name.expression name])]
       | Rtag ({ txt = cnstr; _ }, false, [ tp ]) ->
         let cnstr_expr = [%expr Sexplib0.Sexp.Atom [%e estring ~loc cnstr]] in
         let fresh = Fresh_name.create "v" ~loc in
@@ -228,7 +228,7 @@ module Str_generate_sexp_of = struct
                       ]
                   in
                   ([%e Fresh_name.expression bnd] :: [%e Fresh_name.expression bnds]
-                   : _ Stdlib.List.t))]
+                    : _ Stdlib.List.t))]
             | Inspect_sexp is_empty_expr ->
               [%expr
                 let [%p Fresh_name.pattern arg] =
@@ -244,7 +244,7 @@ module Str_generate_sexp_of = struct
                       ]
                   in
                   ([%e Fresh_name.expression bnd] :: [%e Fresh_name.expression bnds]
-                   : _ Stdlib.List.t))]]
+                    : _ Stdlib.List.t))]]
         in
         [%e expr]]
     in
@@ -252,10 +252,10 @@ module Str_generate_sexp_of = struct
   ;;
 
   let disallow_type_variables_and_recursive_occurrences
-        ~types_being_defined
-        ~loc
-        ~attr_name
-        tp
+    ~types_being_defined
+    ~loc
+    ~attr_name
+    tp
     =
     let disallow_variables =
       let iter =
@@ -310,16 +310,16 @@ module Str_generate_sexp_of = struct
   ;;
 
   let sexp_of_default_field
-        ~types_being_defined
-        how
-        ~renaming
-        ~bnds
-        patt
-        expr
-        name
-        tp
-        ?sexp_of
-        default
+    ~types_being_defined
+    how
+    ~renaming
+    ~bnds
+    patt
+    expr
+    name
+    tp
+    ?sexp_of
+    default
     =
     let is_empty =
       let inspect_value equality_f =
@@ -329,23 +329,23 @@ module Str_generate_sexp_of = struct
       | Sexp ->
         Inspect_sexp
           (fun ~cnv_expr loc sexp_expr ->
-             [%expr Sexplib0.Sexp_conv.( = ) ([%e cnv_expr] [%e default]) [%e sexp_expr]])
+            [%expr Sexplib0.Sexp_conv.( = ) ([%e cnv_expr] [%e default]) [%e sexp_expr]])
         |> Lifted.return
       | No_arg ->
         inspect_value (fun loc ->
           [%expr
             Sexplib0.Sexp_conv.( = ) [@ocaml.ppwarning
-              "[@sexp_drop_default] is deprecated: please use \
-               one of:\n\
-               - [@sexp_drop_default f] and give an explicit \
-               equality function ([f = Poly.(=)] corresponds to \
-               the old behavior)\n\
-               - [@sexp_drop_default.compare] if the type \
-               supports [%compare]\n\
-               - [@sexp_drop_default.equal] if the type \
-               supports [%equal]\n\
-               - [@sexp_drop_default.sexp] if you want to \
-               compare the sexp representations\n"]])
+                                       "[@sexp_drop_default] is deprecated: please use \
+                                        one of:\n\
+                                        - [@sexp_drop_default f] and give an explicit \
+                                        equality function ([f = Poly.(=)] corresponds to \
+                                        the old behavior)\n\
+                                        - [@sexp_drop_default.compare] if the type \
+                                        supports [%compare]\n\
+                                        - [@sexp_drop_default.equal] if the type \
+                                        supports [%equal]\n\
+                                        - [@sexp_drop_default.sexp] if you want to \
+                                        compare the sexp representations\n"]])
         |> Lifted.return
       | Func lifted -> lifted >>| fun f -> inspect_value (fun _ -> f)
       | Compare ->
@@ -375,18 +375,18 @@ module Str_generate_sexp_of = struct
     let list_empty_expr =
       Inspect_value
         (fun loc lst ->
-           [%expr
-             match [%e lst] with
-             | [] -> true
-             | _ -> false])
+          [%expr
+            match [%e lst] with
+            | [] -> true
+            | _ -> false])
     in
     let array_empty_expr =
       Inspect_value
         (fun loc arr ->
-           [%expr
-             match [%e arr] with
-             | [||] -> true
-             | _ -> false])
+          [%expr
+            match [%e arr] with
+            | [||] -> true
+            | _ -> false])
     in
     let coll lifted ld =
       lifted
@@ -416,7 +416,7 @@ module Str_generate_sexp_of = struct
                     ]
                 in
                 ([%e Fresh_name.expression bnd] :: [%e Fresh_name.expression bnds]
-                 : _ Stdlib.List.t)
+                  : _ Stdlib.List.t)
             in
             [%e expr]]
         in
@@ -433,7 +433,7 @@ module Str_generate_sexp_of = struct
                   Sexplib0.Sexp.List [ Sexplib0.Sexp.Atom [%e estring ~loc name] ]
                 in
                 ([%e Fresh_name.expression bnd] :: [%e Fresh_name.expression bnds]
-                 : _ Stdlib.List.t))
+                  : _ Stdlib.List.t))
               else [%e Fresh_name.expression bnds]
             in
             [%e expr]]
@@ -508,12 +508,12 @@ module Str_generate_sexp_of = struct
                  ; [%e Fresh_name.expression arg]
                  ]
                :: [%e Fresh_name.expression bnds]
-               : _ Stdlib.List.t)]
+                : _ Stdlib.List.t)]
         in
         ( patt
         , [%expr
-          let [%p Fresh_name.pattern bnds] = [%e bnds_expr] in
-          [%e expr]] )
+            let [%p Fresh_name.pattern bnds] = [%e bnds_expr] in
+            [%e expr]] )
         |> Lifted.return
       | Specific Keep ->
         let tp = ld.pld_type in
@@ -529,12 +529,12 @@ module Str_generate_sexp_of = struct
                ; [%e Fresh_name.expression arg]
                ]
              :: [%e Fresh_name.expression bnds]
-             : _ Stdlib.List.t)]
+              : _ Stdlib.List.t)]
         in
         ( patt
         , [%expr
-          let [%p Fresh_name.pattern bnds] = [%e bnds_expr] in
-          [%e expr]] )
+            let [%p Fresh_name.pattern bnds] = [%e bnds_expr] in
+            [%e expr]] )
         |> Lifted.return
     in
     let init_expr = wrap_expr (Fresh_name.expression bnds) in
@@ -542,21 +542,21 @@ module Str_generate_sexp_of = struct
     >>| fun (patt, expr) ->
     ( ppat_record ~loc patt Closed
     , [%expr
-      let [%p Fresh_name.pattern bnds] = ([] : _ Stdlib.List.t) in
-      [%e expr]] )
+        let [%p Fresh_name.pattern bnds] = ([] : _ Stdlib.List.t) in
+        [%e expr]] )
   ;;
 
   (* Conversion of sum types *)
 
   let branch_sum
-        row
-        inline_attr
-        ~types_being_defined
-        renaming
-        ~loc
-        constr_lid
-        constr_str
-        args
+    row
+    inline_attr
+    ~types_being_defined
+    renaming
+    ~loc
+    constr_lid
+    constr_str
+    args
     =
     match args with
     | Pcstr_record lds ->
@@ -583,22 +583,22 @@ module Str_generate_sexp_of = struct
                let name = Fresh_name.create "l" ~loc in
                ppat_construct ~loc constr_lid (Some (Fresh_name.pattern name))
                --> [%expr
-                 Sexplib0.Sexp.List
-                   (Sexplib0.Sexp.Atom [%e constr_str]
-                    :: Sexplib0.Sexp_conv.list_map
-                         [%e cnv_expr]
-                         [%e Fresh_name.expression name])]
+                     Sexplib0.Sexp.List
+                       (Sexplib0.Sexp.Atom [%e constr_str]
+                        :: Sexplib0.Sexp_conv.list_map
+                             [%e cnv_expr]
+                             [%e Fresh_name.expression name])]
              | _ -> Attrs.invalid_attribute ~loc inline_attr "_ list")
           | [ [%type: [%t? tp] sexp_list] ] ->
             let cnv_expr = Conversion.to_expression ~loc (sexp_of_type ~renaming tp) in
             let name = Fresh_name.create "l" ~loc in
             ppat_construct ~loc constr_lid (Some (Fresh_name.pattern name))
             --> [%expr
-              Sexplib0.Sexp.List
-                (Sexplib0.Sexp.Atom [%e constr_str]
-                 :: Sexplib0.Sexp_conv.list_map
-                      [%e cnv_expr]
-                      [%e Fresh_name.expression name])]
+                  Sexplib0.Sexp.List
+                    (Sexplib0.Sexp.Atom [%e constr_str]
+                     :: Sexplib0.Sexp_conv.list_map
+                          [%e cnv_expr]
+                          [%e Fresh_name.expression name])]
           | _ ->
             let sexp_of_args = List.map ~f:(sexp_of_type ~renaming) args in
             let cnstr_expr = [%expr Sexplib0.Sexp.Atom [%e constr_str]] in

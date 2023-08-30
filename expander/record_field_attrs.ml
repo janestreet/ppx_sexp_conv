@@ -22,24 +22,24 @@ let create ~loc specific_getters ld ~if_no_attribute =
   let generic_getters =
     [ get_attribute omit_nil ~f:(fun () -> Omit_nil)
     ; (fun ld ->
-         match ld.pld_type with
-         | ty when Option.is_some (Attribute.get bool ld) ->
-           (match ty with
-            | [%type: bool] -> Some (Sexp_bool, "[@sexp.bool]")
-            | _ -> invalid_attribute ~loc bool "bool")
-         | ty when Option.is_some (Attribute.get option ld) ->
-           (match ty with
-            | [%type: [%t? ty] option] -> Some (Sexp_option ty, "[@sexp.option]")
-            | _ -> invalid_attribute ~loc option "_ option")
-         | ty when Option.is_some (Attribute.get list ld) ->
-           (match ty with
-            | [%type: [%t? ty] list] -> Some (Sexp_list ty, "[@sexp.list]")
-            | _ -> invalid_attribute ~loc list "_ list")
-         | ty when Option.is_some (Attribute.get array ld) ->
-           (match ty with
-            | [%type: [%t? ty] array] -> Some (Sexp_array ty, "[@sexp.array]")
-            | _ -> invalid_attribute ~loc array "_ array")
-         | _ -> None)
+        match ld.pld_type with
+        | ty when Option.is_some (Attribute.get bool ld) ->
+          (match ty with
+           | [%type: bool] -> Some (Sexp_bool, "[@sexp.bool]")
+           | _ -> invalid_attribute ~loc bool "bool")
+        | ty when Option.is_some (Attribute.get option ld) ->
+          (match ty with
+           | [%type: [%t? ty] option] -> Some (Sexp_option ty, "[@sexp.option]")
+           | _ -> invalid_attribute ~loc option "_ option")
+        | ty when Option.is_some (Attribute.get list ld) ->
+          (match ty with
+           | [%type: [%t? ty] list] -> Some (Sexp_list ty, "[@sexp.list]")
+           | _ -> invalid_attribute ~loc list "_ list")
+        | ty when Option.is_some (Attribute.get array ld) ->
+          (match ty with
+           | [%type: [%t? ty] array] -> Some (Sexp_array ty, "[@sexp.array]")
+           | _ -> invalid_attribute ~loc array "_ array")
+        | _ -> None)
     ]
   in
   let getters =

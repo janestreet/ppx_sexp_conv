@@ -7,11 +7,11 @@ let _ = fun (_ : ('a, _, 'b) t) -> ()
 let _ = fun (_ : u) -> ()
 
 let t_sexp_grammar :
-  'a 'b__001_ 'b.
-  'a Sexplib0.Sexp_grammar.t
-  -> 'b__001_ Sexplib0.Sexp_grammar.t
-  -> 'b Sexplib0.Sexp_grammar.t
-  -> ('a, 'b__001_, 'b) t Sexplib0.Sexp_grammar.t
+      'a 'b__001_ 'b.
+      'a Sexplib0.Sexp_grammar.t
+      -> 'b__001_ Sexplib0.Sexp_grammar.t
+      -> 'b Sexplib0.Sexp_grammar.t
+      -> ('a, 'b__001_, 'b) t Sexplib0.Sexp_grammar.t
   =
   fun _'a_sexp_grammar _'b__001__sexp_grammar _'b_sexp_grammar ->
   { untyped =

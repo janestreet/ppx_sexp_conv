@@ -21,8 +21,8 @@ let drop_default =
     Attribute.Context.label_declaration
     Ast_pattern.(pstr (alt_option (pstr_eval __ nil ^:: nil) nil))
     (function
-      | None -> None
-      | Some x -> Some { to_lift = x })
+     | None -> None
+     | Some x -> Some { to_lift = x })
 ;;
 
 let drop_default_equal =
@@ -217,9 +217,9 @@ let fail_if_allow_extra_field_td ~loc x =
     match x.ptype_kind with
     | Ptype_variant cds
       when List.exists cds ~f:(fun cd ->
-        match cd.pcd_args with
-        | Pcstr_record _ -> true
-        | _ -> false) ->
+             match cd.pcd_args with
+             | Pcstr_record _ -> true
+             | _ -> false) ->
       Location.raise_errorf
         ~loc
         "ppx_sexp_conv: [@@@@allow_extra_fields] only works on records. For inline \

@@ -81,13 +81,13 @@ let tvars_of_core_type : core_type -> string list =
 ;;
 
 let constrained_function_binding
-      (* placing a suitably polymorphic or rigid type constraint on the pattern or body *)
-      (loc : Location.t)
-      (td : type_declaration)
-      (typ : core_type)
-      ~(tps : string loc list)
-      ~(func_name : string)
-      (body : expression)
+  (* placing a suitably polymorphic or rigid type constraint on the pattern or body *)
+    (loc : Location.t)
+  (td : type_declaration)
+  (typ : core_type)
+  ~(tps : string loc list)
+  ~(func_name : string)
+  (body : expression)
   =
   let vars = tvars_of_core_type typ in
   let has_vars =
@@ -198,16 +198,16 @@ let rec is_value_expression expr =
 
 let really_recursive_respecting_opaque rec_flag tds =
   (object
-    inherit type_is_recursive rec_flag tds as super
+     inherit type_is_recursive rec_flag tds as super
 
-    method! core_type ctype =
-      match ctype with
-      | _ when Option.is_some (Attribute.get ~mark_as_seen:false Attrs.opaque ctype) ->
-        ()
-      | [%type: [%t? _] sexp_opaque] -> ()
-      | _ -> super#core_type ctype
+     method! core_type ctype =
+       match ctype with
+       | _ when Option.is_some (Attribute.get ~mark_as_seen:false Attrs.opaque ctype) ->
+         ()
+       | [%type: [%t? _] sexp_opaque] -> ()
+       | _ -> super#core_type ctype
   end)
-  #go
+    #go
     ()
 ;;
 

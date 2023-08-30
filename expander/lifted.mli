@@ -15,8 +15,6 @@ include Monad.S with type 'a t := 'a t
     [ty]. Uses [loc] for generated code. *)
 val create : loc:location -> prefix:string -> ty:core_type -> expression -> expression t
 
-
 (** Uses [let] to bind all lifted user expressions, with the contained expression as the
     body. Should be called in whatever scope the user should be able to refer to. *)
 val let_bind_user_expressions : expression t -> loc:location -> expression
-

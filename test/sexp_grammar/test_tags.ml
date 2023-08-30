@@ -27,9 +27,9 @@ module _ = struct
       (module struct
         type nonrec t =
           (unit
-           [@tag
-             "key1" = Atom "value1";
-             "key2" = Atom "value2"])
+          [@tag
+            "key1" = Atom "value1";
+            "key2" = Atom "value2"])
         [@@deriving sexp_grammar]
       end);
     [%expect
@@ -54,9 +54,9 @@ module _ = struct
 
         type nonrec t =
           (unit
-           [@tag
-             k = v;
-             kf () = vf ()])
+          [@tag
+            k = v;
+            kf () = vf ()])
         [@@deriving sexp_grammar]
       end);
     [%expect
@@ -113,7 +113,7 @@ module _ = struct
       (module struct
         type t =
           (unit
-           [@tags List.concat [ [ "x", Sexp.Atom "X" ]; [ "y", Atom "Y"; "z", Atom "Z" ] ]])
+          [@tags List.concat [ [ "x", Sexp.Atom "X" ]; [ "y", Atom "Y"; "z", Atom "Z" ] ]])
         [@@deriving sexp_grammar]
       end);
     [%expect
@@ -135,9 +135,9 @@ module _ = struct
       (module struct
         type t =
           (unit
-           [@tags
-             ("w", Sexp.Atom "W")
-             :: List.concat [ [ "x", Sexp.Atom "X" ]; [ "y", Atom "Y"; "z", Atom "Z" ] ]])
+          [@tags
+            ("w", Sexp.Atom "W")
+            :: List.concat [ [ "x", Sexp.Atom "X" ]; [ "y", Atom "Y"; "z", Atom "Z" ] ]])
         [@@deriving sexp_grammar]
       end);
     [%expect
@@ -237,7 +237,7 @@ module _ = struct
           ([ `Clause0 of (unit[@tag "k0" = Atom "v0"]) (** first clause *)
            | `Clause1 [@tag "k1" = Atom "v1"] (** second clause *)
            ]
-           [@tag "kouter" = Atom "vouter"])
+          [@tag "kouter" = Atom "vouter"])
         [@@deriving sexp_grammar ~tags_of_doc_comments]
         (** IGNORED *)
       end);

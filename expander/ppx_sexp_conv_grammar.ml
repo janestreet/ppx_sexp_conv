@@ -509,8 +509,8 @@ let grammar_needs_lazy_wrapper expr =
 
 let lazy_grammar ~loc td expr =
   if List.is_empty td.ptype_params
-  (* polymorphic types generate functions, so the body does not need a [lazy] wrapper *)
-  && grammar_needs_lazy_wrapper expr
+     (* polymorphic types generate functions, so the body does not need a [lazy] wrapper *)
+     && grammar_needs_lazy_wrapper expr
   then [%expr Lazy (lazy [%e expr])]
   else expr
 ;;

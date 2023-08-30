@@ -109,10 +109,10 @@ module _ = struct
       let (grammars__002_ : Sexplib0.Sexp_grammar.defn Stdlib.List.t Stdlib.Lazy.t) =
         lazy
           (let t_sexp_grammar
-            : 'a. 'a Sexplib0.Sexp_grammar.t -> 'a t Sexplib0.Sexp_grammar.t
-            =
-            fun _'a_sexp_grammar ->
-            { untyped = Recursive ("t", [ _'a_sexp_grammar.untyped ]) }
+                 : 'a. 'a Sexplib0.Sexp_grammar.t -> 'a t Sexplib0.Sexp_grammar.t
+             =
+             fun _'a_sexp_grammar ->
+             { untyped = Recursive ("t", [ _'a_sexp_grammar.untyped ]) }
            in
            [ { tycon = "t"
              ; tyvars = [ "a" ]
