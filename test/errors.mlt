@@ -110,12 +110,14 @@ Error: Attribute `sexp.opaque' was not used.
        the
        context of a label declaration.
        Did you put it at the wrong level?
+
 Line _, characters _-_:
 Error: Attribute `sexp.opaque' was not used.
        Hint: `sexp.opaque' is available for core types but is used here in
        the
        context of a label declaration.
        Did you put it at the wrong level?
+
 Line _, characters _-_:
 Error: Attribute `sexp.opaque' was not used.
        Hint: `sexp.opaque' is available for core types but is used here in
@@ -132,8 +134,10 @@ type t = { x : unit [@sexp.option] } [@@deriving sexp_grammar]
   {|
 Line _, characters _-_:
 Error: ppx_sexp_conv: [@sexp.option] is only allowed on type [_ option].
+
 Line _, characters _-_:
 Error: ppx_sexp_conv: [@sexp.option] is only allowed on type [_ option].
+
 Line _, characters _-_:
 Error: ppx_sexp_conv: [@sexp.option] is only allowed on type [_ option].
 |}]
@@ -146,8 +150,10 @@ type t = { x : unit [@sexp.list] } [@@deriving sexp_grammar]
   {|
 Line _, characters _-_:
 Error: ppx_sexp_conv: [@sexp.list] is only allowed on type [_ list].
+
 Line _, characters _-_:
 Error: ppx_sexp_conv: [@sexp.list] is only allowed on type [_ list].
+
 Line _, characters _-_:
 Error: ppx_sexp_conv: [@sexp.list] is only allowed on type [_ list].
 |}]
@@ -160,8 +166,10 @@ type t = { x : unit [@sexp.array] } [@@deriving sexp_grammar]
   {|
 Line _, characters _-_:
 Error: ppx_sexp_conv: [@sexp.array] is only allowed on type [_ array].
+
 Line _, characters _-_:
 Error: ppx_sexp_conv: [@sexp.array] is only allowed on type [_ array].
+
 Line _, characters _-_:
 Error: ppx_sexp_conv: [@sexp.array] is only allowed on type [_ array].
 |}]
@@ -174,8 +182,10 @@ type t = { x : unit [@sexp.bool] } [@@deriving sexp_grammar]
   {|
 Line _, characters _-_:
 Error: ppx_sexp_conv: [@sexp.bool] is only allowed on type [bool].
+
 Line _, characters _-_:
 Error: ppx_sexp_conv: [@sexp.bool] is only allowed on type [bool].
+
 Line _, characters _-_:
 Error: ppx_sexp_conv: [@sexp.bool] is only allowed on type [bool].
 |}]
@@ -188,8 +198,10 @@ type t = A of unit [@sexp.list] [@@deriving sexp_grammar]
   {|
 Line _, characters _-_:
 Error: ppx_sexp_conv: [@sexp.list] is only allowed on type [_ list].
+
 Line _, characters _-_:
 Error: ppx_sexp_conv: [@sexp.list] is only allowed on type [_ list].
+
 Line _, characters _-_:
 Error: ppx_sexp_conv: [@sexp.list] is only allowed on type [_ list].
 |}]
@@ -202,8 +214,10 @@ type t = [ `A of unit [@sexp.list] ] [@@deriving sexp_grammar]
   {|
 Line _, characters _-_:
 Error: ppx_sexp_conv: [@sexp.list] is only allowed on type [_ list].
+
 Line _, characters _-_:
 Error: ppx_sexp_conv: [@sexp.list] is only allowed on type [_ list].
+
 Line _, characters _-_:
 Error: ppx_sexp_conv: [@sexp.list] is only allowed on type [_ list].
 |}]
