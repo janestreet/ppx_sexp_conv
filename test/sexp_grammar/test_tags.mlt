@@ -7,7 +7,8 @@ module No_keys = struct
   type t = (unit[@sexp_grammar.tag]) [@@deriving sexp_grammar]
 end
 
-[%%expect {|
+[%%expect
+  {|
 Line _, characters _-_:
 Error: :: expected
 |}]

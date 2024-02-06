@@ -5,9 +5,10 @@ open Base
 
 type t = [ `A of int & string ] [@@deriving sexp]
 
-[%%expect {|
+[%%expect
+  {|
 Line _, characters _-_:
-Error: split_row_field/&
+Error: unsupported: polymorphic variant intersection type
 |}]
 
 type t = [ `A of int & string ] [@@deriving sexp_grammar]
@@ -62,7 +63,8 @@ Error: Type unsupported for ppx [of_sexp] conversion
 
 type 'a t = [< `A ] as 'a [@@deriving sexp_grammar]
 
-[%%expect {|
+[%%expect
+  {|
 Line _, characters _-_:
 Error: sexp_grammar: type aliases are unsupported
 |}]
@@ -89,7 +91,8 @@ type a = [ `A ] [@@deriving sexp];;
 
 let f = [%sexp_of: [< a ]]
 
-[%%expect {|
+[%%expect
+  {|
 val f : [< a ] -> Sexp.t = <fun>
 |}]
 
@@ -103,8 +106,10 @@ Error: Type unsupported for ppx [of_sexp] conversion
 
 let f = [%of_sexp: [ | a ]]
 
-[%%expect {|
+[%%expect
+  {|
 val f : Sexp.t -> a = <fun>
-|}];;
+|}]
+;;
 
 #verbose false

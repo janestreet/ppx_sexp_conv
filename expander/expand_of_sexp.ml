@@ -133,8 +133,9 @@ module Str_generate_of_sexp = struct
       let iinh = `I inh in
       atoms, structs, iinh :: ainhs, iinh :: sinhs
     | Rtag (_, true, [ _ ]) | Rtag (_, _, _ :: _ :: _) ->
-      Location.raise_errorf ~loc "split_row_field/&"
-    | Rtag (_, false, []) -> assert false
+      Location.raise_errorf ~loc "unsupported: polymorphic variant intersection type"
+    | Rtag (_, false, []) ->
+      Location.raise_errorf ~loc "unsupported: polymorphic variant empty type"
   ;;
 
   let type_constr_of_sexp ?(internal = false) id args =

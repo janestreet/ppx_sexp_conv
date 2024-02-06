@@ -146,16 +146,18 @@ module Str_generate_sexp_of = struct
         ppat_alias ~loc (ppat_type ~loc id) (Fresh_name.to_string_loc name)
         --> sexp_of_type_constr ~loc id [ Fresh_name.expression name ]
       | Rtag (_, true, [ _ ]) | Rtag (_, _, _ :: _ :: _) ->
-        Location.raise_errorf ~loc "unsupported: sexp_of_variant/Rtag/&"
+        Location.raise_errorf ~loc "unsupported: polymorphic variant intersection type"
       | Rinherit ({ ptyp_desc = Ptyp_constr (id, _ :: _); _ } as typ) ->
         let call = Conversion.to_expression ~loc (sexp_of_type ~renaming typ) in
         let name = Fresh_name.create "v" ~loc in
         ppat_alias ~loc (ppat_type ~loc id) (Fresh_name.to_string_loc name)
         --> [%expr [%e call] [%e Fresh_name.expression name]]
       | Rinherit _ ->
-        Location.raise_errorf ~loc "unsupported: sexp_of_variant/Rinherit/non-id"
-      (* impossible? *)
-      | Rtag (_, false, []) -> assert false
+        Location.raise_errorf
+          ~loc
+          "unsupported: polymorphic variant with invalid (non-identifier) inherited type"
+      | Rtag (_, false, []) ->
+        Location.raise_errorf ~loc "unsupported: polymorphic variant empty type"
     in
     Conversion.of_lambda (List.map ~f:item row_fields)
 

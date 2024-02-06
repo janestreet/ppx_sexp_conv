@@ -16,21 +16,24 @@ Exception:
 
 let _ = [%sexp_of: 'a]
 
-[%%expect {|
+[%%expect
+  {|
 Line _, characters _-_:
 Error: ppx_sexp_conv: unbound type variable 'a
 |}]
 
 let _ = [%of_sexp: 'a]
 
-[%%expect {|
+[%%expect
+  {|
 Line _, characters _-_:
 Error: ppx_sexp_conv: unbound type variable 'a
 |}]
 
 let _ = [%sexp (() : 'a)]
 
-[%%expect {|
+[%%expect
+  {|
 Line _, characters _-_:
 Error: ppx_sexp_conv: unbound type variable 'a
 |}]
