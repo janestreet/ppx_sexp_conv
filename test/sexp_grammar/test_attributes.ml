@@ -52,7 +52,8 @@ let%expect_test "[@sexp_grammar.custom] in [@@deriving]" =
             (clause_kind Atom_clause)))
           (No_tag (
             (name B) (clause_kind (List_clause (args (Cons String Empty))))))))))
-      (Cons Integer Empty))) |}]
+      (Cons Integer Empty)))
+    |}]
 ;;
 
 let%expect_test "[@sexp_grammar.custom] in [%sexp_grammar]" =
@@ -76,7 +77,8 @@ let%expect_test "[@sexp_grammar.custom] in [%sexp_grammar]" =
             (clause_kind Atom_clause)))
           (No_tag (
             (name B) (clause_kind (List_clause (args (Cons String Empty))))))))))
-      (Cons Integer Empty))) |}]
+      (Cons Integer Empty)))
+    |}]
 ;;
 
 let%expect_test "[@sexp_grammar.any] in [@@deriving]" =

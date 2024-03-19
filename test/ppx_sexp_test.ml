@@ -68,7 +68,8 @@ module Records = struct
       (raised (
         Of_sexp_error
         "ppx_sexp_test.ml.Records.t_of_sexp: record conversion: only pairs expected, their first element must be an atom"
-        (invalid_sexp ((a) (b ()))))) |}]
+        (invalid_sexp ((a) (b ())))))
+      |}]
   ;;
 
   let%expect_test _ =
@@ -79,7 +80,8 @@ module Records = struct
       (raised (
         Of_sexp_error
         "ppx_sexp_test.ml.Records.t_of_sexp: duplicate fields: a"
-        (invalid_sexp ((a 1) (a))))) |}]
+        (invalid_sexp ((a 1) (a)))))
+      |}]
   ;;
 
   let%expect_test _ =
@@ -90,7 +92,8 @@ module Records = struct
       (raised (
         Of_sexp_error
         "ppx_sexp_test.ml.Records.t_of_sexp: record conversion: only pairs expected, their first element must be an atom"
-        (invalid_sexp (a 3 4)))) |}]
+        (invalid_sexp (a 3 4))))
+      |}]
   ;;
 
   let%expect_test _ =
@@ -101,7 +104,8 @@ module Records = struct
       (raised (
         Of_sexp_error
         "ppx_sexp_test.ml.Records.t_of_sexp: extra fields: c"
-        (invalid_sexp ((c 3))))) |}]
+        (invalid_sexp ((c 3)))))
+      |}]
   ;;
 end
 
@@ -741,7 +745,8 @@ module Boolean = struct
       {|
       (Of_sexp_error
        "ppx_sexp_test.ml.Boolean.t_allow_extra_fields_of_sexp: record conversion: a [sexp.bool] field was given a payload."
-       (invalid_sexp ((no_arg true)))) |}]
+       (invalid_sexp ((no_arg true))))
+      |}]
   ;;
 end
 
@@ -856,7 +861,8 @@ module Allow_extra_fields = struct
         {|
         (Of_sexp_error
          "ppx_sexp_test.ml.Allow_extra_fields.M1.t2_of_sexp: duplicate fields: a"
-         (invalid_sexp ((a 1) (a)))) |}]
+         (invalid_sexp ((a 1) (a))))
+        |}]
     ;;
   end
 

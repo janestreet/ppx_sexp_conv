@@ -52,45 +52,49 @@ module Str_generate_sexp_of = struct
   (* Conversion of types *)
   let rec sexp_of_type ~renaming typ : Conversion.t =
     let loc = { typ.ptyp_loc with loc_ghost = true } in
-    match typ with
-    | _ when Option.is_some (Attribute.get Attrs.opaque typ) ->
-      Conversion.of_reference_exn [%expr Sexplib0.Sexp_conv.sexp_of_opaque]
-    | [%type: _] ->
-      Conversion.of_lambda [ ppat_any ~loc --> [%expr Sexplib0.Sexp.Atom "_"] ]
-    | [%type: [%t? _] sexp_opaque] ->
-      Conversion.of_reference_exn [%expr Sexplib0.Sexp_conv.sexp_of_opaque]
-    | { ptyp_desc = Ptyp_tuple tp; _ } ->
-      Conversion.of_lambda [ sexp_of_tuple ~renaming (loc, tp) ]
-    | { ptyp_desc = Ptyp_var parm; _ } ->
-      (match Renaming.binding_kind renaming parm ~loc with
-       | Universally_bound fresh ->
-         Conversion.of_reference_exn (Fresh_name.expression fresh)
-       | Existentially_bound -> sexp_of_type ~renaming [%type: _])
-    | { ptyp_desc = Ptyp_constr (id, args); _ } ->
-      Conversion.of_reference_exn
-        (sexp_of_type_constr
-           ~loc
-           id
-           (List.map args ~f:(fun tp ->
-              Conversion.to_expression ~loc (sexp_of_type ~renaming tp))))
-    | { ptyp_desc = Ptyp_arrow (_, _, _); _ } ->
-      Conversion.of_lambda
-        [ ppat_any ~loc
-          --> [%expr Sexplib0.Sexp_conv.sexp_of_fun Sexplib0.Sexp_conv.ignore]
-        ]
-    | { ptyp_desc = Ptyp_variant (row_fields, Closed, _); _ } ->
-      sexp_of_variant ~renaming (loc, row_fields)
-    | { ptyp_desc = Ptyp_poly (parms, poly_tp); _ } ->
-      sexp_of_poly ~renaming parms poly_tp
-    | { ptyp_desc = Ptyp_variant (_, Open, _); _ }
-    | { ptyp_desc = Ptyp_object (_, _); _ }
-    | { ptyp_desc = Ptyp_class (_, _); _ }
-    | { ptyp_desc = Ptyp_alias (_, _); _ }
-    | { ptyp_desc = Ptyp_package _; _ }
-    | { ptyp_desc = Ptyp_extension _; _ } ->
-      Location.raise_errorf ~loc "Type unsupported for ppx [sexp_of] conversion"
+    match Ppxlib_jane.Jane_syntax.Core_type.of_ast typ with
+    | Some (Jtyp_tuple alist, (_ : attributes)) ->
+      Conversion.of_lambda [ sexp_of_labeled_tuple ~renaming ~loc alist ]
+    | Some (Jtyp_layout _, _) | None ->
+      (match typ with
+       | _ when Option.is_some (Attribute.get Attrs.opaque typ) ->
+         Conversion.of_reference_exn [%expr Sexplib0.Sexp_conv.sexp_of_opaque]
+       | [%type: _] ->
+         Conversion.of_lambda [ ppat_any ~loc --> [%expr Sexplib0.Sexp.Atom "_"] ]
+       | [%type: [%t? _] sexp_opaque] ->
+         Conversion.of_reference_exn [%expr Sexplib0.Sexp_conv.sexp_of_opaque]
+       | { ptyp_desc = Ptyp_tuple tp; _ } ->
+         Conversion.of_lambda [ sexp_of_tuple ~renaming (loc, tp) ]
+       | { ptyp_desc = Ptyp_var parm; _ } ->
+         (match Renaming.binding_kind renaming parm ~loc with
+          | Universally_bound fresh ->
+            Conversion.of_reference_exn (Fresh_name.expression fresh)
+          | Existentially_bound -> sexp_of_type ~renaming [%type: _])
+       | { ptyp_desc = Ptyp_constr (id, args); _ } ->
+         Conversion.of_reference_exn
+           (sexp_of_type_constr
+              ~loc
+              id
+              (List.map args ~f:(fun tp ->
+                 Conversion.to_expression ~loc (sexp_of_type ~renaming tp))))
+       | { ptyp_desc = Ptyp_arrow (_, _, _); _ } ->
+         Conversion.of_lambda
+           [ ppat_any ~loc
+             --> [%expr Sexplib0.Sexp_conv.sexp_of_fun Sexplib0.Sexp_conv.ignore]
+           ]
+       | { ptyp_desc = Ptyp_variant (row_fields, Closed, _); _ } ->
+         sexp_of_variant ~renaming (loc, row_fields)
+       | { ptyp_desc = Ptyp_poly (parms, poly_tp); _ } ->
+         sexp_of_poly ~renaming parms poly_tp
+       | { ptyp_desc = Ptyp_variant (_, Open, _); _ }
+       | { ptyp_desc = Ptyp_object (_, _); _ }
+       | { ptyp_desc = Ptyp_class (_, _); _ }
+       | { ptyp_desc = Ptyp_alias (_, _); _ }
+       | { ptyp_desc = Ptyp_package _; _ }
+       | { ptyp_desc = Ptyp_extension _; _ } ->
+         Location.raise_errorf ~loc "Type unsupported for ppx [sexp_of] conversion")
 
-  (* Conversion of tuples *)
+  (* Conversion of (unlabeled) tuples *)
   and sexp_of_tuple ~renaming (loc, tps) =
     let fps = List.map ~f:(fun tp -> sexp_of_type ~renaming tp) tps in
     let ({ bindings; arguments; converted } : Conversion.Apply_all.t) =
@@ -99,6 +103,33 @@ module Str_generate_sexp_of = struct
     let in_expr = [%expr Sexplib0.Sexp.List [%e elist ~loc converted]] in
     let expr = pexp_let ~loc Nonrecursive bindings in_expr in
     ppat_tuple ~loc arguments --> expr
+
+  (* Conversion of labeled tuples *)
+  and sexp_of_labeled_tuple ~renaming ~loc alist =
+    assert (Labeled_tuple.is_valid alist);
+    let ({ bindings; arguments; converted } : Conversion.Apply_all.t) =
+      List.map alist ~f:(fun (_, core_type) -> sexp_of_type ~renaming core_type)
+      |> Conversion.apply_all ~loc
+    in
+    let expr =
+      let sexp_exprs =
+        (* Constructor inference allows to to leave off [Sexplib0.Sexp.] here. *)
+        List.map2_exn alist converted ~f:(fun (label_option, _) expr ->
+          [%expr
+            List
+              [ Atom [%e estring ~loc (Labeled_tuple.atom_of_label label_option)]
+              ; [%e expr]
+              ]])
+      in
+      [%expr Sexplib0.Sexp.List [%e elist ~loc sexp_exprs]]
+      |> pexp_let ~loc Nonrecursive bindings
+    in
+    let pat =
+      ( List.map2_exn alist arguments ~f:(fun (label_option, _) arg -> label_option, arg)
+      , Closed )
+      |> Ppxlib_jane.Jane_syntax.Labeled_tuples.pat_of ~loc
+    in
+    pat --> expr
 
   (* Conversion of variant types *)
   and sexp_of_variant ~renaming ((loc, row_fields) : Location.t * row_field list)

@@ -43,7 +43,7 @@ type 'a t =
   | Something_else of { value : 'a }
 [@@deriving sexp]
 
-[%%expect {||}]
+[%%expect {| |}]
 
 module Record_with_defaults = struct
   open Sexplib0.Sexp_conv
@@ -58,10 +58,10 @@ module Record_with_defaults = struct
   [@@deriving of_sexp]
 end
 
-[%%expect {||}]
+[%%expect {| |}]
 
 module Polymorphic_recursion = struct
   type 'a t = T of 'a t t [@@deriving sexp_grammar]
 end
 
-[%%expect {||}]
+[%%expect {| |}]

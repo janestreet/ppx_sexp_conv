@@ -88,7 +88,8 @@ module _ = struct
     print_s (With_sexp.sexp_of_t (`B "foo"));
     [%expect {|
       (A (1 2))
-      (B foo) |}]
+      (B foo)
+      |}]
   ;;
 end
 
@@ -164,6 +165,7 @@ module _ = struct
       (List (1))
       (Sexp_dot_list 1)
       (List (1 2))
-      (Sexp_dot_list 1 2) |}]
+      (Sexp_dot_list 1 2)
+      |}]
   ;;
 end

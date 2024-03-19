@@ -149,49 +149,54 @@ module Str_generate_of_sexp = struct
     : Conversion.t
     =
     let loc = typ.ptyp_loc in
-    match typ with
-    | _ when Option.is_some (Attribute.get Attrs.opaque typ) ->
-      Conversion.of_reference_exn [%expr Sexplib0.Sexp_conv.opaque_of_sexp]
-    | [%type: [%t? _] sexp_opaque] | [%type: _] ->
-      Conversion.of_reference_exn [%expr Sexplib0.Sexp_conv.opaque_of_sexp]
-    | [%type: [%t? ty1] sexp_list] ->
-      let arg1 =
-        Conversion.to_expression ~loc (type_of_sexp ~error_source ~typevars ty1)
-      in
-      Conversion.of_reference_exn [%expr Sexplib0.Sexp_conv.list_of_sexp [%e arg1]]
-    | [%type: [%t? ty1] sexp_array] ->
-      let arg1 =
-        Conversion.to_expression ~loc (type_of_sexp ~error_source ~typevars ty1)
-      in
-      Conversion.of_reference_exn [%expr Sexplib0.Sexp_conv.array_of_sexp [%e arg1]]
-    | { ptyp_desc = Ptyp_tuple tp; _ } ->
-      Conversion.of_lambda (tuple_of_sexp ~error_source ~typevars (loc, tp))
-    | { ptyp_desc = Ptyp_var parm; _ } ->
-      (match Map.find typevars parm with
-       | Some fresh -> Conversion.of_reference_exn (Fresh_name.expression fresh)
-       | None ->
-         Location.raise_errorf ~loc "ppx_sexp_conv: unbound type variable '%s" parm)
-    | { ptyp_desc = Ptyp_constr (id, args); _ } ->
-      let args =
-        List.map args ~f:(fun arg ->
-          Conversion.to_expression ~loc (type_of_sexp ~error_source ~typevars arg))
-      in
-      Conversion.of_reference_exn (type_constr_of_sexp ~loc ~internal id args)
-    | { ptyp_desc = Ptyp_arrow (_, _, _); _ } ->
-      Conversion.of_reference_exn [%expr Sexplib0.Sexp_conv.fun_of_sexp]
-    | { ptyp_desc = Ptyp_variant (row_fields, Closed, _); _ } ->
-      variant_of_sexp ~error_source ~typevars ?full_type (loc, row_fields)
-    | { ptyp_desc = Ptyp_poly (parms, poly_tp); _ } ->
-      poly_of_sexp ~error_source ~typevars parms poly_tp
-    | { ptyp_desc = Ptyp_variant (_, Open, _); _ }
-    | { ptyp_desc = Ptyp_object (_, _); _ }
-    | { ptyp_desc = Ptyp_class (_, _); _ }
-    | { ptyp_desc = Ptyp_alias (_, _); _ }
-    | { ptyp_desc = Ptyp_package _; _ }
-    | { ptyp_desc = Ptyp_extension _; _ } ->
-      Location.raise_errorf ~loc "Type unsupported for ppx [of_sexp] conversion"
+    match Ppxlib_jane.Jane_syntax.Core_type.of_ast typ with
+    | Some (Jtyp_tuple alist, (_ : attributes)) ->
+      Conversion.of_reference_exn
+        (labeled_tuple_of_sexp ~error_source ~typevars ~loc alist)
+    | Some (Jtyp_layout _, _) | None ->
+      (match typ with
+       | _ when Option.is_some (Attribute.get Attrs.opaque typ) ->
+         Conversion.of_reference_exn [%expr Sexplib0.Sexp_conv.opaque_of_sexp]
+       | [%type: [%t? _] sexp_opaque] | [%type: _] ->
+         Conversion.of_reference_exn [%expr Sexplib0.Sexp_conv.opaque_of_sexp]
+       | [%type: [%t? ty1] sexp_list] ->
+         let arg1 =
+           Conversion.to_expression ~loc (type_of_sexp ~error_source ~typevars ty1)
+         in
+         Conversion.of_reference_exn [%expr Sexplib0.Sexp_conv.list_of_sexp [%e arg1]]
+       | [%type: [%t? ty1] sexp_array] ->
+         let arg1 =
+           Conversion.to_expression ~loc (type_of_sexp ~error_source ~typevars ty1)
+         in
+         Conversion.of_reference_exn [%expr Sexplib0.Sexp_conv.array_of_sexp [%e arg1]]
+       | { ptyp_desc = Ptyp_tuple tp; _ } ->
+         Conversion.of_lambda (tuple_of_sexp ~error_source ~typevars (loc, tp))
+       | { ptyp_desc = Ptyp_var parm; _ } ->
+         (match Map.find typevars parm with
+          | Some fresh -> Conversion.of_reference_exn (Fresh_name.expression fresh)
+          | None ->
+            Location.raise_errorf ~loc "ppx_sexp_conv: unbound type variable '%s" parm)
+       | { ptyp_desc = Ptyp_constr (id, args); _ } ->
+         let args =
+           List.map args ~f:(fun arg ->
+             Conversion.to_expression ~loc (type_of_sexp ~error_source ~typevars arg))
+         in
+         Conversion.of_reference_exn (type_constr_of_sexp ~loc ~internal id args)
+       | { ptyp_desc = Ptyp_arrow (_, _, _); _ } ->
+         Conversion.of_reference_exn [%expr Sexplib0.Sexp_conv.fun_of_sexp]
+       | { ptyp_desc = Ptyp_variant (row_fields, Closed, _); _ } ->
+         variant_of_sexp ~error_source ~typevars ?full_type (loc, row_fields)
+       | { ptyp_desc = Ptyp_poly (parms, poly_tp); _ } ->
+         poly_of_sexp ~error_source ~typevars parms poly_tp
+       | { ptyp_desc = Ptyp_variant (_, Open, _); _ }
+       | { ptyp_desc = Ptyp_object (_, _); _ }
+       | { ptyp_desc = Ptyp_class (_, _); _ }
+       | { ptyp_desc = Ptyp_alias (_, _); _ }
+       | { ptyp_desc = Ptyp_package _; _ }
+       | { ptyp_desc = Ptyp_extension _; _ } ->
+         Location.raise_errorf ~loc "Type unsupported for ppx [of_sexp] conversion")
 
-  (* Conversion of tuples *)
+  (* Conversion of (unlabeled) tuples *)
   and tuple_of_sexp ~error_source ~typevars (loc, tps) =
     let fps = List.map ~f:(type_of_sexp ~error_source ~typevars) tps in
     let ({ bindings; arguments; converted } : Conversion.Apply_all.t) =
@@ -208,6 +213,44 @@ module Str_generate_of_sexp = struct
               [%e eint ~loc n]
               [%e Fresh_name.expression fresh_sexp]]
     ]
+
+  (* Conversion of labeled tuples *)
+  and labeled_tuple_of_sexp ~error_source ~typevars ~loc alist =
+    assert (Labeled_tuple.is_valid alist);
+    let fields_expr =
+      List.fold_right
+        alist
+        ~init:[%expr Empty]
+        ~f:(fun (label_option, core_type) rest_expr ->
+        let name_expr = estring ~loc (Labeled_tuple.atom_of_label label_option) in
+        let conv_expr =
+          type_of_sexp ~error_source ~typevars core_type
+          |> Conversion.to_expression ~loc:core_type.ptyp_loc
+        in
+        [%expr
+          Field { name = [%e name_expr]; conv = [%e conv_expr]; rest = [%e rest_expr] }])
+    in
+    let create_expr =
+      let pats, exprs =
+        List.map alist ~f:(fun (label_option, _) ->
+          let name = Fresh_name.create ~loc "field" in
+          Fresh_name.pattern name, (label_option, Fresh_name.expression name))
+        |> List.unzip
+      in
+      let pat =
+        List.fold_right pats ~init:(punit ~loc) ~f:(fun pat1 pat2 ->
+          ppat_tuple ~loc [ pat1; pat2 ])
+      in
+      let expr = Ppxlib_jane.Jane_syntax.Labeled_tuples.expr_of ~loc exprs in
+      [%expr fun [%p pat] -> [%e expr]]
+    in
+    pexp_apply
+      ~loc
+      [%expr Sexplib0.Sexp_conv_labeled_tuple.labeled_tuple_of_sexp]
+      [ Labelled "caller", error_source ()
+      ; Labelled "fields", fields_expr
+      ; Labelled "create", create_expr
+      ]
 
   (* Generate code for matching included variant types *)
   and handle_variant_inh

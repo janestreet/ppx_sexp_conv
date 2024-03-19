@@ -224,9 +224,7 @@ Error: ppx_sexp_conv: [@sexp.list] is only allowed on type [_ list].
 
 let (_ : _) = [%sexp_grammar: 'k -> 'v -> ('k * 'v) list]
 
-[%%expect
-  {|
-|}]
+[%%expect {| |}]
 
 let (_ : _) = [%sexp_grammar: < for_all : 'k 'v. ('k * 'v) list > ]
 
@@ -273,9 +271,7 @@ Hint: Did you mean char_sexp_grammar, int_sexp_grammar or ref_sexp_grammar?
    still be able to pair it with a consistent hand-written [t_of_sexp]. *)
 type _ t = T : int -> string t [@@deriving sexp_grammar]
 
-[%%expect
-  {|
-|}]
+[%%expect {| |}]
 
 type _ t = T : int -> string t [@@deriving of_sexp]
 

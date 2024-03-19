@@ -19,7 +19,8 @@ module _ = struct
       (Tagged (
         (key   key)
         (value value)
-        (grammar (List Empty)))) |}]
+        (grammar (List Empty))))
+      |}]
   ;;
 
   let%expect_test "tag ordering" =
@@ -41,7 +42,8 @@ module _ = struct
           Tagged (
             (key   key2)
             (value value2)
-            (grammar (List Empty))))))) |}]
+            (grammar (List Empty)))))))
+      |}]
   ;;
 
   let%expect_test "tag idents/expressions" =
@@ -68,7 +70,8 @@ module _ = struct
           Tagged (
             (key   key)
             (value value)
-            (grammar (List Empty))))))) |}]
+            (grammar (List Empty)))))))
+      |}]
   ;;
 
   let%expect_test "tag nesting" =
@@ -89,7 +92,8 @@ module _ = struct
           Tagged (
             (key   inner)
             (value "inner value")
-            (grammar (List Empty))))))) |}]
+            (grammar (List Empty)))))))
+      |}]
   ;;
 
   let%expect_test "@tags attribute" =
@@ -107,7 +111,8 @@ module _ = struct
           Tagged (
             (key   z)
             (value Z)
-            (grammar (List Empty))))))) |}];
+            (grammar (List Empty)))))))
+      |}];
     (* non-constant expression *)
     show_grammar
       (module struct
@@ -129,7 +134,8 @@ module _ = struct
               Tagged (
                 (key   z)
                 (value Z)
-                (grammar (List Empty)))))))))) |}];
+                (grammar (List Empty))))))))))
+      |}];
     (* cons onto non-constant expression *)
     show_grammar
       (module struct
@@ -157,7 +163,8 @@ module _ = struct
                   Tagged (
                     (key   z)
                     (value Z)
-                    (grammar (List Empty))))))))))))) |}];
+                    (grammar (List Empty)))))))))))))
+      |}];
     (* empty *)
     show_grammar
       (module struct
@@ -179,7 +186,8 @@ module _ = struct
           Tagged (
             (key   b)
             (value B)
-            (grammar (List Empty))))))) |}]
+            (grammar (List Empty)))))))
+      |}]
   ;;
 
   let%expect_test "doc comments - variant clauses" =
@@ -224,7 +232,8 @@ module _ = struct
                 (grammar (
                   No_tag (
                     (name        Clause1)
-                    (clause_kind Atom_clause))))))))))))) |}]
+                    (clause_kind Atom_clause)))))))))))))
+      |}]
   ;;
 
   let%expect_test "doc comments - poly variant clauses" =
@@ -275,7 +284,8 @@ module _ = struct
                     (grammar (
                       No_tag (
                         (name        Clause1)
-                        (clause_kind Atom_clause)))))))))))))))) |}]
+                        (clause_kind Atom_clause))))))))))))))))
+      |}]
   ;;
 
   let%expect_test "doc comments - record fields" =
@@ -320,7 +330,8 @@ module _ = struct
                     No_tag (
                       (name     field1)
                       (required true)
-                      (args (Cons (List Empty) Empty))))))))))))))) |}]
+                      (args (Cons (List Empty) Empty)))))))))))))))
+      |}]
   ;;
 
   let%expect_test "deriving sexp_grammar without tags_of_doc_comments" =
@@ -337,7 +348,8 @@ module _ = struct
             No_tag (
               (name     field)
               (required true)
-              (args (Cons (List Empty) Empty))))))))) |}]
+              (args (Cons (List Empty) Empty)))))))))
+      |}]
   ;;
 
   let%expect_test "doc comments on subexpressions" =
@@ -372,7 +384,8 @@ module _ = struct
                               No_tag (
                                 (name     bar)
                                 (required true)
-                                (args (Cons Integer Empty))))))))))))))))))))))) |}];
+                                (args (Cons Integer Empty)))))))))))))))))))))))
+      |}];
     show_grammar
       (module struct
         [@@@ocaml.warning "-37"]
@@ -405,7 +418,8 @@ module _ = struct
                               No_tag (
                                 (name        B)
                                 (clause_kind Atom_clause))))))))))
-                      Empty))))))))))))) |}];
+                      Empty)))))))))))))
+      |}];
     show_grammar
       (module struct
         [@@@ocaml.warning "-37"]
@@ -438,7 +452,8 @@ module _ = struct
                             No_tag (
                               (name B)
                               (clause_kind (List_clause (args (Cons Integer Empty)))))))))))))
-                    Empty)))))))))))) |}];
+                    Empty))))))))))))
+      |}];
     show_grammar
       (module struct
         [@@@ocaml.warning "-37"]
@@ -472,6 +487,7 @@ module _ = struct
                                 No_tag (
                                   (name        B)
                                   (clause_kind Atom_clause)))))))))))
-                      Empty))))))))))))) |}]
+                      Empty)))))))))))))
+      |}]
   ;;
 end
