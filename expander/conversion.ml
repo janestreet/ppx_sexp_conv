@@ -180,5 +180,5 @@ let apply_all ts ~loc =
    ; arguments = List.map arguments_names ~f:(pvar ~loc)
    ; converted = List.map converted_names ~f:(evar ~loc)
    }
-    : Apply_all.t)
+   : Apply_all.t)
 ;;

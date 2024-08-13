@@ -261,7 +261,7 @@ module Str_generate_sexp_of = struct
                       ]
                   in
                   ([%e Fresh_name.expression bnd] :: [%e Fresh_name.expression bnds]
-                    : _ Stdlib.List.t))]
+                   : _ Stdlib.List.t))]
             | Inspect_sexp is_empty_expr ->
               [%expr
                 let [%p Fresh_name.pattern arg] =
@@ -277,7 +277,7 @@ module Str_generate_sexp_of = struct
                       ]
                   in
                   ([%e Fresh_name.expression bnd] :: [%e Fresh_name.expression bnds]
-                    : _ Stdlib.List.t))]]
+                   : _ Stdlib.List.t))]]
         in
         [%e expr]]
     in
@@ -449,7 +449,7 @@ module Str_generate_sexp_of = struct
                     ]
                 in
                 ([%e Fresh_name.expression bnd] :: [%e Fresh_name.expression bnds]
-                  : _ Stdlib.List.t)
+                 : _ Stdlib.List.t)
             in
             [%e expr]]
         in
@@ -466,7 +466,7 @@ module Str_generate_sexp_of = struct
                   Sexplib0.Sexp.List [ Sexplib0.Sexp.Atom [%e estring ~loc name] ]
                 in
                 ([%e Fresh_name.expression bnd] :: [%e Fresh_name.expression bnds]
-                  : _ Stdlib.List.t))
+                 : _ Stdlib.List.t))
               else [%e Fresh_name.expression bnds]
             in
             [%e expr]]
@@ -541,7 +541,7 @@ module Str_generate_sexp_of = struct
                  ; [%e Fresh_name.expression arg]
                  ]
                :: [%e Fresh_name.expression bnds]
-                : _ Stdlib.List.t)]
+               : _ Stdlib.List.t)]
         in
         ( patt
         , [%expr
@@ -562,7 +562,7 @@ module Str_generate_sexp_of = struct
                ; [%e Fresh_name.expression arg]
                ]
              :: [%e Fresh_name.expression bnds]
-              : _ Stdlib.List.t)]
+             : _ Stdlib.List.t)]
         in
         ( patt
         , [%expr
@@ -608,6 +608,7 @@ module Str_generate_sexp_of = struct
          --> [%expr Sexplib0.Sexp.Atom [%e constr_str]]
          |> Lifted.return
        | args ->
+         let args = List.map args ~f:Ppxlib_jane.Shim.Pcstr_tuple_arg.to_core_type in
          (match args with
           | [ tp ] when Option.is_some (Attribute.get inline_attr row) ->
             (match tp with
@@ -679,7 +680,7 @@ module Str_generate_sexp_of = struct
 
   let sexp_of_td ~types_being_defined td =
     let td = name_type_params_in_td td in
-    let tps = List.map td.ptype_params ~f:get_type_param_name in
+    let tps = List.map td.ptype_params ~f:Ppxlib_jane.get_type_param_name_and_jkind in
     let { ptype_name = { txt = type_name; loc = _ }; ptype_loc = loc; _ } = td in
     let renaming = Renaming.of_type_declaration td ~prefix:"_of_" in
     let body =
@@ -689,7 +690,7 @@ module Str_generate_sexp_of = struct
           sexp_of_sum
             ~renaming
             ~types_being_defined
-            (List.map tps ~f:(fun x -> x.txt))
+            (List.map tps ~f:(fun (x, _) -> x.txt))
             cds
         | Ptype_record lds ->
           sexp_of_label_declaration_list
@@ -747,7 +748,7 @@ module Str_generate_sexp_of = struct
       body
       >>| fun body ->
       let patts =
-        List.map tps ~f:(fun id ->
+        List.map tps ~f:(fun (id, _) ->
           match Renaming.binding_kind renaming id.txt ~loc:id.loc with
           | Universally_bound name -> Fresh_name.pattern name
           | Existentially_bound -> assert false)

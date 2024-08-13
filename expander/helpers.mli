@@ -12,7 +12,8 @@ val constrained_function_binding
   :  location (** location to use for the binding *)
   -> type_declaration (** type declaration used to derive the function *)
   -> core_type (** type of the function *)
-  -> tps:string loc list (** names of type parameters in the declaration *)
+  -> tps:(string loc * Ppxlib_jane.Jane_syntax.Jkind.annotation option) list
+       (** names and jkinds of type parameters in the declaration *)
   -> func_name:string (** name to bind the function to *)
   -> expression (** expression representing the function *)
   -> value_binding

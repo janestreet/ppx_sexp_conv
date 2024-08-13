@@ -15,8 +15,8 @@ module Maybe = struct
 end
 
 module Make (T : sig
-  type 'a t [@@deriving sexp_grammar]
-end) =
+    type 'a t [@@deriving sexp_grammar]
+  end) =
 struct
   [@@@warning "-37"]
 
@@ -31,12 +31,12 @@ struct
       let (grammars__001_ : Sexplib0.Sexp_grammar.defn Stdlib.List.t Stdlib.Lazy.t) =
         lazy
           (let t_sexp_grammar
-                 : 'a. 'a Sexplib0.Sexp_grammar.t -> 'a t Sexplib0.Sexp_grammar.t
+             : 'a. 'a Sexplib0.Sexp_grammar.t -> 'a t Sexplib0.Sexp_grammar.t
              =
              fun _'a_sexp_grammar ->
              { untyped = Recursive ("t", [ _'a_sexp_grammar.untyped ]) }
            and u_sexp_grammar
-                 : 'a. 'a Sexplib0.Sexp_grammar.t -> 'a u Sexplib0.Sexp_grammar.t
+             : 'a. 'a Sexplib0.Sexp_grammar.t -> 'a u Sexplib0.Sexp_grammar.t
              =
              fun _'a_sexp_grammar ->
              { untyped = Recursive ("u", [ _'a_sexp_grammar.untyped ]) }

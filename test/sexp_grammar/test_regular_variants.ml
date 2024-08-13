@@ -80,7 +80,8 @@ module _ = struct
   let%expect_test _ =
     print_s (With_sexp.sexp_of_t (A (1, 2)));
     print_s (With_sexp.sexp_of_t (B "foo"));
-    [%expect {|
+    [%expect
+      {|
       (A 1 2)
       (B foo)
       |}]

@@ -44,6 +44,18 @@ module Sum_and_polymorphic_variants = struct
       ; (Two_args (1, "a"), Sexp.(List [ Atom "Two_args"; Atom "1"; Atom "a" ]))
       ]
   ;;
+
+  let%expect_test _ =
+    let sexp = Sexplib.Sexp.of_string "(Three_args 1 1 1)" in
+    Expect_test_helpers_core.show_raise (fun () -> nominal_of_sexp sexp);
+    [%expect
+      {|
+      (raised (
+        Of_sexp_error
+        "ppx_sexp_test.ml.Sum_and_polymorphic_variants.nominal_of_sexp: unexpected variant constructor; expected one of No_arg One_arg One_tuple Two_args"
+        (invalid_sexp (Three_args 1 1 1))))
+      |}]
+  ;;
 end
 
 module Records = struct
@@ -103,8 +115,32 @@ module Records = struct
       {|
       (raised (
         Of_sexp_error
-        "ppx_sexp_test.ml.Records.t_of_sexp: extra fields: c"
+        "ppx_sexp_test.ml.Records.t_of_sexp: extra fields found while some fields missing; extra fields: c; missing fields: a b"
         (invalid_sexp ((c 3)))))
+      |}]
+  ;;
+
+  let%expect_test _ =
+    let sexp = Sexplib.Sexp.of_string "((a 3))" in
+    Expect_test_helpers_core.show_raise (fun () -> t_of_sexp sexp);
+    [%expect
+      {|
+      (raised (
+        Of_sexp_error
+        "ppx_sexp_test.ml.Records.t_of_sexp: missing fields: b"
+        (invalid_sexp ((a 3)))))
+      |}]
+  ;;
+
+  let%expect_test _ =
+    let sexp = Sexplib.Sexp.of_string "((a 3) (b ()) (c 1))" in
+    Expect_test_helpers_core.show_raise (fun () -> t_of_sexp sexp);
+    [%expect
+      {|
+      (raised (
+        Of_sexp_error
+        "ppx_sexp_test.ml.Records.t_of_sexp: extra fields: c"
+        (invalid_sexp ((a 3) (b ()) (c 1)))))
       |}]
   ;;
 end
@@ -298,8 +334,8 @@ module No_unused_value_warnings : sig end = struct
   module Empty = struct end
 
   module No_warning2 (X : sig
-    type t [@@deriving sexp, sexp_grammar]
-  end) =
+      type t [@@deriving sexp, sexp_grammar]
+    end) =
   struct end
 
   (* this one can't be handled (what if Empty was a functor, huh?) *)
@@ -320,11 +356,13 @@ module No_unused_value_warnings : sig end = struct
       S) :
       S)
 
-  module Nested_functors (M1 : sig
-    type t [@@deriving sexp, sexp_grammar]
-  end) (M2 : sig
-    type t [@@deriving sexp, sexp_grammar]
-  end) =
+  module Nested_functors
+      (M1 : sig
+         type t [@@deriving sexp, sexp_grammar]
+       end)
+      (M2 : sig
+         type t [@@deriving sexp, sexp_grammar]
+       end) =
   struct end
 
   let () =
@@ -339,13 +377,13 @@ module No_unused_value_warnings : sig end = struct
 
   module Include = struct
     include (
-      struct
-        type t = int [@@deriving sexp, sexp_grammar]
-      end :
-        sig
-          type t [@@deriving sexp, sexp_grammar]
-        end
-        with type t := int)
+    struct
+      type t = int [@@deriving sexp, sexp_grammar]
+    end :
+      sig
+        type t [@@deriving sexp, sexp_grammar]
+      end
+      with type t := int)
   end
 end
 
@@ -409,12 +447,12 @@ module Drop_default = struct
 
   let test ?cr t_of_sexp sexp_of_t =
     let ( = ) = Sexp.( = ) in
-    require ?cr [%here] (Sexp.(List [ List [ Atom "a"; Atom "1" ] ]) = sexp_of_t { a = 1 });
-    require ?cr [%here] (Sexp.(List []) = sexp_of_t { a = 2 });
+    require ?cr (Sexp.(List [ List [ Atom "a"; Atom "1" ] ]) = sexp_of_t { a = 1 });
+    require ?cr (Sexp.(List []) = sexp_of_t { a = 2 });
     let ( = ) = equal in
-    require ?cr [%here] (t_of_sexp Sexp.(List [ List [ Atom "a"; Atom "1" ] ]) = { a = 1 });
-    require ?cr [%here] (t_of_sexp Sexp.(List [ List [ Atom "a"; Atom "2" ] ]) = { a = 2 });
-    require ?cr [%here] (t_of_sexp Sexp.(List []) = { a = 2 })
+    require ?cr (t_of_sexp Sexp.(List [ List [ Atom "a"; Atom "1" ] ]) = { a = 1 });
+    require ?cr (t_of_sexp Sexp.(List [ List [ Atom "a"; Atom "2" ] ]) = { a = 2 });
+    require ?cr (t_of_sexp Sexp.(List []) = { a = 2 })
   ;;
 
   type my_int = int [@@deriving sexp, sexp_grammar]
@@ -738,13 +776,13 @@ module Boolean = struct
   [@@deriving sexp, sexp_grammar] [@@sexp.allow_extra_fields]
 
   let%expect_test _ =
-    Expect_test_helpers_core.require_does_raise ~cr:CR_soon [%here] (fun () ->
+    Expect_test_helpers_core.require_does_raise ~cr:CR_soon (fun () ->
       let r = t_allow_extra_fields_of_sexp (Sexplib.Sexp.of_string "((no_arg true))") in
       print_endline (Bool.to_string r.no_arg));
     [%expect
       {|
       (Of_sexp_error
-       "ppx_sexp_test.ml.Boolean.t_allow_extra_fields_of_sexp: record conversion: a [sexp.bool] field was given a payload."
+       "ppx_sexp_test.ml.Boolean.t_allow_extra_fields_of_sexp: record conversion: a [sexp.bool] field was given a payload"
        (invalid_sexp ((no_arg true))))
       |}]
   ;;
@@ -782,11 +820,13 @@ module Applicative_functor_types = struct
   module Bidirectional_map = struct
     type ('k1, 'k2) t
 
-    module S (K1 : sig
-      type t
-    end) (K2 : sig
-      type t
-    end) =
+    module S
+        (K1 : sig
+           type t
+         end)
+        (K2 : sig
+           type t
+         end) =
     struct
       type nonrec t = (K1.t, K2.t) t
     end
@@ -855,7 +895,7 @@ module Allow_extra_fields = struct
     let%test _ = should_raise t1_of_sexp sexp_extra
 
     let%expect_test _ =
-      Expect_test_helpers_core.require_does_raise ~cr:CR_soon [%here] (fun () ->
+      Expect_test_helpers_core.require_does_raise ~cr:CR_soon (fun () ->
         t2_of_sexp (Sexplib.Sexp.of_string "((a 1)(a))"));
       [%expect
         {|

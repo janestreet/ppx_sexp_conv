@@ -434,11 +434,19 @@ let grammar_of_variant ~loc ~rec_flag ~tags_of_doc_comments clause_decls =
       match Attribute.get Attrs.list_variant clause with
       | Some () ->
         (match clause.pcd_args with
-         | Pcstr_tuple [ [%type: [%t? ty] list] ] ->
-           let args =
-             many_grammar ~loc (grammar_of_type ty ~rec_flag ~tags_of_doc_comments)
-           in
-           { name = clause.pcd_name; comments; tags; clause_kind = list_clause ~loc args }
+         | Pcstr_tuple [ arg ] ->
+           let core_type = Ppxlib_jane.Shim.Pcstr_tuple_arg.to_core_type arg in
+           (match core_type with
+            | [%type: [%t? ty] list] ->
+              let args =
+                many_grammar ~loc (grammar_of_type ty ~rec_flag ~tags_of_doc_comments)
+              in
+              { name = clause.pcd_name
+              ; comments
+              ; tags
+              ; clause_kind = list_clause ~loc args
+              }
+            | _ -> Attrs.invalid_attribute ~loc Attrs.list_variant "_ list")
          | _ -> Attrs.invalid_attribute ~loc Attrs.list_variant "_ list")
       | None ->
         (match clause.pcd_args with
@@ -448,7 +456,9 @@ let grammar_of_variant ~loc ~rec_flag ~tags_of_doc_comments clause_decls =
            let args =
              tuple_grammar
                ~loc
-               (List.map args ~f:(grammar_of_type ~rec_flag ~tags_of_doc_comments))
+               (List.map args ~f:(fun arg ->
+                  Ppxlib_jane.Shim.Pcstr_tuple_arg.to_core_type arg
+                  |> grammar_of_type ~rec_flag ~tags_of_doc_comments))
            in
            { name = clause.pcd_name; comments; tags; clause_kind = list_clause ~loc args }
          | Pcstr_record fields ->

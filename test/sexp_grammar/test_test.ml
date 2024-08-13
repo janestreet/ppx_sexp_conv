@@ -71,11 +71,11 @@ module _ = struct
 
   let _ = fun (_ : ('a, 'b) t) -> ()
 
-  let t_sexp_grammar :
-        'a 'b.
-        'a Sexplib0.Sexp_grammar.t
-        -> 'b Sexplib0.Sexp_grammar.t
-        -> ('a, 'b) t Sexplib0.Sexp_grammar.t
+  let t_sexp_grammar
+    : 'a 'b.
+    'a Sexplib0.Sexp_grammar.t
+    -> 'b Sexplib0.Sexp_grammar.t
+    -> ('a, 'b) t Sexplib0.Sexp_grammar.t
     =
     fun _'a_sexp_grammar _'b_sexp_grammar -> Sexplib0.Sexp_conv.fun_sexp_grammar
   ;;

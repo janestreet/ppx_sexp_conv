@@ -21,8 +21,8 @@ let drop_default =
     Attribute.Context.label_declaration
     Ast_pattern.(pstr (alt_option (pstr_eval __ nil ^:: nil) nil))
     (function
-     | None -> None
-     | Some x -> Some { to_lift = x })
+      | None -> None
+      | Some x -> Some { to_lift = x })
 ;;
 
 let drop_default_equal =
@@ -59,6 +59,14 @@ let drop_if =
 
 let opaque =
   Attribute.declare "sexp.opaque" Attribute.Context.core_type Ast_pattern.(pstr nil) ()
+;;
+
+let non_value =
+  Attribute.declare
+    "sexp.non_value"
+    Attribute.Context.label_declaration
+    Ast_pattern.(pstr nil)
+    ()
 ;;
 
 let omit_nil =

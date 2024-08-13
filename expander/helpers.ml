@@ -24,20 +24,25 @@ let make_rigid_types tps =
   List.fold
     tps
     ~init:(Map.empty (module String))
-    ~f:(fun map tp ->
+    ~f:(fun map (tp, jkind) ->
       Map.update map tp.txt ~f:(function
-        | None -> Fresh_name.of_string_loc tp
-        | Some fresh ->
+        | None -> Fresh_name.of_string_loc tp, jkind
+        | Some (fresh, jkind) ->
           (* Ignore duplicate names, the typechecker will raise after expansion. *)
-          fresh))
+          fresh, jkind))
 ;;
 
 let find_rigid_type ~loc ~rigid_types name =
   match Map.find rigid_types name with
-  | Some tp -> Fresh_name.to_string_loc tp
+  | Some (tp, jkind) -> Fresh_name.to_string_loc tp, jkind
   | None ->
     (* Ignore unbound type names, the typechecker will raise after expansion. *)
-    { txt = name; loc }
+    { txt = name; loc }, None
+;;
+
+let find_rigid_type_constr ~loc ~rigid_types name =
+  let name, _jkind = find_rigid_type ~loc ~rigid_types name in
+  Ptyp_constr (Located.map_lident name, [])
 ;;
 
 let make_type_rigid ~rigid_types =
@@ -46,14 +51,19 @@ let make_type_rigid ~rigid_types =
       inherit Ast_traverse.map as super
 
       method! core_type ty =
-        let ptyp_desc =
-          match ty.ptyp_desc with
-          | Ptyp_var s ->
-            Ptyp_constr
-              (Located.map_lident (find_rigid_type ~loc:ty.ptyp_loc ~rigid_types s), [])
-          | desc -> super#core_type_desc desc
-        in
-        { ty with ptyp_desc }
+        match Ppxlib_jane.Jane_syntax.Core_type.of_ast ty with
+        | Some (Jtyp_layout (Ltyp_var { name = Some name; jkind = _ }), ptyp_attributes)
+          ->
+          let ptyp_desc = find_rigid_type_constr ~loc:ty.ptyp_loc ~rigid_types name in
+          { ty with ptyp_desc; ptyp_attributes }
+        | Some _ -> super#core_type ty
+        | None ->
+          let ptyp_desc =
+            match ty.ptyp_desc with
+            | Ptyp_var s -> find_rigid_type_constr ~loc:ty.ptyp_loc ~rigid_types s
+            | desc -> super#core_type_desc desc
+          in
+          { ty with ptyp_desc }
     end
   in
   map#core_type
@@ -66,14 +76,34 @@ let make_type_rigid ~rigid_types =
    not work because of certains types with constraints. We thus only use rigid variables
    for sum types, which includes all GADTs. *)
 
-let tvars_of_core_type : core_type -> string list =
+type bound_var = string loc * Ppxlib_jane.Jane_syntax.Jkind.annotation option
+
+let tvars_of_core_type : core_type -> bound_var list =
+  let add_binding_to_list (bindings : bound_var list) (bound : bound_var) =
+    let { txt = bound_name; loc = _ }, _annot = bound in
+    match
+      List.exists bindings ~f:(fun b' ->
+        let { txt = bound_name'; loc = _ }, _annot' = b' in
+        String.equal bound_name bound_name')
+    with
+    | true -> bindings
+    | false -> bound :: bindings
+  in
   let tvars =
     object
-      inherit [string list] Ast_traverse.fold as super
+      inherit [bound_var list] Ast_traverse.fold as super
 
       method! core_type x acc =
+        let loc = x.ptyp_loc in
         match x.ptyp_desc with
-        | Ptyp_var x -> if List.mem acc x ~equal:String.equal then acc else x :: acc
+        | Ptyp_var bound_name ->
+          let binding =
+            match Ppxlib_jane.Jane_syntax.Core_type.of_ast x with
+            | Some (Jtyp_layout (Ltyp_var { name = Some name; jkind }), _attrs) ->
+              { txt = name; loc }, Some jkind
+            | _ -> { txt = bound_name; loc }, None
+          in
+          add_binding_to_list acc binding
         | _ -> super#core_type x acc
     end
   in
@@ -85,13 +115,13 @@ let constrained_function_binding
     (loc : Location.t)
   (td : type_declaration)
   (typ : core_type)
-  ~(tps : string loc list)
+  ~(tps : (string loc * Ppxlib_jane.Jane_syntax.Jkind.annotation option) list)
   ~(func_name : string)
   (body : expression)
   =
-  let vars = tvars_of_core_type typ in
+  let bound_vars = tvars_of_core_type typ in
   let has_vars =
-    match vars with
+    match bound_vars with
     | [] -> false
     | _ :: _ -> true
   in
@@ -100,8 +130,13 @@ let constrained_function_binding
     if not has_vars
     then pat
     else (
-      let vars = List.map ~f:(fun txt -> { txt; loc }) vars in
-      ppat_constraint ~loc pat (ptyp_poly ~loc vars typ))
+      let annot =
+        Ppxlib_jane.Jane_syntax.Core_type.core_type_of
+          ~loc
+          ~attrs:[]
+          (Jtyp_layout (Ltyp_poly { inner_type = typ; bound_vars }))
+      in
+      ppat_constraint ~loc pat annot)
   in
   let body =
     let use_rigid_variables =
@@ -114,8 +149,14 @@ let constrained_function_binding
       let rigid_types = make_rigid_types tps in
       List.fold_right
         tps
-        ~f:(fun tp body ->
-          pexp_newtype ~loc (find_rigid_type ~loc:tp.loc ~rigid_types tp.txt) body)
+        ~f:(fun (tp, _) body ->
+          let name, jkind = find_rigid_type ~loc:tp.loc ~rigid_types tp.txt in
+          match jkind with
+          | None -> pexp_newtype ~loc name body
+          | Some jkind ->
+            Ppxlib_jane.Jane_syntax.Layouts.expr_of
+              ~loc
+              (Lexp_newtype (name, jkind, body)))
         ~init:(pexp_constraint ~loc body (make_type_rigid ~rigid_types typ)))
     else if has_vars
     then body
@@ -154,9 +195,11 @@ let fresh_lambda ~loc apply =
 ;;
 
 let rec is_value_expression expr =
-  match expr.pexp_desc with
+  match
+    Ppxlib_jane.Shim.Expression_desc.of_parsetree expr.pexp_desc ~loc:expr.pexp_loc
+  with
   (* Syntactic values. *)
-  | Pexp_ident _ | Pexp_constant _ | Pexp_function _ | Pexp_fun _ | Pexp_lazy _ -> true
+  | Pexp_ident _ | Pexp_constant _ | Pexp_function _ | Pexp_lazy _ -> true
   (* Type-only wrappers; we check their contents. *)
   | Pexp_constraint (expr, (_ : core_type))
   | Pexp_coerce (expr, (_ : core_type option), (_ : core_type))

@@ -8,17 +8,17 @@ type 'a t =
   }
 
 include Monad.Make (struct
-  type nonrec 'a t = 'a t
+    type nonrec 'a t = 'a t
 
-  let return body = { value_bindings = []; body }
+    let return body = { value_bindings = []; body }
 
-  let bind a ~f =
-    let b = f a.body in
-    { value_bindings = a.value_bindings @ b.value_bindings; body = b.body }
-  ;;
+    let bind a ~f =
+      let b = f a.body in
+      { value_bindings = a.value_bindings @ b.value_bindings; body = b.body }
+    ;;
 
-  let map = `Define_using_bind
-end)
+    let map = `Define_using_bind
+  end)
 
 let create ~loc ~prefix ~ty rhs =
   let name = gen_symbol ~prefix () in
