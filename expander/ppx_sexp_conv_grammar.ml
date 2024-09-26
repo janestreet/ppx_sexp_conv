@@ -278,7 +278,7 @@ let rec grammar_of_type core_type ~rec_flag ~tags_of_doc_comments =
        | Some (Jtyp_tuple ltps, _attrs) ->
          grammar_of_labeled_tuple ~loc ~rec_flag ~tags_of_doc_comments ltps
        | Some (Jtyp_layout _, _) | None ->
-         (match core_type.ptyp_desc with
+         (match Ppxlib_jane.Shim.Core_type_desc.of_parsetree core_type.ptyp_desc with
           | Ptyp_any -> any_grammar ~loc "_"
           | Ptyp_var name ->
             (match rec_flag with
@@ -300,6 +300,7 @@ let rec grammar_of_type core_type ~rec_flag ~tags_of_doc_comments =
             List.map ~f:(grammar_of_type ~rec_flag ~tags_of_doc_comments) list
             |> tuple_grammar ~loc
             |> list_grammar ~loc
+          | Ptyp_unboxed_tuple _ -> unsupported ~loc "unboxed tuple types"
           | Ptyp_constr (id, args) ->
             List.map args ~f:(fun core_type ->
               let loc = core_type.ptyp_loc in
@@ -517,8 +518,10 @@ let pattern_of_td td =
 (* Any grammar expression that is purely a constant does no work, and does not need to be
    wrapped in [Lazy]. *)
 let rec is_preallocated_constant expr =
-  match expr.pexp_desc with
-  | Pexp_constraint (expr, _) | Pexp_coerce (expr, _, _) | Pexp_open (_, expr) ->
+  match
+    Ppxlib_jane.Shim.Expression_desc.of_parsetree ~loc:expr.pexp_loc expr.pexp_desc
+  with
+  | Pexp_constraint (expr, _, _) | Pexp_coerce (expr, _, _) | Pexp_open (_, expr) ->
     is_preallocated_constant expr
   | Pexp_constant _ -> true
   | Pexp_tuple args -> List.for_all ~f:is_preallocated_constant args
@@ -534,8 +537,10 @@ let rec is_preallocated_constant expr =
    need to be wrapped in [Lazy]. Accessing the previous grammar is work, but building the
    closure for a lazy value is at least as much work anyway. *)
 let rec is_variable_access expr =
-  match expr.pexp_desc with
-  | Pexp_constraint (expr, _) | Pexp_coerce (expr, _, _) | Pexp_open (_, expr) ->
+  match
+    Ppxlib_jane.Shim.Expression_desc.of_parsetree ~loc:expr.pexp_loc expr.pexp_desc
+  with
+  | Pexp_constraint (expr, _, _) | Pexp_coerce (expr, _, _) | Pexp_open (_, expr) ->
     is_variable_access expr
   | Pexp_ident _ -> true
   | Pexp_field (expr, _) -> is_variable_access expr

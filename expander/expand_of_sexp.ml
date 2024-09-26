@@ -160,21 +160,11 @@ module Str_generate_of_sexp = struct
       Conversion.of_reference_exn
         (labeled_tuple_of_sexp ~error_source ~typevars ~loc alist)
     | Some (Jtyp_layout _, _) | None ->
-      (match typ with
+      (match Ppxlib_jane.Shim.Core_type.of_parsetree typ with
        | _ when Option.is_some (Attribute.get Attrs.opaque typ) ->
          Conversion.of_reference_exn [%expr Sexplib0.Sexp_conv.opaque_of_sexp]
-       | [%type: [%t? _] sexp_opaque] | [%type: _] ->
+       | { ptyp_desc = Ptyp_any; _ } ->
          Conversion.of_reference_exn [%expr Sexplib0.Sexp_conv.opaque_of_sexp]
-       | [%type: [%t? ty1] sexp_list] ->
-         let arg1 =
-           Conversion.to_expression ~loc (type_of_sexp ~error_source ~typevars ty1)
-         in
-         Conversion.of_reference_exn [%expr Sexplib0.Sexp_conv.list_of_sexp [%e arg1]]
-       | [%type: [%t? ty1] sexp_array] ->
-         let arg1 =
-           Conversion.to_expression ~loc (type_of_sexp ~error_source ~typevars ty1)
-         in
-         Conversion.of_reference_exn [%expr Sexplib0.Sexp_conv.array_of_sexp [%e arg1]]
        | { ptyp_desc = Ptyp_tuple tp; _ } ->
          Conversion.of_lambda (tuple_of_sexp ~error_source ~typevars (loc, tp))
        | { ptyp_desc = Ptyp_var parm; _ } ->
@@ -183,17 +173,32 @@ module Str_generate_of_sexp = struct
           | None ->
             Location.raise_errorf ~loc "ppx_sexp_conv: unbound type variable '%s" parm)
        | { ptyp_desc = Ptyp_constr (id, args); _ } ->
-         let args =
-           List.map args ~f:(fun arg ->
-             Conversion.to_expression ~loc (type_of_sexp ~error_source ~typevars arg))
-         in
-         Conversion.of_reference_exn (type_constr_of_sexp ~loc ~internal id args)
-       | { ptyp_desc = Ptyp_arrow (_, _, _); _ } ->
+         (match typ with
+          | [%type: [%t? _] sexp_opaque] ->
+            Conversion.of_reference_exn [%expr Sexplib0.Sexp_conv.opaque_of_sexp]
+          | [%type: [%t? ty1] sexp_list] ->
+            let arg1 =
+              Conversion.to_expression ~loc (type_of_sexp ~error_source ~typevars ty1)
+            in
+            Conversion.of_reference_exn [%expr Sexplib0.Sexp_conv.list_of_sexp [%e arg1]]
+          | [%type: [%t? ty1] sexp_array] ->
+            let arg1 =
+              Conversion.to_expression ~loc (type_of_sexp ~error_source ~typevars ty1)
+            in
+            Conversion.of_reference_exn [%expr Sexplib0.Sexp_conv.array_of_sexp [%e arg1]]
+          | _ ->
+            let args =
+              List.map args ~f:(fun arg ->
+                Conversion.to_expression ~loc (type_of_sexp ~error_source ~typevars arg))
+            in
+            Conversion.of_reference_exn (type_constr_of_sexp ~loc ~internal id args))
+       | { ptyp_desc = Ptyp_arrow (_, _, _, _, _); _ } ->
          Conversion.of_reference_exn [%expr Sexplib0.Sexp_conv.fun_of_sexp]
        | { ptyp_desc = Ptyp_variant (row_fields, Closed, _); _ } ->
          variant_of_sexp ~error_source ~typevars ?full_type (loc, row_fields)
        | { ptyp_desc = Ptyp_poly (parms, poly_tp); _ } ->
          poly_of_sexp ~error_source ~typevars parms poly_tp
+       | { ptyp_desc = Ptyp_unboxed_tuple _; _ }
        | { ptyp_desc = Ptyp_variant (_, Open, _); _ }
        | { ptyp_desc = Ptyp_object (_, _); _ }
        | { ptyp_desc = Ptyp_class (_, _); _ }

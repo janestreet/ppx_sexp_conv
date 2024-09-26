@@ -201,11 +201,14 @@ let rec is_value_expression expr =
   (* Syntactic values. *)
   | Pexp_ident _ | Pexp_constant _ | Pexp_function _ | Pexp_lazy _ -> true
   (* Type-only wrappers; we check their contents. *)
-  | Pexp_constraint (expr, (_ : core_type))
+  | Pexp_constraint (expr, (_ : core_type option), _)
   | Pexp_coerce (expr, (_ : core_type option), (_ : core_type))
-  | Pexp_newtype ((_ : string loc), expr) -> is_value_expression expr
+  | Pexp_newtype ((_ : string loc), expr)
+  | Pexp_stack expr -> is_value_expression expr
   (* Allocating constructors; they are only values if all of their contents are. *)
   | Pexp_tuple exprs -> List.for_all exprs ~f:is_value_expression
+  | Pexp_unboxed_tuple lexprs ->
+    List.for_all lexprs ~f:(fun (_, e) -> is_value_expression e)
   | Pexp_construct (_, maybe_expr) -> Option.for_all maybe_expr ~f:is_value_expression
   | Pexp_variant (_, maybe_expr) -> Option.for_all maybe_expr ~f:is_value_expression
   | Pexp_record (fields, maybe_expr) ->

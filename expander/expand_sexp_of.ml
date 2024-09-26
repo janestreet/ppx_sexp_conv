@@ -56,13 +56,11 @@ module Str_generate_sexp_of = struct
     | Some (Jtyp_tuple alist, (_ : attributes)) ->
       Conversion.of_lambda [ sexp_of_labeled_tuple ~renaming ~loc alist ]
     | Some (Jtyp_layout _, _) | None ->
-      (match typ with
+      (match Ppxlib_jane.Shim.Core_type.of_parsetree typ with
        | _ when Option.is_some (Attribute.get Attrs.opaque typ) ->
          Conversion.of_reference_exn [%expr Sexplib0.Sexp_conv.sexp_of_opaque]
-       | [%type: _] ->
+       | { ptyp_desc = Ptyp_any; _ } ->
          Conversion.of_lambda [ ppat_any ~loc --> [%expr Sexplib0.Sexp.Atom "_"] ]
-       | [%type: [%t? _] sexp_opaque] ->
-         Conversion.of_reference_exn [%expr Sexplib0.Sexp_conv.sexp_of_opaque]
        | { ptyp_desc = Ptyp_tuple tp; _ } ->
          Conversion.of_lambda [ sexp_of_tuple ~renaming (loc, tp) ]
        | { ptyp_desc = Ptyp_var parm; _ } ->
@@ -71,13 +69,17 @@ module Str_generate_sexp_of = struct
             Conversion.of_reference_exn (Fresh_name.expression fresh)
           | Existentially_bound -> sexp_of_type ~renaming [%type: _])
        | { ptyp_desc = Ptyp_constr (id, args); _ } ->
-         Conversion.of_reference_exn
-           (sexp_of_type_constr
-              ~loc
-              id
-              (List.map args ~f:(fun tp ->
-                 Conversion.to_expression ~loc (sexp_of_type ~renaming tp))))
-       | { ptyp_desc = Ptyp_arrow (_, _, _); _ } ->
+         (match typ with
+          | [%type: [%t? _] sexp_opaque] ->
+            Conversion.of_reference_exn [%expr Sexplib0.Sexp_conv.sexp_of_opaque]
+          | _ ->
+            Conversion.of_reference_exn
+              (sexp_of_type_constr
+                 ~loc
+                 id
+                 (List.map args ~f:(fun tp ->
+                    Conversion.to_expression ~loc (sexp_of_type ~renaming tp)))))
+       | { ptyp_desc = Ptyp_arrow (_, _, _, _, _); _ } ->
          Conversion.of_lambda
            [ ppat_any ~loc
              --> [%expr Sexplib0.Sexp_conv.sexp_of_fun Sexplib0.Sexp_conv.ignore]
@@ -86,6 +88,7 @@ module Str_generate_sexp_of = struct
          sexp_of_variant ~renaming (loc, row_fields)
        | { ptyp_desc = Ptyp_poly (parms, poly_tp); _ } ->
          sexp_of_poly ~renaming parms poly_tp
+       | { ptyp_desc = Ptyp_unboxed_tuple _; _ }
        | { ptyp_desc = Ptyp_variant (_, Open, _); _ }
        | { ptyp_desc = Ptyp_object (_, _); _ }
        | { ptyp_desc = Ptyp_class (_, _); _ }
