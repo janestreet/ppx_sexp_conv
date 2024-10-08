@@ -88,14 +88,11 @@ module Str_generate_sexp_of = struct
          sexp_of_variant ~renaming (loc, row_fields)
        | { ptyp_desc = Ptyp_poly (parms, poly_tp); _ } ->
          sexp_of_poly ~renaming parms poly_tp
-       | { ptyp_desc = Ptyp_unboxed_tuple _; _ }
-       | { ptyp_desc = Ptyp_variant (_, Open, _); _ }
-       | { ptyp_desc = Ptyp_object (_, _); _ }
-       | { ptyp_desc = Ptyp_class (_, _); _ }
-       | { ptyp_desc = Ptyp_alias (_, _); _ }
-       | { ptyp_desc = Ptyp_package _; _ }
-       | { ptyp_desc = Ptyp_extension _; _ } ->
-         Location.raise_errorf ~loc "Type unsupported for ppx [sexp_of] conversion")
+       | core_type ->
+         Location.raise_errorf
+           ~loc
+           "Type unsupported for ppx [sexp_of] conversion (%s)"
+           (Ppxlib_jane.Language_feature_name.of_core_type_desc core_type.ptyp_desc))
 
   (* Conversion of (unlabeled) tuples *)
   and sexp_of_tuple ~renaming (loc, tps) =

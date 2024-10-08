@@ -198,14 +198,11 @@ module Str_generate_of_sexp = struct
          variant_of_sexp ~error_source ~typevars ?full_type (loc, row_fields)
        | { ptyp_desc = Ptyp_poly (parms, poly_tp); _ } ->
          poly_of_sexp ~error_source ~typevars parms poly_tp
-       | { ptyp_desc = Ptyp_unboxed_tuple _; _ }
-       | { ptyp_desc = Ptyp_variant (_, Open, _); _ }
-       | { ptyp_desc = Ptyp_object (_, _); _ }
-       | { ptyp_desc = Ptyp_class (_, _); _ }
-       | { ptyp_desc = Ptyp_alias (_, _); _ }
-       | { ptyp_desc = Ptyp_package _; _ }
-       | { ptyp_desc = Ptyp_extension _; _ } ->
-         Location.raise_errorf ~loc "Type unsupported for ppx [of_sexp] conversion")
+       | core_type ->
+         Location.raise_errorf
+           ~loc
+           "Type unsupported for ppx [of_sexp] conversion (%s)"
+           (Ppxlib_jane.Language_feature_name.of_core_type_desc core_type.ptyp_desc))
 
   (* Conversion of (unlabeled) tuples *)
   and tuple_of_sexp ~error_source ~typevars (loc, tps) =

@@ -42,13 +42,39 @@ module Sig_sexp = struct
   ;;
 
   let sig_type_decl ~loc ~path ((_rf, tds) as decls) =
-    match
-      mk_named_sig
-        ~loc
-        ~sg_name:"Sexplib0.Sexpable.S"
-        ~handle_polymorphic_variant:false
-        tds
-    with
+    let include_infos =
+      match tds with
+      | [] | _ :: _ :: _ -> None
+      | [ td ] ->
+        let sg_name =
+          let open struct
+            type is_value =
+              | Value
+              | Maybe_non_value
+          end in
+          let has_jkind_annotation =
+            match Ppxlib_jane.Jane_syntax.Layouts.of_type_declaration td with
+            | None -> None
+            | Some (jkind, _) ->
+              (match jkind.txt with
+               | Default -> None (* [t : _] *)
+               | Abbreviation { txt = "value"; _ } -> Some Value (* [t : value] *)
+               | _ -> Some Maybe_non_value)
+          in
+          let is_value =
+            match td.ptype_kind, td.ptype_manifest with
+            | (Ptype_variant _ | Ptype_record _ | Ptype_open), _ -> Value
+            | Ptype_abstract, Some _ ->
+              Option.value has_jkind_annotation ~default:Maybe_non_value
+            | Ptype_abstract, None -> Option.value has_jkind_annotation ~default:Value
+          in
+          match is_value with
+          | Value -> "Sexplib0.Sexpable.S"
+          | Maybe_non_value -> "Sexplib0.Sexpable.S_any"
+        in
+        mk_named_sig ~loc ~sg_name ~handle_polymorphic_variant:false [ td ]
+    in
+    match include_infos with
     | Some include_infos -> [ psig_include ~loc include_infos ]
     | None -> mk_sig ~loc ~path decls
   ;;
