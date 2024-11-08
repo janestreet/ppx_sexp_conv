@@ -12,7 +12,7 @@ val core_type
 val sig_type_decl
   :  ctxt:Expansion_context.Deriver.t
   -> rec_flag * type_declaration list
-  -> signature
+  -> signature_item list
 
 val str_type_decl
   :  ctxt:Expansion_context.Deriver.t

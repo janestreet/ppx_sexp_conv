@@ -60,8 +60,8 @@ let with_constructor_declaration original cd ~type_parameters:tps =
       inherit [t] Ast_traverse.fold as super
 
       method! core_type ty t =
-        match ty.ptyp_desc with
-        | Ptyp_var var ->
+        match Ppxlib_jane.Shim.Core_type_desc.of_parsetree ty.ptyp_desc with
+        | Ptyp_var (var, _) ->
           let error =
             { loc = ty.ptyp_loc
             ; txt = "ppx_sexp_conv: variable is not a parameter of the type constructor"
@@ -72,8 +72,8 @@ let with_constructor_declaration original cd ~type_parameters:tps =
     end
   in
   let aux t tp_name tp_in_return_type =
-    match tp_in_return_type.ptyp_desc with
-    | Ptyp_var var ->
+    match Ppxlib_jane.Shim.Core_type_desc.of_parsetree tp_in_return_type.ptyp_desc with
+    | Ptyp_var (var, _) ->
       let data =
         let loc = tp_in_return_type.ptyp_loc in
         if Map.mem t.universal var

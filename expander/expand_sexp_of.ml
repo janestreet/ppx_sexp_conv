@@ -52,47 +52,45 @@ module Str_generate_sexp_of = struct
   (* Conversion of types *)
   let rec sexp_of_type ~renaming typ : Conversion.t =
     let loc = { typ.ptyp_loc with loc_ghost = true } in
-    match Ppxlib_jane.Jane_syntax.Core_type.of_ast typ with
-    | Some (Jtyp_tuple alist, (_ : attributes)) ->
-      Conversion.of_lambda [ sexp_of_labeled_tuple ~renaming ~loc alist ]
-    | Some (Jtyp_layout _, _) | None ->
+    match Ppxlib_jane.Shim.Core_type.of_parsetree typ with
+    | _ when Option.is_some (Attribute.get Attrs.opaque typ) ->
+      Conversion.of_reference_exn [%expr Sexplib0.Sexp_conv.sexp_of_opaque]
+    | { ptyp_desc = Ptyp_any _; _ } ->
+      Conversion.of_lambda [ ppat_any ~loc --> [%expr Sexplib0.Sexp.Atom "_"] ]
+    | { ptyp_desc = Ptyp_tuple labeled_tps; _ } ->
+      (match Ppxlib_jane.as_unlabeled_tuple labeled_tps with
+       | Some tps -> Conversion.of_lambda [ sexp_of_tuple ~renaming (loc, tps) ]
+       | None -> Conversion.of_lambda [ sexp_of_labeled_tuple ~renaming ~loc labeled_tps ])
+    | { ptyp_desc = Ptyp_var (parm, _); _ } ->
+      (match Renaming.binding_kind renaming parm ~loc with
+       | Universally_bound fresh ->
+         Conversion.of_reference_exn (Fresh_name.expression fresh)
+       | Existentially_bound -> sexp_of_type ~renaming [%type: _])
+    | { ptyp_desc = Ptyp_constr (id, args); _ } ->
       (match typ with
-       | _ when Option.is_some (Attribute.get Attrs.opaque typ) ->
-         Conversion.of_reference_exn [%expr Sexplib0.Sexp_conv.sexp_of_opaque]
-       | [%type: _] ->
-         Conversion.of_lambda [ ppat_any ~loc --> [%expr Sexplib0.Sexp.Atom "_"] ]
        | [%type: [%t? _] sexp_opaque] ->
          Conversion.of_reference_exn [%expr Sexplib0.Sexp_conv.sexp_of_opaque]
-       | { ptyp_desc = Ptyp_tuple tp; _ } ->
-         Conversion.of_lambda [ sexp_of_tuple ~renaming (loc, tp) ]
-       | { ptyp_desc = Ptyp_var parm; _ } ->
-         (match Renaming.binding_kind renaming parm ~loc with
-          | Universally_bound fresh ->
-            Conversion.of_reference_exn (Fresh_name.expression fresh)
-          | Existentially_bound -> sexp_of_type ~renaming [%type: _])
-       | { ptyp_desc = Ptyp_constr (id, args); _ } ->
+       | _ ->
          Conversion.of_reference_exn
            (sexp_of_type_constr
               ~loc
               id
               (List.map args ~f:(fun tp ->
-                 Conversion.to_expression ~loc (sexp_of_type ~renaming tp))))
-       | { ptyp_desc = Ptyp_arrow (_, _, _); _ } ->
-         Conversion.of_lambda
-           [ ppat_any ~loc
-             --> [%expr Sexplib0.Sexp_conv.sexp_of_fun Sexplib0.Sexp_conv.ignore]
-           ]
-       | { ptyp_desc = Ptyp_variant (row_fields, Closed, _); _ } ->
-         sexp_of_variant ~renaming (loc, row_fields)
-       | { ptyp_desc = Ptyp_poly (parms, poly_tp); _ } ->
-         sexp_of_poly ~renaming parms poly_tp
-       | { ptyp_desc = Ptyp_variant (_, Open, _); _ }
-       | { ptyp_desc = Ptyp_object (_, _); _ }
-       | { ptyp_desc = Ptyp_class (_, _); _ }
-       | { ptyp_desc = Ptyp_alias (_, _); _ }
-       | { ptyp_desc = Ptyp_package _; _ }
-       | { ptyp_desc = Ptyp_extension _; _ } ->
-         Location.raise_errorf ~loc "Type unsupported for ppx [sexp_of] conversion")
+                 Conversion.to_expression ~loc (sexp_of_type ~renaming tp)))))
+    | { ptyp_desc = Ptyp_arrow (_, _, _, _, _); _ } ->
+      Conversion.of_lambda
+        [ ppat_any ~loc
+          --> [%expr Sexplib0.Sexp_conv.sexp_of_fun Sexplib0.Sexp_conv.ignore]
+        ]
+    | { ptyp_desc = Ptyp_variant (row_fields, Closed, _); _ } ->
+      sexp_of_variant ~renaming (loc, row_fields)
+    | { ptyp_desc = Ptyp_poly (parms, poly_tp); _ } ->
+      sexp_of_poly ~renaming parms poly_tp
+    | core_type ->
+      Location.raise_errorf
+        ~loc
+        "Type unsupported for ppx [sexp_of] conversion (%s)"
+        (Ppxlib_jane.Language_feature_name.of_core_type_desc core_type.ptyp_desc)
 
   (* Conversion of (unlabeled) tuples *)
   and sexp_of_tuple ~renaming (loc, tps) =
@@ -106,7 +104,6 @@ module Str_generate_sexp_of = struct
 
   (* Conversion of labeled tuples *)
   and sexp_of_labeled_tuple ~renaming ~loc alist =
-    assert (Labeled_tuple.is_valid alist);
     let ({ bindings; arguments; converted } : Conversion.Apply_all.t) =
       List.map alist ~f:(fun (_, core_type) -> sexp_of_type ~renaming core_type)
       |> Conversion.apply_all ~loc
@@ -125,9 +122,10 @@ module Str_generate_sexp_of = struct
       |> pexp_let ~loc Nonrecursive bindings
     in
     let pat =
-      ( List.map2_exn alist arguments ~f:(fun (label_option, _) arg -> label_option, arg)
-      , Closed )
-      |> Ppxlib_jane.Jane_syntax.Labeled_tuples.pat_of ~loc
+      Ppxlib_jane.Ast_builder.Default.ppat_tuple
+        ~loc
+        (List.map2_exn alist arguments ~f:(fun (label_option, _) arg -> label_option, arg))
+        Closed
     in
     pat --> expr
 
@@ -196,13 +194,11 @@ module Str_generate_sexp_of = struct
   and sexp_of_poly ~renaming parms tp =
     let loc = tp.ptyp_loc in
     let renaming =
-      List.fold_left
-        parms
-        ~init:renaming
-        ~f:(Renaming.add_universally_bound ~prefix:"_of_")
+      List.fold_left parms ~init:renaming ~f:(fun renaming (name, _jkind) ->
+        Renaming.add_universally_bound renaming name ~prefix:"_of_")
     in
     let bindings =
-      let mk_binding parm =
+      let mk_binding (parm, _jkind) =
         let name =
           match Renaming.binding_kind renaming parm.txt ~loc:parm.loc with
           | Universally_bound name -> name
@@ -295,9 +291,9 @@ module Str_generate_sexp_of = struct
         object
           inherit Ast_traverse.iter as super
 
-          method! core_type_desc =
-            function
-            | Ptyp_var v ->
+          method! core_type_desc t =
+            match Ppxlib_jane.Shim.Core_type_desc.of_parsetree t with
+            | Ptyp_var (v, _) ->
               Location.raise_errorf
                 ~loc
                 "[@%s] was used, but the type of the field contains a type variable: '%s.\n\
@@ -305,7 +301,7 @@ module Str_generate_sexp_of = struct
                  Consider using [@sexp_drop_if _] or [@sexp_drop_default.sexp] instead."
                 attr_name
                 v
-            | t -> super#core_type_desc t
+            | _ -> super#core_type_desc t
         end
       in
       iter#core_type

@@ -1,6 +1,6 @@
 open! Base
 
-let is_valid alist = List.exists alist ~f:(fun (option, _) -> Option.is_some option)
+let has_any_label alist = List.exists alist ~f:(fun (label, _) -> Option.is_some label)
 
 let atom_of_label = function
   | None -> "."
