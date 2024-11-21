@@ -274,56 +274,55 @@ let rec grammar_of_type core_type ~rec_flag ~tags_of_doc_comments =
     match from_attribute with
     | Some expr -> expr
     | None ->
-      (match Ppxlib_jane.Jane_syntax.Core_type.of_ast core_type with
-       | Some (Jtyp_tuple ltps, _attrs) ->
-         grammar_of_labeled_tuple ~loc ~rec_flag ~tags_of_doc_comments ltps
-       | Some (Jtyp_layout _, _) | None ->
-         (match Ppxlib_jane.Shim.Core_type_desc.of_parsetree core_type.ptyp_desc with
-          | Ptyp_any -> any_grammar ~loc "_"
-          | Ptyp_var name ->
-            (match rec_flag with
-             | Recursive ->
-               (* For recursive grammars, [grammar_of_type] for any type variables is called
+      (match Ppxlib_jane.Shim.Core_type_desc.of_parsetree core_type.ptyp_desc with
+       | Ptyp_any _ -> any_grammar ~loc "_"
+       | Ptyp_var (name, _) ->
+         (match rec_flag with
+          | Recursive ->
+            (* For recursive grammars, [grammar_of_type] for any type variables is called
                   inside a [defn]. The variables should therefore be resolved as [Tyvar]
                   grammars. *)
-               tyvar_grammar ~loc (estring ~loc name)
-             | Nonrecursive ->
-               (* Outside recursive [defn]s, type variables are passed in as function
+            tyvar_grammar ~loc (estring ~loc name)
+          | Nonrecursive ->
+            (* Outside recursive [defn]s, type variables are passed in as function
                   arguments. *)
-               unapplied_type_constr_conv
-                 ~loc
-                 ~f:tyvar_grammar_name
-                 (Located.lident ~loc name)
-               |> untyped_grammar ~loc)
-          | Ptyp_arrow _ -> arrow_grammar ~loc
-          | Ptyp_tuple list ->
-            List.map ~f:(grammar_of_type ~rec_flag ~tags_of_doc_comments) list
+            unapplied_type_constr_conv
+              ~loc
+              ~f:tyvar_grammar_name
+              (Located.lident ~loc name)
+            |> untyped_grammar ~loc)
+       | Ptyp_arrow _ -> arrow_grammar ~loc
+       | Ptyp_tuple labeled_tps ->
+         (match Ppxlib_jane.as_unlabeled_tuple labeled_tps with
+          | Some tps ->
+            List.map ~f:(grammar_of_type ~rec_flag ~tags_of_doc_comments) tps
             |> tuple_grammar ~loc
             |> list_grammar ~loc
-          | Ptyp_unboxed_tuple _ -> unsupported ~loc "unboxed tuple types"
-          | Ptyp_constr (id, args) ->
-            List.map args ~f:(fun core_type ->
-              let loc = core_type.ptyp_loc in
-              grammar_of_type ~rec_flag ~tags_of_doc_comments core_type
-              |> typed_grammar ~loc)
-            |> type_constr_conv ~loc ~f:grammar_name id
-            |> untyped_grammar ~loc
-          | Ptyp_object _ -> unsupported ~loc "object types"
-          | Ptyp_class _ -> unsupported ~loc "class types"
-          | Ptyp_alias _ -> unsupported ~loc "type aliases"
-          | Ptyp_variant (rows, closed_flag, (_ : string list option)) ->
-            (match closed_flag with
-             | Open -> unsupported ~loc "open polymorphic variant types"
-             | Closed ->
-               grammar_of_polymorphic_variant ~loc ~rec_flag ~tags_of_doc_comments rows)
-          | Ptyp_poly _ -> unsupported ~loc "explicitly polymorphic types"
-          | Ptyp_package _ -> unsupported ~loc "first-class module types"
-          | Ptyp_extension _ -> unsupported ~loc "unexpanded ppx extensions"))
+          | None ->
+            grammar_of_labeled_tuple ~loc ~rec_flag ~tags_of_doc_comments labeled_tps)
+       | Ptyp_unboxed_tuple _ -> unsupported ~loc "unboxed tuple types"
+       | Ptyp_constr (id, args) ->
+         List.map args ~f:(fun core_type ->
+           let loc = core_type.ptyp_loc in
+           grammar_of_type ~rec_flag ~tags_of_doc_comments core_type |> typed_grammar ~loc)
+         |> type_constr_conv ~loc ~f:grammar_name id
+         |> untyped_grammar ~loc
+       | Ptyp_object _ -> unsupported ~loc "object types"
+       | Ptyp_class _ -> unsupported ~loc "class types"
+       | Ptyp_alias _ -> unsupported ~loc "type aliases"
+       | Ptyp_variant (rows, closed_flag, (_ : string list option)) ->
+         (match closed_flag with
+          | Open -> unsupported ~loc "open polymorphic variant types"
+          | Closed ->
+            grammar_of_polymorphic_variant ~loc ~rec_flag ~tags_of_doc_comments rows)
+       | Ptyp_poly _ -> unsupported ~loc "explicitly polymorphic types"
+       | Ptyp_package _ -> unsupported ~loc "first-class module types"
+       | Ptyp_extension _ -> unsupported ~loc "unexpanded ppx extensions")
   in
   grammar_of_type_tags core_type grammar ~tags_of_doc_comments
 
 and grammar_of_labeled_tuple ~loc ~rec_flag ~tags_of_doc_comments alist =
-  assert (Labeled_tuple.is_valid alist);
+  assert (Labeled_tuple.has_any_label alist);
   let fields =
     List.concat_map alist ~f:(fun (lbl, typ) ->
       let lbl = Labeled_tuple.atom_of_label lbl in
@@ -524,7 +523,7 @@ let rec is_preallocated_constant expr =
   | Pexp_constraint (expr, _, _) | Pexp_coerce (expr, _, _) | Pexp_open (_, expr) ->
     is_preallocated_constant expr
   | Pexp_constant _ -> true
-  | Pexp_tuple args -> List.for_all ~f:is_preallocated_constant args
+  | Pexp_tuple args -> List.for_all ~f:(fun (_, e) -> is_preallocated_constant e) args
   | Pexp_variant (_, maybe_arg) | Pexp_construct (_, maybe_arg) ->
     Option.for_all ~f:is_preallocated_constant maybe_arg
   | Pexp_record (fields, maybe_template) ->

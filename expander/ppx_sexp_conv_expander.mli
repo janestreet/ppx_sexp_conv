@@ -10,9 +10,13 @@ module Sexp_of : sig
     :  loc:Location.t
     -> path:string
     -> rec_flag * type_declaration list
-    -> signature
+    -> signature_item list
 
-  val sig_exception : loc:Location.t -> path:string -> type_exception -> signature
+  val sig_exception
+    :  loc:Location.t
+    -> path:string
+    -> type_exception
+    -> signature_item list
 
   val str_type_decl
     :  loc:Location.t
@@ -32,7 +36,7 @@ module Of_sexp : sig
     -> loc:Location.t
     -> path:string
     -> rec_flag * type_declaration list
-    -> signature
+    -> signature_item list
 
   val str_type_decl
     :  loc:Location.t
@@ -54,7 +58,7 @@ module Sexp_grammar : sig
   val sig_type_decl
     :  ctxt:Expansion_context.Deriver.t
     -> rec_flag * type_declaration list
-    -> signature
+    -> signature_item list
 
   val str_type_decl
     :  ctxt:Expansion_context.Deriver.t
@@ -68,5 +72,5 @@ module Sig_sexp : sig
     :  loc:Location.t
     -> path:string
     -> rec_flag * type_declaration list
-    -> signature
+    -> signature_item list
 end

@@ -12,7 +12,7 @@ val constrained_function_binding
   :  location (** location to use for the binding *)
   -> type_declaration (** type declaration used to derive the function *)
   -> core_type (** type of the function *)
-  -> tps:(string loc * Ppxlib_jane.Jane_syntax.Jkind.annotation option) list
+  -> tps:(string loc * Ppxlib_jane.Shim.jkind_annotation option) list
        (** names and jkinds of type parameters in the declaration *)
   -> func_name:string (** name to bind the function to *)
   -> expression (** expression representing the function *)
@@ -39,4 +39,4 @@ val is_value_expression : expression -> bool
     attribute. *)
 val really_recursive_respecting_opaque : rec_flag -> type_declaration list -> rec_flag
 
-val strip_attributes : Ast_traverse.map
+val strip_attributes : Ppxlib_jane.Ast_traverse.map

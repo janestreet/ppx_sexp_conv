@@ -53,12 +53,12 @@ module Sig_sexp = struct
               | Maybe_non_value
           end in
           let has_jkind_annotation =
-            match Ppxlib_jane.Jane_syntax.Layouts.of_type_declaration td with
+            match Ppxlib_jane.Shim.Type_declaration.extract_jkind_annotation td with
             | None -> None
-            | Some (jkind, _) ->
-              (match jkind.txt with
+            | Some jkind ->
+              (match jkind.pjkind_desc with
                | Default -> None (* [t : _] *)
-               | Abbreviation { txt = "value"; _ } -> Some Value (* [t : value] *)
+               | Abbreviation "value" -> Some Value (* [t : value] *)
                | _ -> Some Maybe_non_value)
           in
           let is_value =

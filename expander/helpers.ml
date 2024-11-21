@@ -11,10 +11,11 @@ let replace_variables_by_underscores =
     object
       inherit Ast_traverse.map as super
 
-      method! core_type_desc =
-        function
-        | Ptyp_var _ -> Ptyp_any
-        | t -> super#core_type_desc t
+      method! core_type_desc t =
+        match Ppxlib_jane.Shim.Core_type_desc.of_parsetree t with
+        | Ptyp_var (_, jkind) ->
+          Ppxlib_jane.Shim.Core_type_desc.to_parsetree (Ptyp_any jkind)
+        | _ -> super#core_type_desc t
     end
   in
   map#core_type
@@ -51,19 +52,11 @@ let make_type_rigid ~rigid_types =
       inherit Ast_traverse.map as super
 
       method! core_type ty =
-        match Ppxlib_jane.Jane_syntax.Core_type.of_ast ty with
-        | Some (Jtyp_layout (Ltyp_var { name = Some name; jkind = _ }), ptyp_attributes)
-          ->
+        match Ppxlib_jane.Shim.Core_type_desc.of_parsetree ty.ptyp_desc with
+        | Ptyp_var (name, _) ->
           let ptyp_desc = find_rigid_type_constr ~loc:ty.ptyp_loc ~rigid_types name in
-          { ty with ptyp_desc; ptyp_attributes }
-        | Some _ -> super#core_type ty
-        | None ->
-          let ptyp_desc =
-            match ty.ptyp_desc with
-            | Ptyp_var s -> find_rigid_type_constr ~loc:ty.ptyp_loc ~rigid_types s
-            | desc -> super#core_type_desc desc
-          in
           { ty with ptyp_desc }
+        | _ -> super#core_type ty
     end
   in
   map#core_type
@@ -76,7 +69,7 @@ let make_type_rigid ~rigid_types =
    not work because of certains types with constraints. We thus only use rigid variables
    for sum types, which includes all GADTs. *)
 
-type bound_var = string loc * Ppxlib_jane.Jane_syntax.Jkind.annotation option
+type bound_var = string loc * Ppxlib_jane.jkind_annotation option
 
 let tvars_of_core_type : core_type -> bound_var list =
   let add_binding_to_list (bindings : bound_var list) (bound : bound_var) =
@@ -95,15 +88,9 @@ let tvars_of_core_type : core_type -> bound_var list =
 
       method! core_type x acc =
         let loc = x.ptyp_loc in
-        match x.ptyp_desc with
-        | Ptyp_var bound_name ->
-          let binding =
-            match Ppxlib_jane.Jane_syntax.Core_type.of_ast x with
-            | Some (Jtyp_layout (Ltyp_var { name = Some name; jkind }), _attrs) ->
-              { txt = name; loc }, Some jkind
-            | _ -> { txt = bound_name; loc }, None
-          in
-          add_binding_to_list acc binding
+        match Ppxlib_jane.Shim.Core_type_desc.of_parsetree x.ptyp_desc with
+        | Ptyp_var (bound_name, jkind) ->
+          add_binding_to_list acc ({ txt = bound_name; loc }, jkind)
         | _ -> super#core_type x acc
     end
   in
@@ -115,7 +102,7 @@ let constrained_function_binding
     (loc : Location.t)
   (td : type_declaration)
   (typ : core_type)
-  ~(tps : (string loc * Ppxlib_jane.Jane_syntax.Jkind.annotation option) list)
+  ~(tps : (string loc * Ppxlib_jane.jkind_annotation option) list)
   ~(func_name : string)
   (body : expression)
   =
@@ -130,12 +117,7 @@ let constrained_function_binding
     if not has_vars
     then pat
     else (
-      let annot =
-        Ppxlib_jane.Jane_syntax.Core_type.core_type_of
-          ~loc
-          ~attrs:[]
-          (Jtyp_layout (Ltyp_poly { inner_type = typ; bound_vars }))
-      in
+      let annot = Ppxlib_jane.Ast_builder.Default.ptyp_poly ~loc bound_vars typ in
       ppat_constraint ~loc pat annot)
   in
   let body =
@@ -154,9 +136,7 @@ let constrained_function_binding
           match jkind with
           | None -> pexp_newtype ~loc name body
           | Some jkind ->
-            Ppxlib_jane.Jane_syntax.Layouts.expr_of
-              ~loc
-              (Lexp_newtype (name, jkind, body)))
+            Ppxlib_jane.Ast_builder.Default.pexp_newtype ~loc name (Some jkind) body)
         ~init:(pexp_constraint ~loc body (make_type_rigid ~rigid_types typ)))
     else if has_vars
     then body
@@ -203,10 +183,10 @@ let rec is_value_expression expr =
   (* Type-only wrappers; we check their contents. *)
   | Pexp_constraint (expr, (_ : core_type option), _)
   | Pexp_coerce (expr, (_ : core_type option), (_ : core_type))
-  | Pexp_newtype ((_ : string loc), expr)
+  | Pexp_newtype ((_ : string loc), (_ : Ppxlib_jane.jkind_annotation option), expr)
   | Pexp_stack expr -> is_value_expression expr
   (* Allocating constructors; they are only values if all of their contents are. *)
-  | Pexp_tuple exprs -> List.for_all exprs ~f:is_value_expression
+  | Pexp_tuple lexprs -> List.for_all lexprs ~f:(fun (_, e) -> is_value_expression e)
   | Pexp_unboxed_tuple lexprs ->
     List.for_all lexprs ~f:(fun (_, e) -> is_value_expression e)
   | Pexp_construct (_, maybe_expr) -> Option.for_all maybe_expr ~f:is_value_expression
@@ -239,7 +219,8 @@ let rec is_value_expression expr =
   | Pexp_pack _
   | Pexp_open _
   | Pexp_letop _
-  | Pexp_extension _ -> false
+  | Pexp_extension _
+  | Pexp_comprehension _ -> false
 ;;
 
 let really_recursive_respecting_opaque rec_flag tds =
@@ -259,14 +240,14 @@ let really_recursive_respecting_opaque rec_flag tds =
 
 let strip_attributes =
   object
-    inherit Ast_traverse.map
+    inherit Ppxlib_jane.Ast_traverse.map
 
     method! attribute attr =
       Location.raise_errorf ~loc:attr.attr_loc "failed to strip attribute from syntax"
 
     method! attributes _ = []
 
-    method! signature items =
+    method! signature_items items =
       List.filter items ~f:(fun item ->
         match item.psig_desc with
         | Psig_attribute _ -> false
