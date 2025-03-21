@@ -801,7 +801,7 @@ module Str_generate_of_sexp = struct
     in
     let default_case = case ~lhs:(ppat_any ~loc) ~guard:None ~rhs:(eint ~loc (-1)) in
     let cases = List.concat [ field_cases; [ default_case ] ] in
-    pexp_function ~loc cases
+    pexp_function_cases ~loc cases
   ;;
 
   let create_arg_for_record_of_sexp td fields ~loc ~constructor =
