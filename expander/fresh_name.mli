@@ -1,6 +1,6 @@
 (** Represents freshly generated names at ppx expansion time. *)
 
-open! Base
+open! Stdppx
 open Ppxlib
 
 type t

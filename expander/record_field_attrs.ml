@@ -1,4 +1,4 @@
-open! Base
+open! Stdppx
 open! Ppxlib
 open Attrs
 
@@ -104,7 +104,6 @@ end
 module Sexp_of = struct
   module Drop = struct
     type t =
-      | No_arg
       | Compare
       | Equal
       | Sexp
@@ -119,9 +118,8 @@ module Sexp_of = struct
   let create ~loc ld =
     create
       ~loc
-      [ get_attribute drop_default ~f:(function
-          | None -> Drop_default No_arg
-          | Some { to_lift = e } -> Drop_default (Func (lift_drop_default ~loc ld e)))
+      [ get_attribute drop_default ~f:(fun { to_lift = e } ->
+          Drop_default (Func (lift_drop_default ~loc ld e)))
       ; get_attribute drop_default_equal ~f:(fun () -> Drop_default Equal)
       ; get_attribute drop_default_compare ~f:(fun () -> Drop_default Compare)
       ; get_attribute drop_default_sexp ~f:(fun () -> Drop_default Sexp)

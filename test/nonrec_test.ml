@@ -1,63 +1,63 @@
 open Ppx_sexp_conv_lib.Conv
 
-type t = float [@@deriving sexp]
+type t = float [@@deriving sexp ~localize]
 
 module M : sig
-  type t = float list [@@deriving sexp]
+  type t = float list [@@deriving sexp ~localize]
 end = struct
-  type nonrec t = t list [@@deriving sexp]
+  type nonrec t = t list [@@deriving sexp ~localize]
 end
 
-type 'a u = 'a [@@deriving sexp]
+type 'a u = 'a [@@deriving sexp ~localize]
 
 module M2 : sig
-  type 'a u = 'a list [@@deriving sexp]
+  type 'a u = 'a list [@@deriving sexp ~localize]
 end = struct
-  type nonrec 'a u = 'a u list [@@deriving sexp]
+  type nonrec 'a u = 'a u list [@@deriving sexp ~localize]
 end
 
 type 'a v = 'a w
-and 'a w = A of 'a v [@@deriving sexp]
+and 'a w = A of 'a v [@@deriving sexp ~localize]
 
-type 'a v_ = 'a v [@@deriving sexp]
-type 'a w_ = 'a w [@@deriving sexp]
+type 'a v_ = 'a v [@@deriving sexp ~localize]
+type 'a w_ = 'a w [@@deriving sexp ~localize]
 
 module M3 : sig
-  type 'a v = 'a w_ [@@deriving sexp]
-  type 'a w = 'a v_ [@@deriving sexp]
+  type 'a v = 'a w_ [@@deriving sexp ~localize]
+  type 'a w = 'a v_ [@@deriving sexp ~localize]
 end = struct
   type nonrec 'a v = 'a w
-  and 'a w = 'a v [@@deriving sexp]
+  and 'a w = 'a v [@@deriving sexp ~localize]
 end
 
-type t0 = A of t0 [@@deriving sexp]
+type t0 = A of t0 [@@deriving sexp ~localize]
 
 module B : sig
-  type nonrec t0 = t0 [@@deriving sexp]
+  type nonrec t0 = t0 [@@deriving sexp ~localize]
 end = struct
-  type nonrec t0 = t0 = A of t0 [@@deriving sexp]
+  type nonrec t0 = t0 = A of t0 [@@deriving sexp ~localize]
 end
 
 type t1 = A of t2
-and t2 = B of t1 [@@deriving sexp]
+and t2 = B of t1 [@@deriving sexp ~localize]
 
 module C : sig
-  type nonrec t1 = t1 [@@deriving sexp]
-  type nonrec t2 = t2 [@@deriving sexp]
+  type nonrec t1 = t1 [@@deriving sexp ~localize]
+  type nonrec t2 = t2 [@@deriving sexp ~localize]
 end = struct
   type nonrec t1 = t1 = A of t2
-  and t2 = t2 = B of t1 [@@deriving sexp]
+  and t2 = t2 = B of t1 [@@deriving sexp ~localize]
 end
 
 type 'a v1 = A of 'a v2
-and 'a v2 = B of 'a v1 [@@deriving sexp]
+and 'a v2 = B of 'a v1 [@@deriving sexp ~localize]
 
 module D : sig
-  type nonrec 'a v1 = 'a v1 [@@deriving sexp]
-  type nonrec 'a v2 = 'a v2 [@@deriving sexp]
+  type nonrec 'a v1 = 'a v1 [@@deriving sexp ~localize]
+  type nonrec 'a v2 = 'a v2 [@@deriving sexp ~localize]
 end = struct
   type nonrec 'a v1 = 'a v1 = A of 'a v2
-  and 'a v2 = 'a v2 = B of 'a v1 [@@deriving sexp]
+  and 'a v2 = 'a v2 = B of 'a v1 [@@deriving sexp ~localize]
 end
 
 type +'a w1

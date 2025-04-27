@@ -1,4 +1,4 @@
-open! Base
+open! Stdppx
 open! Ppxlib
 
 module To_lift = struct
@@ -16,13 +16,20 @@ let default =
 ;;
 
 let drop_default =
-  Attribute.declare
+  Attribute.declare_with_attr_loc
     "sexp.sexp_drop_default"
     Attribute.Context.label_declaration
-    Ast_pattern.(pstr (alt_option (pstr_eval __ nil ^:: nil) nil))
-    (function
-      | None -> None
-      | Some x -> Some { to_lift = x })
+    Ast_pattern.(pstr (many (pstr_eval __ nil)))
+    (fun ~attr_loc -> function
+      | [ x ] -> { to_lift = x }
+      | _ ->
+        Location.raise_errorf
+          ~loc:attr_loc
+          "Unsupported [@sexp_drop_default] payload; please use one of:\n\
+           - [@sexp_drop_default f] and give an explicit equality function [f]\n\
+           - [@sexp_drop_default.compare] if the type supports [%%compare]\n\
+           - [@sexp_drop_default.equal] if the type supports [%%equal]\n\
+           - [@sexp_drop_default.sexp] if you want to compare the sexp representations\n")
 ;;
 
 let drop_default_equal =

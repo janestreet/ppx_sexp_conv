@@ -1,4 +1,4 @@
-open! Base
+open! Stdppx
 open! Ppxlib
 
 (** Sexp conversion function, expressed as either a single expression or as a collection
@@ -14,7 +14,7 @@ val of_lambda : cases -> t
 val of_reference_exn : expression -> t
 
 (** Convert [t] to an expression. *)
-val to_expression : t -> loc:location -> expression
+val to_expression : t -> loc:location -> localize:bool -> expression
 
 (** Convert [t] to an expression that is a syntactic value, i.e. a constant, identifier,
     or lambda expression that does no "work", can can be preallocated, and works in the
@@ -23,7 +23,8 @@ val to_value_expression
   :  t
   -> loc:location
   -> rec_flag:rec_flag
-  -> values_being_defined:Set.M(String).t
+  -> values_being_defined:String.Set.t
+  -> localize:bool
   -> expression
 
 (** Apply [t] to an argument. *)

@@ -6,7 +6,7 @@ type abstract_a [@@deriving sexp] [@@deriving_inline sexp_grammar]
 include sig
   [@@@ocaml.warning "-32"]
 
-  val abstract_a_sexp_grammar : abstract_a Sexplib0.Sexp_grammar.t
+  val abstract_a_sexp_grammar : abstract_a Sexplib0.Sexp_grammar.t @@ portable
 end
 [@@ocaml.doc "@inline"]
 
@@ -17,7 +17,7 @@ type abstract_b [@@deriving sexp] [@@deriving_inline sexp_grammar]
 include sig
   [@@@ocaml.warning "-32"]
 
-  val abstract_b_sexp_grammar : abstract_b Sexplib0.Sexp_grammar.t
+  val abstract_b_sexp_grammar : abstract_b Sexplib0.Sexp_grammar.t @@ portable
 end
 [@@ocaml.doc "@inline"]
 
@@ -28,7 +28,7 @@ type integer = int [@@deriving sexp] [@@deriving_inline sexp_grammar]
 include sig
   [@@@ocaml.warning "-32"]
 
-  val integer_sexp_grammar : integer Sexplib0.Sexp_grammar.t
+  val integer_sexp_grammar : integer Sexplib0.Sexp_grammar.t @@ portable
 end
 [@@ocaml.doc "@inline"]
 
@@ -39,7 +39,7 @@ type tuple = int * string [@@deriving sexp] [@@deriving_inline sexp_grammar]
 include sig
   [@@@ocaml.warning "-32"]
 
-  val tuple_sexp_grammar : tuple Sexplib0.Sexp_grammar.t
+  val tuple_sexp_grammar : tuple Sexplib0.Sexp_grammar.t @@ portable
 end
 [@@ocaml.doc "@inline"]
 
@@ -54,7 +54,7 @@ type pos =
 include sig
   [@@@ocaml.warning "-32"]
 
-  val pos_sexp_grammar : pos Sexplib0.Sexp_grammar.t
+  val pos_sexp_grammar : pos Sexplib0.Sexp_grammar.t @@ portable
 end
 [@@ocaml.doc "@inline"]
 
@@ -65,7 +65,10 @@ type 'a unary = 'a list [@@deriving sexp] [@@deriving_inline sexp_grammar]
 include sig
   [@@@ocaml.warning "-32"]
 
-  val unary_sexp_grammar : 'a Sexplib0.Sexp_grammar.t -> 'a unary Sexplib0.Sexp_grammar.t
+  val unary_sexp_grammar
+    :  'a Sexplib0.Sexp_grammar.t
+    -> 'a unary Sexplib0.Sexp_grammar.t
+    @@ portable
 end
 [@@ocaml.doc "@inline"]
 
@@ -80,7 +83,7 @@ type enum =
 include sig
   [@@@ocaml.warning "-32"]
 
-  val enum_sexp_grammar : enum Sexplib0.Sexp_grammar.t
+  val enum_sexp_grammar : enum Sexplib0.Sexp_grammar.t @@ portable
 end
 [@@ocaml.doc "@inline"]
 
@@ -98,6 +101,7 @@ include sig
     :  'a Sexplib0.Sexp_grammar.t
     -> 'b Sexplib0.Sexp_grammar.t
     -> ('a, 'b) which Sexplib0.Sexp_grammar.t
+    @@ portable
 end
 [@@ocaml.doc "@inline"]
 
@@ -114,6 +118,7 @@ include sig
   val optional_sexp_grammar
     :  'a Sexplib0.Sexp_grammar.t
     -> 'a optional Sexplib0.Sexp_grammar.t
+    @@ portable
 end
 [@@ocaml.doc "@inline"]
 
@@ -124,7 +129,7 @@ type empty = | [@@deriving sexp] [@@deriving_inline sexp_grammar]
 include sig
   [@@@ocaml.warning "-32"]
 
-  val empty_sexp_grammar : empty Sexplib0.Sexp_grammar.t
+  val empty_sexp_grammar : empty Sexplib0.Sexp_grammar.t @@ portable
 end
 [@@ocaml.doc "@inline"]
 
@@ -138,6 +143,7 @@ include sig
   val phantom_sexp_grammar
     :  'a__003_ Sexplib0.Sexp_grammar.t
     -> 'a__003_ phantom Sexplib0.Sexp_grammar.t
+    @@ portable
 end
 [@@ocaml.doc "@inline"]
 
@@ -152,7 +158,7 @@ type color =
 include sig
   [@@@ocaml.warning "-32"]
 
-  val color_sexp_grammar : color Sexplib0.Sexp_grammar.t
+  val color_sexp_grammar : color Sexplib0.Sexp_grammar.t @@ portable
 end
 [@@ocaml.doc "@inline"]
 
@@ -169,7 +175,7 @@ type adjective =
 include sig
   [@@@ocaml.warning "-32"]
 
-  val adjective_sexp_grammar : adjective Sexplib0.Sexp_grammar.t
+  val adjective_sexp_grammar : adjective Sexplib0.Sexp_grammar.t @@ portable
 end
 [@@ocaml.doc "@inline"]
 
@@ -184,7 +190,10 @@ type 'a tree =
 include sig
   [@@@ocaml.warning "-32"]
 
-  val tree_sexp_grammar : 'a Sexplib0.Sexp_grammar.t -> 'a tree Sexplib0.Sexp_grammar.t
+  val tree_sexp_grammar
+    :  'a Sexplib0.Sexp_grammar.t
+    -> 'a tree Sexplib0.Sexp_grammar.t
+    @@ portable
 end
 [@@ocaml.doc "@inline"]
 
@@ -202,9 +211,9 @@ and gamma = beta list [@@deriving sexp] [@@deriving_inline sexp_grammar]
 include sig
   [@@@ocaml.warning "-32"]
 
-  val alpha_sexp_grammar : alpha Sexplib0.Sexp_grammar.t
-  val beta_sexp_grammar : beta Sexplib0.Sexp_grammar.t
-  val gamma_sexp_grammar : gamma Sexplib0.Sexp_grammar.t
+  val alpha_sexp_grammar : alpha Sexplib0.Sexp_grammar.t @@ portable
+  val beta_sexp_grammar : beta Sexplib0.Sexp_grammar.t @@ portable
+  val gamma_sexp_grammar : gamma Sexplib0.Sexp_grammar.t @@ portable
 end
 [@@ocaml.doc "@inline"]
 
@@ -223,7 +232,9 @@ type record_attributes =
 include sig
   [@@@ocaml.warning "-32"]
 
-  val record_attributes_sexp_grammar : record_attributes Sexplib0.Sexp_grammar.t
+  val record_attributes_sexp_grammar
+    : record_attributes Sexplib0.Sexp_grammar.t
+    @@ portable
 end
 [@@ocaml.doc "@inline"]
 
@@ -245,7 +256,9 @@ type variant_attributes =
 include sig
   [@@@ocaml.warning "-32"]
 
-  val variant_attributes_sexp_grammar : variant_attributes Sexplib0.Sexp_grammar.t
+  val variant_attributes_sexp_grammar
+    : variant_attributes Sexplib0.Sexp_grammar.t
+    @@ portable
 end
 [@@ocaml.doc "@inline"]
 
@@ -262,6 +275,7 @@ include sig
 
   val polymorphic_variant_attributes_sexp_grammar
     : polymorphic_variant_attributes Sexplib0.Sexp_grammar.t
+    @@ portable
 end
 [@@ocaml.doc "@inline"]
 
@@ -276,7 +290,7 @@ type opaque =
 include sig
   [@@@ocaml.warning "-32"]
 
-  val opaque_sexp_grammar : opaque Sexplib0.Sexp_grammar.t
+  val opaque_sexp_grammar : opaque Sexplib0.Sexp_grammar.t @@ portable
 end
 [@@ocaml.doc "@inline"]
 

@@ -1,4 +1,4 @@
-open! Base
+open! Stdppx
 open! Ppxlib
 
 (** Constructs a branch of a [match] or [function] expression with no guard. *)
@@ -15,6 +15,7 @@ val constrained_function_binding
   -> tps:(string loc * Ppxlib_jane.Shim.jkind_annotation option) list
        (** names and jkinds of type parameters in the declaration *)
   -> func_name:string (** name to bind the function to *)
+  -> portable:bool (** Whether the function should be marked as portable. *)
   -> expression (** expression representing the function *)
   -> value_binding
 

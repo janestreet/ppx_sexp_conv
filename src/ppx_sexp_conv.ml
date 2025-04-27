@@ -1,5 +1,6 @@
 (* sexp_conv: Preprocessing Module for Automated S-expression Conversions *)
 
+open StdLabels
 open Ppxlib
 module Attrs = Ppx_sexp_conv_expander.Attrs
 
@@ -8,6 +9,12 @@ let register_extension name f =
   Driver.register_transformation
     ("Ppxlib.Deriving." ^ name)
     ~rules:[ Context_free.Rule.extension extension ]
+;;
+
+let portable_arg () = Deriving.Args.(empty +> flag "portable")
+
+let localize_and_portable_args () =
+  Deriving.Args.(empty +> flag "localize" +> flag "portable")
 ;;
 
 module Sexp_grammar = struct
@@ -46,11 +53,17 @@ end
 module Sexp_of = struct
   module E = Ppx_sexp_conv_expander.Sexp_of
 
-  let name = "sexp_of"
+  let name ~localize =
+    match localize with
+    | false -> "sexp_of"
+    | true -> "sexp_of_local"
+  ;;
 
   let str_type_decl =
-    Deriving.Generator.make_noarg
-      E.str_type_decl
+    Deriving.Generator.make
+      (localize_and_portable_args ())
+      (fun ~loc ~path tds localize portable ->
+        E.str_type_decl ~loc ~path tds ~localize ~portable)
       ~attributes:
         [ Attribute.T Attrs.default
         ; Attribute.T Attrs.drop_default
@@ -59,27 +72,42 @@ module Sexp_of = struct
   ;;
 
   let str_exception = Deriving.Generator.make_noarg E.str_exception
-  let sig_type_decl = Deriving.Generator.make_noarg E.sig_type_decl
+
+  let sig_type_decl =
+    Deriving.Generator.make
+      (localize_and_portable_args ())
+      (fun ~loc ~path tds localize portable ->
+         E.sig_type_decl ~loc ~path tds ~localize ~portable)
+  ;;
+
   let sig_exception = Deriving.Generator.make_noarg E.sig_exception
 
   let deriver =
-    Deriving.add name ~str_type_decl ~str_exception ~sig_type_decl ~sig_exception
+    Deriving.add
+      (name ~localize:false)
+      ~str_type_decl
+      ~str_exception
+      ~sig_type_decl
+      ~sig_exception
   ;;
 
-  let extension ~loc:_ ~path:_ ctyp = E.core_type ctyp
-  let () = register_extension name extension
+  let () =
+    List.iter [ false; true ] ~f:(fun localize ->
+      register_extension (name ~localize) (fun ~loc:_ ~path:_ ctyp ->
+        E.core_type ctyp ~localize))
+  ;;
 
   let () =
-    Driver.register_transformation
-      name
-      ~rules:
-        [ Context_free.Rule.extension
-            (Extension.declare
-               name
-               Core_type
-               Ast_pattern.(ptyp __)
-               (fun ~loc:_ ~path:_ ty -> E.type_extension ty))
-        ]
+    let rules =
+      List.map [ false; true ] ~f:(fun localize ->
+        Context_free.Rule.extension
+          (Extension.declare
+             (name ~localize)
+             Core_type
+             Ast_pattern.(ptyp __)
+             (fun ~loc:_ ~path:_ ty -> E.type_extension ty ~localize)))
+    in
+    Driver.register_transformation (name ~localize:false) ~rules
   ;;
 end
 
@@ -89,12 +117,18 @@ module Of_sexp = struct
   let name = "of_sexp"
 
   let str_type_decl =
-    Deriving.Generator.make_noarg
-      (E.str_type_decl ~poly:false)
+    Deriving.Generator.make
+      (portable_arg ())
+      (fun ~loc ~path tds portable ->
+        E.str_type_decl ~loc ~path tds ~poly:false ~portable)
       ~attributes:[ Attribute.T Attrs.default ]
   ;;
 
-  let sig_type_decl = Deriving.Generator.make_noarg (E.sig_type_decl ~poly:false)
+  let sig_type_decl =
+    Deriving.Generator.make (portable_arg ()) (fun ~loc ~path tds portable ->
+      E.sig_type_decl ~poly:false ~loc ~path tds ~portable)
+  ;;
+
   let deriver = Deriving.add name ~str_type_decl ~sig_type_decl
   let extension ~loc:_ ~path ctyp = E.core_type ~path ctyp
   let () = register_extension name extension
@@ -117,12 +151,17 @@ module Of_sexp_poly = struct
   module E = Ppx_sexp_conv_expander.Of_sexp
 
   let str_type_decl =
-    Deriving.Generator.make_noarg
-      (E.str_type_decl ~poly:true)
+    Deriving.Generator.make
+      (portable_arg ())
+      (fun ~loc ~path tds portable -> E.str_type_decl ~loc ~path tds ~portable ~poly:true)
       ~attributes:[ Attribute.T Attrs.default ]
   ;;
 
-  let sig_type_decl = Deriving.Generator.make_noarg (E.sig_type_decl ~poly:true)
+  let sig_type_decl =
+    Deriving.Generator.make (portable_arg ()) (fun ~loc ~path tds portable ->
+      E.sig_type_decl ~poly:true ~loc ~path tds ~portable)
+  ;;
+
   let deriver = Deriving.add "of_sexp_poly" ~sig_type_decl ~str_type_decl
 end
 
@@ -134,7 +173,12 @@ let sexp_grammar = Sexp_grammar.deriver
 module Sexp_in_sig = struct
   module E = Ppx_sexp_conv_expander.Sig_sexp
 
-  let sig_type_decl = Deriving.Generator.make_noarg E.sig_type_decl
+  let sig_type_decl =
+    Deriving.Generator.make
+      (localize_and_portable_args ())
+      (fun ~loc ~path tds localize portable ->
+         E.sig_type_decl ~loc ~path tds ~localize ~portable)
+  ;;
 
   let deriver =
     Deriving.add

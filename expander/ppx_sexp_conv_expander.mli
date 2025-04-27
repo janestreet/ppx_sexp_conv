@@ -3,13 +3,15 @@ module Attrs = Attrs
 module Record_field_attrs = Record_field_attrs
 
 module Sexp_of : sig
-  val type_extension : core_type -> core_type
-  val core_type : core_type -> expression
+  val type_extension : core_type -> localize:bool -> core_type
+  val core_type : core_type -> localize:bool -> expression
 
   val sig_type_decl
     :  loc:Location.t
     -> path:string
     -> rec_flag * type_declaration list
+    -> localize:bool
+    -> portable:bool
     -> signature_item list
 
   val sig_exception
@@ -22,6 +24,8 @@ module Sexp_of : sig
     :  loc:Location.t
     -> path:string
     -> rec_flag * type_declaration list
+    -> localize:bool
+    -> portable:bool
     -> structure
 
   val str_exception : loc:Location.t -> path:string -> type_exception -> structure
@@ -36,6 +40,7 @@ module Of_sexp : sig
     -> loc:Location.t
     -> path:string
     -> rec_flag * type_declaration list
+    -> portable:bool
     -> signature_item list
 
   val str_type_decl
@@ -43,6 +48,7 @@ module Of_sexp : sig
     -> poly:bool (** the type is annotated with sexp_poly instead of sexp *)
     -> path:string (** the module path within the file *)
     -> rec_flag * type_declaration list
+    -> portable:bool
     -> structure
 end
 
@@ -72,5 +78,7 @@ module Sig_sexp : sig
     :  loc:Location.t
     -> path:string
     -> rec_flag * type_declaration list
+    -> localize:bool
+    -> portable:bool
     -> signature_item list
 end

@@ -22,6 +22,14 @@ Line _, characters _-_:
 Error: ppx_sexp_conv: unbound type variable 'a
 |}]
 
+let _ = [%sexp_of_local: 'a]
+
+[%%expect
+  {|
+Line _, characters _-_:
+Error: ppx_sexp_conv: unbound type variable 'a
+|}]
+
 let _ = [%of_sexp: 'a]
 
 [%%expect
@@ -29,6 +37,18 @@ let _ = [%of_sexp: 'a]
 Line _, characters _-_:
 Error: ppx_sexp_conv: unbound type variable 'a
 |}]
+
+module type S = sig
+  val x : [%sexp_of: 'a]
+end
+
+[%%expect {| |}]
+
+module type S = sig
+  val x : [%sexp_of_local: 'a]
+end
+
+[%%expect {| |}]
 
 let _ = [%sexp (() : 'a)]
 
@@ -41,7 +61,7 @@ Error: ppx_sexp_conv: unbound type variable 'a
 type 'a t =
   | None
   | Something_else of { value : 'a }
-[@@deriving sexp]
+[@@deriving sexp ~localize]
 
 [%%expect {| |}]
 
