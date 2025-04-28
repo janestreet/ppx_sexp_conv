@@ -1,4 +1,4 @@
-open! Base
+open! Stdppx
 open! Ppxlib
 
 module Generic : sig
@@ -22,7 +22,6 @@ end
 module Sexp_of : sig
   module Drop : sig
     type t =
-      | No_arg
       | Compare
       | Equal
       | Sexp

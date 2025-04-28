@@ -38,12 +38,9 @@ type tuple = int * string [@@deriving sexp] [@@deriving_inline sexp_grammar]
 
 let _ = fun (_ : tuple) -> ()
 
-let (tuple_sexp_grammar : tuple Sexplib0.Sexp_grammar.t) =
+let tuple_sexp_grammar : tuple Sexplib0.Sexp_grammar.t =
   { untyped =
-      Lazy
-        (lazy
-          (List
-             (Cons (int_sexp_grammar.untyped, Cons (string_sexp_grammar.untyped, Empty)))))
+      List (Cons (int_sexp_grammar.untyped, Cons (string_sexp_grammar.untyped, Empty)))
   }
 ;;
 
@@ -59,26 +56,24 @@ type pos =
 
 let _ = fun (_ : pos) -> ()
 
-let (pos_sexp_grammar : pos Sexplib0.Sexp_grammar.t) =
+let pos_sexp_grammar : pos Sexplib0.Sexp_grammar.t =
   { untyped =
-      Lazy
-        (lazy
-          (List
-             (Fields
-                { allow_extra_fields = false
-                ; fields =
-                    [ No_tag
-                        { name = "x"
-                        ; required = true
-                        ; args = Cons (float_sexp_grammar.untyped, Empty)
-                        }
-                    ; No_tag
-                        { name = "y"
-                        ; required = true
-                        ; args = Cons (float_sexp_grammar.untyped, Empty)
-                        }
-                    ]
-                })))
+      List
+        (Fields
+           { allow_extra_fields = false
+           ; fields =
+               [ No_tag
+                   { name = "x"
+                   ; required = true
+                   ; args = Cons (float_sexp_grammar.untyped, Empty)
+                   }
+               ; No_tag
+                   { name = "y"
+                   ; required = true
+                   ; args = Cons (float_sexp_grammar.untyped, Empty)
+                   }
+               ]
+           })
   }
 ;;
 
@@ -248,25 +243,23 @@ type adjective =
 
 let _ = fun (_ : adjective) -> ()
 
-let (adjective_sexp_grammar : adjective Sexplib0.Sexp_grammar.t) =
+let adjective_sexp_grammar : adjective Sexplib0.Sexp_grammar.t =
   { untyped =
-      Lazy
-        (lazy
-          (Union
-             [ color_sexp_grammar.untyped
-             ; Variant
-                 { case_sensitivity = Case_sensitive
-                 ; clauses =
-                     [ No_tag { name = "Fast"; clause_kind = Atom_clause }
-                     ; No_tag { name = "Slow"; clause_kind = Atom_clause }
-                     ; No_tag
-                         { name = "Count"
-                         ; clause_kind =
-                             List_clause { args = Cons (int_sexp_grammar.untyped, Empty) }
-                         }
-                     ]
-                 }
-             ]))
+      Union
+        [ color_sexp_grammar.untyped
+        ; Variant
+            { case_sensitivity = Case_sensitive
+            ; clauses =
+                [ No_tag { name = "Fast"; clause_kind = Atom_clause }
+                ; No_tag { name = "Slow"; clause_kind = Atom_clause }
+                ; No_tag
+                    { name = "Count"
+                    ; clause_kind =
+                        List_clause { args = Cons (int_sexp_grammar.untyped, Empty) }
+                    }
+                ]
+            }
+        ]
   }
 ;;
 
@@ -284,40 +277,43 @@ let _ = fun (_ : 'a tree) -> ()
 
 include struct
   open struct
-    let (grammars__118_ : Sexplib0.Sexp_grammar.defn Stdlib.List.t Stdlib.Lazy.t) =
-      lazy
-        (let tree_sexp_grammar
-           : 'a. 'a Sexplib0.Sexp_grammar.t -> 'a tree Sexplib0.Sexp_grammar.t
-           =
-           fun _'a_sexp_grammar ->
-           { untyped = Recursive ("tree", [ _'a_sexp_grammar.untyped ]) }
-         in
-         [ { tycon = "tree"
-           ; tyvars = [ "a" ]
-           ; grammar =
-               List
-                 (Fields
-                    { allow_extra_fields = false
-                    ; fields =
-                        [ No_tag
-                            { name = "data"
-                            ; required = true
-                            ; args = Cons (Tyvar "a", Empty)
-                            }
-                        ; No_tag
-                            { name = "children"
-                            ; required = true
-                            ; args =
-                                Cons
-                                  ( (list_sexp_grammar
-                                       (tree_sexp_grammar { untyped = Tyvar "a" }))
-                                      .untyped
-                                  , Empty )
-                            }
-                        ]
-                    })
-           }
-         ])
+    let grammars__118_ : Sexplib0.Sexp_grammar.defn Stdlib.List.t Basement.Portable_lazy.t
+      =
+      Basement.Portable_lazy.from_fun
+        (Basement.Portability_hacks.magic_portable__needs_base_and_core
+           (fun () : Sexplib0.Sexp_grammar.defn list ->
+              let tree_sexp_grammar
+                : 'a. 'a Sexplib0.Sexp_grammar.t -> 'a tree Sexplib0.Sexp_grammar.t
+                =
+                fun _'a_sexp_grammar ->
+                { untyped = Recursive ("tree", [ _'a_sexp_grammar.untyped ]) }
+              in
+              [ { tycon = "tree"
+                ; tyvars = [ "a" ]
+                ; grammar =
+                    List
+                      (Fields
+                         { allow_extra_fields = false
+                         ; fields =
+                             [ No_tag
+                                 { name = "data"
+                                 ; required = true
+                                 ; args = Cons (Tyvar "a", Empty)
+                                 }
+                             ; No_tag
+                                 { name = "children"
+                                 ; required = true
+                                 ; args =
+                                     Cons
+                                       ( (list_sexp_grammar
+                                            (tree_sexp_grammar { untyped = Tyvar "a" }))
+                                           .untyped
+                                       , Empty )
+                                 }
+                             ]
+                         })
+                }
+              ]))
     ;;
 
     let _ = grammars__118_
@@ -328,7 +324,10 @@ include struct
     =
     fun _'a_sexp_grammar ->
     { untyped =
-        Tycon ("tree", [ _'a_sexp_grammar.untyped ], Stdlib.Lazy.force grammars__118_)
+        Tycon
+          ( "tree"
+          , [ _'a_sexp_grammar.untyped ]
+          , Basement.Portable_lazy.force grammars__118_ )
     }
   ;;
 
@@ -352,54 +351,77 @@ let _ = fun (_ : gamma) -> ()
 
 include struct
   open struct
-    let (grammars__131_ : Sexplib0.Sexp_grammar.defn Stdlib.List.t Stdlib.Lazy.t) =
-      lazy
-        (let (alpha_sexp_grammar : alpha Sexplib0.Sexp_grammar.t) =
-           { untyped = Recursive ("alpha", []) }
-         and (beta_sexp_grammar : beta Sexplib0.Sexp_grammar.t) =
-           { untyped = Recursive ("beta", []) }
-         in
-         [ { tycon = "alpha"; tyvars = []; grammar = int_sexp_grammar.untyped }
-         ; { tycon = "beta"
-           ; tyvars = []
-           ; grammar =
-               List
-                 (Fields
-                    { allow_extra_fields = false
-                    ; fields =
-                        [ No_tag
-                            { name = "alpha"
-                            ; required = true
-                            ; args = Cons (alpha_sexp_grammar.untyped, Empty)
-                            }
-                        ; No_tag
-                            { name = "betas"
-                            ; required = true
-                            ; args =
-                                Cons ((list_sexp_grammar beta_sexp_grammar).untyped, Empty)
-                            }
-                        ]
-                    })
-           }
-         ])
+    let grammars__131_ : Sexplib0.Sexp_grammar.defn Stdlib.List.t Basement.Portable_lazy.t
+      =
+      Basement.Portable_lazy.from_fun
+        (Basement.Portability_hacks.magic_portable__needs_base_and_core
+           (fun () : Sexplib0.Sexp_grammar.defn list ->
+              let alpha_sexp_grammar : alpha Sexplib0.Sexp_grammar.t =
+                { untyped = Recursive ("alpha", []) }
+              and beta_sexp_grammar : beta Sexplib0.Sexp_grammar.t =
+                { untyped = Recursive ("beta", []) }
+              in
+              [ { tycon = "alpha"; tyvars = []; grammar = int_sexp_grammar.untyped }
+              ; { tycon = "beta"
+                ; tyvars = []
+                ; grammar =
+                    List
+                      (Fields
+                         { allow_extra_fields = false
+                         ; fields =
+                             [ No_tag
+                                 { name = "alpha"
+                                 ; required = true
+                                 ; args = Cons (alpha_sexp_grammar.untyped, Empty)
+                                 }
+                             ; No_tag
+                                 { name = "betas"
+                                 ; required = true
+                                 ; args =
+                                     Cons
+                                       ( (list_sexp_grammar beta_sexp_grammar).untyped
+                                       , Empty )
+                                 }
+                             ]
+                         })
+                }
+              ]))
     ;;
 
     let _ = grammars__131_
   end
 
-  let (alpha_sexp_grammar : alpha Sexplib0.Sexp_grammar.t) =
-    { untyped = Lazy (lazy (Tycon ("alpha", [], Stdlib.Lazy.force grammars__131_))) }
+  let alpha_sexp_grammar : alpha Sexplib0.Sexp_grammar.t =
+    { untyped =
+        Lazy
+          (Basement.Portable_lazy.from_fun
+             (Basement.Portability_hacks.magic_portable__needs_base_and_core
+                (fun () : Sexplib0.Sexp_grammar.grammar ->
+                   Tycon ("alpha", [], Basement.Portable_lazy.force grammars__131_))))
+    }
 
-  and (beta_sexp_grammar : beta Sexplib0.Sexp_grammar.t) =
-    { untyped = Lazy (lazy (Tycon ("beta", [], Stdlib.Lazy.force grammars__131_))) }
+  and beta_sexp_grammar : beta Sexplib0.Sexp_grammar.t =
+    { untyped =
+        Lazy
+          (Basement.Portable_lazy.from_fun
+             (Basement.Portability_hacks.magic_portable__needs_base_and_core
+                (fun () : Sexplib0.Sexp_grammar.grammar ->
+                   Tycon ("beta", [], Basement.Portable_lazy.force grammars__131_))))
+    }
   ;;
 
   let _ = alpha_sexp_grammar
   and _ = beta_sexp_grammar
 end
 
-let (gamma_sexp_grammar : gamma Sexplib0.Sexp_grammar.t) =
-  { untyped = Lazy (lazy (list_sexp_grammar beta_sexp_grammar).untyped) }
+let gamma_sexp_grammar : gamma Sexplib0.Sexp_grammar.t =
+  { untyped =
+      Lazy
+        (Basement.Portable_lazy.from_fun
+           (Basement.Portability_hacks.magic_portable__needs_base_and_core
+              (fun () : Sexplib0.Sexp_grammar.grammar ->
+                 (list_sexp_grammar beta_sexp_grammar).untyped)))
+  }
 ;;
 
 let _ = gamma_sexp_grammar
@@ -418,43 +440,40 @@ type record_attributes =
 
 let _ = fun (_ : record_attributes) -> ()
 
-let (record_attributes_sexp_grammar : record_attributes Sexplib0.Sexp_grammar.t) =
+let record_attributes_sexp_grammar : record_attributes Sexplib0.Sexp_grammar.t =
   { untyped =
-      Lazy
-        (lazy
-          (List
-             (Fields
-                { allow_extra_fields = true
-                ; fields =
-                    [ No_tag
-                        { name = "a"
-                        ; required = false
-                        ; args = Cons (int_sexp_grammar.untyped, Empty)
-                        }
-                    ; No_tag { name = "b"; required = false; args = Empty }
-                    ; No_tag
-                        { name = "c"
-                        ; required = false
-                        ; args = Cons (float_sexp_grammar.untyped, Empty)
-                        }
-                    ; No_tag
-                        { name = "d"
-                        ; required = false
-                        ; args = Cons (List (Many string_sexp_grammar.untyped), Empty)
-                        }
-                    ; No_tag
-                        { name = "e"
-                        ; required = false
-                        ; args = Cons (List (Many bytes_sexp_grammar.untyped), Empty)
-                        }
-                    ; No_tag
-                        { name = "f"
-                        ; required = false
-                        ; args =
-                            Cons (Ppx_sexp_conv_lib.Sexp.t_sexp_grammar.untyped, Empty)
-                        }
-                    ]
-                })))
+      List
+        (Fields
+           { allow_extra_fields = true
+           ; fields =
+               [ No_tag
+                   { name = "a"
+                   ; required = false
+                   ; args = Cons (int_sexp_grammar.untyped, Empty)
+                   }
+               ; No_tag { name = "b"; required = false; args = Empty }
+               ; No_tag
+                   { name = "c"
+                   ; required = false
+                   ; args = Cons (float_sexp_grammar.untyped, Empty)
+                   }
+               ; No_tag
+                   { name = "d"
+                   ; required = false
+                   ; args = Cons (List (Many string_sexp_grammar.untyped), Empty)
+                   }
+               ; No_tag
+                   { name = "e"
+                   ; required = false
+                   ; args = Cons (List (Many bytes_sexp_grammar.untyped), Empty)
+                   }
+               ; No_tag
+                   { name = "f"
+                   ; required = false
+                   ; args = Cons (Ppx_sexp_conv_lib.Sexp.t_sexp_grammar.untyped, Empty)
+                   }
+               ]
+           })
   }
 ;;
 
@@ -477,69 +496,63 @@ type variant_attributes =
 
 let _ = fun (_ : variant_attributes) -> ()
 
-let (variant_attributes_sexp_grammar : variant_attributes Sexplib0.Sexp_grammar.t) =
+let variant_attributes_sexp_grammar : variant_attributes Sexplib0.Sexp_grammar.t =
   { untyped =
-      Lazy
-        (lazy
-          (Variant
-             { case_sensitivity = Case_sensitive_except_first_character
-             ; clauses =
-                 [ No_tag { name = "A"; clause_kind = Atom_clause }
-                 ; No_tag
-                     { name = "B"
-                     ; clause_kind = List_clause { args = Many int_sexp_grammar.untyped }
-                     }
-                 ; No_tag
-                     { name = "C"
-                     ; clause_kind =
-                         List_clause
-                           { args =
-                               Fields
-                                 { allow_extra_fields = true
-                                 ; fields =
-                                     [ No_tag
-                                         { name = "a"
-                                         ; required = false
-                                         ; args = Cons (int_sexp_grammar.untyped, Empty)
-                                         }
-                                     ; No_tag
-                                         { name = "b"; required = false; args = Empty }
-                                     ; No_tag
-                                         { name = "c"
-                                         ; required = false
-                                         ; args = Cons (float_sexp_grammar.untyped, Empty)
-                                         }
-                                     ; No_tag
-                                         { name = "d"
-                                         ; required = false
-                                         ; args =
-                                             Cons
-                                               ( List (Many string_sexp_grammar.untyped)
-                                               , Empty )
-                                         }
-                                     ; No_tag
-                                         { name = "e"
-                                         ; required = false
-                                         ; args =
-                                             Cons
-                                               ( List (Many bytes_sexp_grammar.untyped)
-                                               , Empty )
-                                         }
-                                     ; No_tag
-                                         { name = "f"
-                                         ; required = false
-                                         ; args =
-                                             Cons
-                                               ( Ppx_sexp_conv_lib.Sexp.t_sexp_grammar
-                                                   .untyped
-                                               , Empty )
-                                         }
-                                     ]
-                                 }
-                           }
-                     }
-                 ]
-             }))
+      Variant
+        { case_sensitivity = Case_sensitive_except_first_character
+        ; clauses =
+            [ No_tag { name = "A"; clause_kind = Atom_clause }
+            ; No_tag
+                { name = "B"
+                ; clause_kind = List_clause { args = Many int_sexp_grammar.untyped }
+                }
+            ; No_tag
+                { name = "C"
+                ; clause_kind =
+                    List_clause
+                      { args =
+                          Fields
+                            { allow_extra_fields = true
+                            ; fields =
+                                [ No_tag
+                                    { name = "a"
+                                    ; required = false
+                                    ; args = Cons (int_sexp_grammar.untyped, Empty)
+                                    }
+                                ; No_tag { name = "b"; required = false; args = Empty }
+                                ; No_tag
+                                    { name = "c"
+                                    ; required = false
+                                    ; args = Cons (float_sexp_grammar.untyped, Empty)
+                                    }
+                                ; No_tag
+                                    { name = "d"
+                                    ; required = false
+                                    ; args =
+                                        Cons
+                                          (List (Many string_sexp_grammar.untyped), Empty)
+                                    }
+                                ; No_tag
+                                    { name = "e"
+                                    ; required = false
+                                    ; args =
+                                        Cons
+                                          (List (Many bytes_sexp_grammar.untyped), Empty)
+                                    }
+                                ; No_tag
+                                    { name = "f"
+                                    ; required = false
+                                    ; args =
+                                        Cons
+                                          ( Ppx_sexp_conv_lib.Sexp.t_sexp_grammar.untyped
+                                          , Empty )
+                                    }
+                                ]
+                            }
+                      }
+                }
+            ]
+        }
   }
 ;;
 
@@ -555,22 +568,20 @@ type polymorphic_variant_attributes =
 
 let _ = fun (_ : polymorphic_variant_attributes) -> ()
 
-let (polymorphic_variant_attributes_sexp_grammar :
-      polymorphic_variant_attributes Sexplib0.Sexp_grammar.t)
+let polymorphic_variant_attributes_sexp_grammar
+  : polymorphic_variant_attributes Sexplib0.Sexp_grammar.t
   =
   { untyped =
-      Lazy
-        (lazy
-          (Variant
-             { case_sensitivity = Case_sensitive
-             ; clauses =
-                 [ No_tag { name = "A"; clause_kind = Atom_clause }
-                 ; No_tag
-                     { name = "B"
-                     ; clause_kind = List_clause { args = Many int_sexp_grammar.untyped }
-                     }
-                 ]
-             }))
+      Variant
+        { case_sensitivity = Case_sensitive
+        ; clauses =
+            [ No_tag { name = "A"; clause_kind = Atom_clause }
+            ; No_tag
+                { name = "B"
+                ; clause_kind = List_clause { args = Many int_sexp_grammar.untyped }
+                }
+            ]
+        }
   }
 ;;
 
@@ -586,27 +597,24 @@ type opaque =
 
 let _ = fun (_ : opaque) -> ()
 
-let (opaque_sexp_grammar : opaque Sexplib0.Sexp_grammar.t) =
+let opaque_sexp_grammar : opaque Sexplib0.Sexp_grammar.t =
   { untyped =
-      Lazy
-        (lazy
-          (List
-             (Fields
-                { allow_extra_fields = false
-                ; fields =
-                    [ No_tag
-                        { name = "x"
-                        ; required = true
-                        ; args =
-                            Cons (Sexplib0.Sexp_conv.opaque_sexp_grammar.untyped, Empty)
-                        }
-                    ; No_tag
-                        { name = "y"
-                        ; required = true
-                        ; args = Cons (Sexplib0.Sexp_conv.fun_sexp_grammar.untyped, Empty)
-                        }
-                    ]
-                })))
+      List
+        (Fields
+           { allow_extra_fields = false
+           ; fields =
+               [ No_tag
+                   { name = "x"
+                   ; required = true
+                   ; args = Cons (Sexplib0.Sexp_conv.opaque_sexp_grammar.untyped, Empty)
+                   }
+               ; No_tag
+                   { name = "y"
+                   ; required = true
+                   ; args = Cons (Sexplib0.Sexp_conv.fun_sexp_grammar.untyped, Empty)
+                   }
+               ]
+           })
   }
 ;;
 

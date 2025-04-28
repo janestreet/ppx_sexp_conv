@@ -1,20 +1,32 @@
-open! Base
+open! Stdppx
 open! Ppxlib
 open Ast_builder.Default
 open Helpers
+
+let maybe_exclave ~loc expr ~localize =
+  match localize with
+  | false -> expr
+  | true -> [%expr [%e expr]]
+;;
+
+let maybe_constrain ~loc expr = function
+  | None -> expr
+  | Some cstr -> [%expr ([%e expr] : [%t cstr])]
+;;
 
 module Reference = struct
   type t =
     { types : type_declaration list
     ; binds : value_binding list list
     ; ident : longident_loc
+    ; cstr : core_type option
     ; args : (arg_label * expression) list
     }
 
   let bind t binds = { t with binds = binds :: t.binds }
   let bind_types t types = { t with types = types @ t.types }
 
-  let maybe_apply { types; binds; ident; args } ~loc maybe_arg =
+  let maybe_apply { types; binds; ident; cstr; args } ~loc maybe_arg =
     let ident = pexp_ident ~loc ident in
     let args =
       match maybe_arg with
@@ -23,7 +35,7 @@ module Reference = struct
     in
     let expr =
       match args with
-      | [] -> ident
+      | [] -> maybe_constrain ~loc ident cstr
       | _ -> pexp_apply ~loc ident args
     in
     with_types ~loc ~types (with_let ~loc ~binds expr)
@@ -32,16 +44,16 @@ module Reference = struct
   let apply t ~loc arg = maybe_apply t ~loc (Some arg)
   let to_expression t ~loc = maybe_apply t ~loc None
 
-  let to_value_expression t ~loc ~rec_flag ~values_being_defined =
+  let to_value_expression t ~loc ~rec_flag ~values_being_defined ~localize =
     let may_refer_directly_to ident =
       match rec_flag with
       | Nonrecursive -> true
-      | Recursive -> not (Set.mem values_being_defined (Longident.name ident.txt))
+      | Recursive -> not (String.Set.mem (Longident.name ident.txt) values_being_defined)
     in
     match t with
-    | { types = []; binds = []; ident; args = [] } when may_refer_directly_to ident ->
-      pexp_ident ~loc ident
-    | _ -> fresh_lambda ~loc (fun ~arg -> apply t ~loc arg)
+    | { types = []; binds = []; ident; cstr; args = [] } when may_refer_directly_to ident
+      -> maybe_constrain ~loc (pexp_ident ~loc ident) cstr
+    | _ -> fresh_lambda ~loc (fun ~arg -> maybe_exclave ~loc (apply t ~loc arg) ~localize)
   ;;
 end
 
@@ -56,51 +68,58 @@ module Lambda = struct
   let bind_types t types = { t with types = types @ t.types }
 
   (* generic case: use [function] or [match] *)
-  let maybe_apply_generic ~loc ~types ~binds maybe_arg cases =
+  let maybe_apply_generic ~loc ~types ~binds maybe_arg cases ~localize =
     let expr =
       match maybe_arg with
-      | None -> pexp_function ~loc cases
+      | None ->
+        let cases =
+          List.map cases ~f:(fun case ->
+            { case with pc_rhs = maybe_exclave ~loc case.pc_rhs ~localize })
+        in
+        pexp_function ~loc cases
       | Some arg -> pexp_match ~loc arg cases
     in
     with_types ~loc ~types (with_let ~loc ~binds expr)
   ;;
 
   (* zero cases: synthesize an "impossible" case, i.e. [| _ -> .] *)
-  let maybe_apply_impossible ~loc ~types ~binds maybe_arg =
+  let maybe_apply_impossible ~loc ~types ~binds maybe_arg ~localize =
     [ case ~lhs:(ppat_any ~loc) ~guard:None ~rhs:(pexp_unreachable ~loc) ]
-    |> maybe_apply_generic ~loc ~binds ~types maybe_arg
+    |> maybe_apply_generic ~loc ~binds ~types maybe_arg ~localize
   ;;
 
   (* one case without guard: use [fun] or [let] *)
-  let maybe_apply_simple ~loc ~types ~binds maybe_arg pat body =
+  let maybe_apply_simple ~loc ~types ~binds maybe_arg pat body ~localize =
     let expr =
       match maybe_arg with
-      | None -> pexp_fun ~loc Nolabel None pat body
+      | None -> pexp_fun ~loc Nolabel None pat (maybe_exclave ~loc body ~localize)
       | Some arg -> pexp_let ~loc Nonrecursive [ value_binding ~loc ~pat ~expr:arg ] body
     in
     with_types ~loc ~types (with_let ~loc ~binds expr)
   ;;
 
   (* shared special-casing logic for [apply] and [to_expression] *)
-  let maybe_apply t ~loc maybe_arg =
+  let maybe_apply t ~loc maybe_arg ~localize =
     match t with
-    | { types; binds; cases = [] } -> maybe_apply_impossible ~loc ~types ~binds maybe_arg
+    | { types; binds; cases = [] } ->
+      maybe_apply_impossible ~loc ~types ~binds maybe_arg ~localize
     | { types; binds; cases = [ { pc_lhs; pc_guard = None; pc_rhs } ] } ->
-      maybe_apply_simple ~loc ~types ~binds maybe_arg pc_lhs pc_rhs
-    | { types; binds; cases } -> maybe_apply_generic ~loc ~types ~binds maybe_arg cases
+      maybe_apply_simple ~loc ~types ~binds maybe_arg pc_lhs pc_rhs ~localize
+    | { types; binds; cases } ->
+      maybe_apply_generic ~loc ~types ~binds maybe_arg cases ~localize
   ;;
 
-  let apply t ~loc arg = maybe_apply t ~loc (Some arg)
-  let to_expression t ~loc = maybe_apply t ~loc None
+  let apply t ~loc arg = maybe_apply t ~loc (Some arg) ~localize:false
+  let to_expression t ~loc ~localize = maybe_apply t ~loc None ~localize
 
-  let to_value_expression t ~loc =
+  let to_value_expression t ~loc ~localize =
     match t with
     | { types = []; binds = []; cases = _ } ->
       (* lambdas without [let] are already values *)
-      let expr = to_expression t ~loc in
+      let expr = to_expression t ~loc ~localize in
       assert (is_value_expression expr);
       expr
-    | _ -> fresh_lambda ~loc (fun ~arg -> apply t ~loc arg)
+    | _ -> fresh_lambda ~loc (fun ~arg -> maybe_exclave ~loc (apply t ~loc arg) ~localize)
   ;;
 end
 
@@ -111,10 +130,15 @@ type t =
 let of_lambda cases = Lambda { types = []; binds = []; cases }
 
 let of_reference_exn expr =
-  match expr.pexp_desc with
-  | Pexp_ident ident -> Reference { types = []; binds = []; ident; args = [] }
+  match
+    Ppxlib_jane.Shim.Expression_desc.of_parsetree expr.pexp_desc ~loc:expr.pexp_loc
+  with
+  | Pexp_ident ident ->
+    Reference { types = []; binds = []; ident; cstr = None; args = [] }
+  | Pexp_constraint ({ pexp_desc = Pexp_ident ident; _ }, cstr, _) ->
+    Reference { types = []; binds = []; ident; cstr; args = [] }
   | Pexp_apply ({ pexp_desc = Pexp_ident ident; _ }, args) ->
-    Reference { types = []; binds = []; ident; args }
+    Reference { types = []; binds = []; ident; cstr = None; args }
   | _ ->
     Location.raise_errorf
       ~loc:expr.pexp_loc
@@ -125,17 +149,17 @@ let of_reference_exn expr =
       (Pprintast.string_of_expression expr)
 ;;
 
-let to_expression t ~loc =
+let to_expression t ~loc ~localize =
   match t with
   | Reference reference -> Reference.to_expression ~loc reference
-  | Lambda lambda -> Lambda.to_expression ~loc lambda
+  | Lambda lambda -> Lambda.to_expression ~loc lambda ~localize
 ;;
 
-let to_value_expression t ~loc ~rec_flag ~values_being_defined =
+let to_value_expression t ~loc ~rec_flag ~values_being_defined ~localize =
   match t with
   | Reference reference ->
-    Reference.to_value_expression ~loc ~rec_flag ~values_being_defined reference
-  | Lambda lambda -> Lambda.to_value_expression ~loc lambda
+    Reference.to_value_expression ~loc ~rec_flag ~values_being_defined reference ~localize
+  | Lambda lambda -> Lambda.to_value_expression ~loc lambda ~localize
 ;;
 
 let apply t ~loc e =
@@ -168,13 +192,19 @@ let gen_symbols list ~prefix =
   List.mapi list ~f:(fun i _ -> gen_symbol ~prefix:(prefix ^ Int.to_string i) ())
 ;;
 
+let zip list1 list2 =
+  List.fold_right2 list1 list2 ~init:[] ~f:(fun x y acc -> (x, y) :: acc)
+;;
+
 let apply_all ts ~loc =
   let arguments_names = gen_symbols ts ~prefix:"arg" in
   let converted_names = gen_symbols ts ~prefix:"res" in
   let bindings =
-    List.map3_exn ts arguments_names converted_names ~f:(fun t arg conv ->
-      let expr = apply ~loc t (evar ~loc arg) in
-      value_binding ~loc ~pat:(pvar ~loc conv) ~expr)
+    List.map
+      (zip ts (zip arguments_names converted_names))
+      ~f:(fun (t, (arg, conv)) ->
+        let expr = apply ~loc t (evar ~loc arg) in
+        value_binding ~loc ~pat:(pvar ~loc conv) ~expr)
   in
   ({ bindings
    ; arguments = List.map arguments_names ~f:(pvar ~loc)

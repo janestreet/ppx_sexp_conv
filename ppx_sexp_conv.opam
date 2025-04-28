@@ -11,10 +11,10 @@ build: [
 ]
 depends: [
   "ocaml" {>= "5.1.0"}
-  "base"
+  "basement"
   "ppxlib_jane"
   "sexplib0"
-  "dune"        {>= "3.11.0"}
+  "dune"        {>= "3.17.0"}
   "ppxlib"      {>= "0.33.0"}
 ]
 available: arch != "arm32" & arch != "x86_32"

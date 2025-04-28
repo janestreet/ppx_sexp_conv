@@ -1,4 +1,4 @@
-open! Base
+open! Stdppx
 open Ppxlib
 
 (** Represents an ['a], along with some user expressions that should lifted out of the
@@ -8,7 +8,16 @@ type 'a t
 
 (** As a monad, combines all client expressions so they can be lifted to the outermost
     level of generated code. *)
-include Monad.S with type 'a t := 'a t
+
+val return : 'a -> 'a t
+val map : 'a t -> f:('a -> 'b) -> 'b t
+val bind : 'a t -> f:('a -> 'b t) -> 'b t
+val all : 'a t list -> 'a list t
+
+module Monad_infix : sig
+  val ( >>| ) : 'a t -> ('a -> 'b) -> 'b t
+  val ( >>= ) : 'a t -> ('a -> 'b t) -> 'b t
+end
 
 (** Lifts the given expression and binds it to a fresh variable starting with [prefix].
     The expression is evaluated each time it is referred to. The binding is annotated with

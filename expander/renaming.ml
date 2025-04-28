@@ -1,8 +1,8 @@
-open! Base
+open! Stdppx
 open! Ppxlib
 
 type t =
-  { universal : (Fresh_name.t, string loc) Result.t Map.M(String).t
+  { universal : (Fresh_name.t, string loc) result String.Map.t
   ; existential : bool
   }
 
@@ -15,15 +15,15 @@ end
 let add_universally_bound t name ~prefix =
   { t with
     universal =
-      Map.set
+      String.Map.add
+        name.txt
+        (Ok (Fresh_name.create (prefix ^ name.txt) ~loc:name.loc))
         t.universal
-        ~key:name.txt
-        ~data:(Ok (Fresh_name.create (prefix ^ name.txt) ~loc:name.loc))
   }
 ;;
 
 let binding_kind t var ~loc =
-  match Map.find t.universal var with
+  match String.Map.find_opt var t.universal with
   | None ->
     if t.existential
     then Binding_kind.Existentially_bound
@@ -64,10 +64,15 @@ let with_constructor_declaration original cd ~type_parameters:tps =
         | Ptyp_var (var, _) ->
           let error =
             { loc = ty.ptyp_loc
-            ; txt = "ppx_sexp_conv: variable is not a parameter of the type constructor"
+            ; txt =
+                Printf.sprintf
+                  "ppx_sexp_conv: variable is not a parameter of the type constructor. \
+                   Hint: mark all appearances of '%s in the constructor's arguments as \
+                   [@sexp.opaque]."
+                  var
             }
           in
-          { t with universal = Map.set t.universal ~key:var ~data:(Error error) }
+          { t with universal = String.Map.add var (Error error) t.universal }
         | _ -> super#core_type ty t
     end
   in
@@ -76,14 +81,14 @@ let with_constructor_declaration original cd ~type_parameters:tps =
     | Ptyp_var (var, _) ->
       let data =
         let loc = tp_in_return_type.ptyp_loc in
-        if Map.mem t.universal var
+        if String.Map.mem var t.universal
         then Error { loc; txt = "ppx_sexp_conv: duplicate variable" }
         else (
-          match Map.find original.universal tp_name with
+          match String.Map.find_opt tp_name original.universal with
           | Some result -> result
           | None -> Error { loc; txt = "ppx_sexp_conv: unbound type parameter" })
       in
-      { t with universal = Map.set t.universal ~key:var ~data }
+      { t with universal = String.Map.add var data t.universal }
     | _ -> add_typevars#core_type tp_in_return_type t
   in
   match cd.pcd_res with
@@ -97,7 +102,7 @@ let with_constructor_declaration original cd ~type_parameters:tps =
          Stdlib.ListLabels.fold_left2
            tps
            params
-           ~init:{ existential = true; universal = Map.empty (module String) }
+           ~init:{ existential = true; universal = String.Map.empty }
            ~f:aux
      | _ -> original)
 ;;
@@ -105,16 +110,16 @@ let with_constructor_declaration original cd ~type_parameters:tps =
 let of_type_declaration decl ~prefix =
   { existential = false
   ; universal =
-      List.fold
-        decl.ptype_params
-        ~init:(Map.empty (module String))
-        ~f:(fun map param ->
-          let name = get_type_param_name param in
-          Map.update map name.txt ~f:(function
-            | None -> Ok (Fresh_name.create (prefix ^ name.txt) ~loc:name.loc)
+      List.fold_left decl.ptype_params ~init:String.Map.empty ~f:(fun map param ->
+        let name = get_type_param_name param in
+        String.Map.update
+          name.txt
+          (function
+            | None -> Some (Ok (Fresh_name.create (prefix ^ name.txt) ~loc:name.loc))
             | Some _ ->
-              Error { loc = name.loc; txt = "ppx_sexp_conv: duplicate variable" }))
+              Some (Error { loc = name.loc; txt = "ppx_sexp_conv: duplicate variable" }))
+          map)
   }
 ;;
 
-let without_type () = { existential = false; universal = Map.empty (module String) }
+let without_type () = { existential = false; universal = String.Map.empty }

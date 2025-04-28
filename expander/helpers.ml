@@ -1,4 +1,4 @@
-open! Base
+open! Stdppx
 open! Ppxlib
 open Ast_builder.Default
 
@@ -22,19 +22,19 @@ let replace_variables_by_underscores =
 ;;
 
 let make_rigid_types tps =
-  List.fold
-    tps
-    ~init:(Map.empty (module String))
-    ~f:(fun map (tp, jkind) ->
-      Map.update map tp.txt ~f:(function
-        | None -> Fresh_name.of_string_loc tp, jkind
+  List.fold_left tps ~init:String.Map.empty ~f:(fun map (tp, jkind) ->
+    String.Map.update
+      tp.txt
+      (function
+        | None -> Some (Fresh_name.of_string_loc tp, jkind)
         | Some (fresh, jkind) ->
           (* Ignore duplicate names, the typechecker will raise after expansion. *)
-          fresh, jkind))
+          Some (fresh, jkind))
+      map)
 ;;
 
 let find_rigid_type ~loc ~rigid_types name =
-  match Map.find rigid_types name with
+  match String.Map.find_opt name rigid_types with
   | Some (tp, jkind) -> Fresh_name.to_string_loc tp, jkind
   | None ->
     (* Ignore unbound type names, the typechecker will raise after expansion. *)
@@ -104,6 +104,7 @@ let constrained_function_binding
   (typ : core_type)
   ~(tps : (string loc * Ppxlib_jane.jkind_annotation option) list)
   ~(func_name : string)
+  ~portable
   (body : expression)
   =
   let bound_vars = tvars_of_core_type typ in
@@ -142,7 +143,11 @@ let constrained_function_binding
     then body
     else pexp_constraint ~loc body typ
   in
-  value_binding ~loc ~pat ~expr:body
+  Ppxlib_jane.Ast_builder.Default.value_binding
+    ~loc
+    ~pat
+    ~expr:body
+    ~modes:(if portable then [ { txt = Mode "portable"; loc } ] else [])
 ;;
 
 let with_let ~loc ~binds body =
@@ -189,11 +194,16 @@ let rec is_value_expression expr =
   | Pexp_tuple lexprs -> List.for_all lexprs ~f:(fun (_, e) -> is_value_expression e)
   | Pexp_unboxed_tuple lexprs ->
     List.for_all lexprs ~f:(fun (_, e) -> is_value_expression e)
-  | Pexp_construct (_, maybe_expr) -> Option.for_all maybe_expr ~f:is_value_expression
-  | Pexp_variant (_, maybe_expr) -> Option.for_all maybe_expr ~f:is_value_expression
-  | Pexp_record (fields, maybe_expr) ->
+  | Pexp_construct (_, None) -> true
+  | Pexp_construct (_, Some expr) -> is_value_expression expr
+  | Pexp_variant (_, None) -> true
+  | Pexp_variant (_, Some expr) -> is_value_expression expr
+  | Pexp_record (fields, maybe_expr) | Pexp_record_unboxed_product (fields, maybe_expr) ->
     List.for_all fields ~f:(fun (_, expr) -> is_value_expression expr)
-    && Option.for_all maybe_expr ~f:is_value_expression
+    &&
+      (match maybe_expr with
+      | None -> true
+      | Some expr -> is_value_expression expr)
   (* Not values, or not always values. We make a conservative approximation. *)
   | Pexp_unreachable
   | Pexp_let _
@@ -201,6 +211,7 @@ let rec is_value_expression expr =
   | Pexp_match _
   | Pexp_try _
   | Pexp_field _
+  | Pexp_unboxed_field _
   | Pexp_setfield _
   | Pexp_array _
   | Pexp_ifthenelse _
@@ -220,7 +231,9 @@ let rec is_value_expression expr =
   | Pexp_open _
   | Pexp_letop _
   | Pexp_extension _
-  | Pexp_comprehension _ -> false
+  | Pexp_comprehension _
+  | Pexp_overwrite _
+  | Pexp_hole -> false
 ;;
 
 let really_recursive_respecting_opaque rec_flag tds =

@@ -6,20 +6,18 @@ module _ = struct
 
   let _ = fun (_ : t) -> ()
 
-  let (t_sexp_grammar : t Sexplib0.Sexp_grammar.t) =
+  let t_sexp_grammar : t Sexplib0.Sexp_grammar.t =
     { untyped =
-        Lazy
-          (lazy
-            (Variant
-               { case_sensitivity = Case_sensitive
-               ; clauses =
-                   [ No_tag
-                       { name = "T"
-                       ; clause_kind =
-                           List_clause { args = Cons (int_sexp_grammar.untyped, Empty) }
-                       }
-                   ]
-               }))
+        Variant
+          { case_sensitivity = Case_sensitive
+          ; clauses =
+              [ No_tag
+                  { name = "T"
+                  ; clause_kind =
+                      List_clause { args = Cons (int_sexp_grammar.untyped, Empty) }
+                  }
+              ]
+          }
     }
   ;;
 
@@ -36,33 +34,44 @@ module _ = struct
 
   include struct
     open struct
-      let (grammars__001_ : Sexplib0.Sexp_grammar.defn Stdlib.List.t Stdlib.Lazy.t) =
-        lazy
-          (let (t_sexp_grammar : t Sexplib0.Sexp_grammar.t) =
-             { untyped = Recursive ("t", []) }
-           in
-           [ { tycon = "t"
-             ; tyvars = []
-             ; grammar =
-                 Variant
-                   { case_sensitivity = Case_sensitive
-                   ; clauses =
-                       [ No_tag
-                           { name = "T"
-                           ; clause_kind =
-                               List_clause { args = Cons (t_sexp_grammar.untyped, Empty) }
-                           }
-                       ]
-                   }
-             }
-           ])
+      let grammars__001_
+        : Sexplib0.Sexp_grammar.defn Stdlib.List.t Basement.Portable_lazy.t
+        =
+        Basement.Portable_lazy.from_fun
+          (Basement.Portability_hacks.magic_portable__needs_base_and_core
+             (fun () : Sexplib0.Sexp_grammar.defn list ->
+                let t_sexp_grammar : t Sexplib0.Sexp_grammar.t =
+                  { untyped = Recursive ("t", []) }
+                in
+                [ { tycon = "t"
+                  ; tyvars = []
+                  ; grammar =
+                      Variant
+                        { case_sensitivity = Case_sensitive
+                        ; clauses =
+                            [ No_tag
+                                { name = "T"
+                                ; clause_kind =
+                                    List_clause
+                                      { args = Cons (t_sexp_grammar.untyped, Empty) }
+                                }
+                            ]
+                        }
+                  }
+                ]))
       ;;
 
       let _ = grammars__001_
     end
 
-    let (t_sexp_grammar : t Sexplib0.Sexp_grammar.t) =
-      { untyped = Lazy (lazy (Tycon ("t", [], Stdlib.Lazy.force grammars__001_))) }
+    let t_sexp_grammar : t Sexplib0.Sexp_grammar.t =
+      { untyped =
+          Lazy
+            (Basement.Portable_lazy.from_fun
+               (Basement.Portability_hacks.magic_portable__needs_base_and_core
+                  (fun () : Sexplib0.Sexp_grammar.grammar ->
+                     Tycon ("t", [], Basement.Portable_lazy.force grammars__001_))))
+      }
     ;;
 
     let _ = t_sexp_grammar
@@ -106,34 +115,39 @@ module _ = struct
 
   include struct
     open struct
-      let (grammars__002_ : Sexplib0.Sexp_grammar.defn Stdlib.List.t Stdlib.Lazy.t) =
-        lazy
-          (let t_sexp_grammar
-             : 'a. 'a Sexplib0.Sexp_grammar.t -> 'a t Sexplib0.Sexp_grammar.t
-             =
-             fun _'a_sexp_grammar ->
-             { untyped = Recursive ("t", [ _'a_sexp_grammar.untyped ]) }
-           in
-           [ { tycon = "t"
-             ; tyvars = [ "a" ]
-             ; grammar =
-                 Variant
-                   { case_sensitivity = Case_sensitive
-                   ; clauses =
-                       [ No_tag
-                           { name = "T"
-                           ; clause_kind =
-                               List_clause
-                                 { args =
-                                     Cons
-                                       ( (t_sexp_grammar { untyped = Tyvar "a" }).untyped
-                                       , Empty )
-                                 }
-                           }
-                       ]
-                   }
-             }
-           ])
+      let grammars__002_
+        : Sexplib0.Sexp_grammar.defn Stdlib.List.t Basement.Portable_lazy.t
+        =
+        Basement.Portable_lazy.from_fun
+          (Basement.Portability_hacks.magic_portable__needs_base_and_core
+             (fun () : Sexplib0.Sexp_grammar.defn list ->
+                let t_sexp_grammar
+                  : 'a. 'a Sexplib0.Sexp_grammar.t -> 'a t Sexplib0.Sexp_grammar.t
+                  =
+                  fun _'a_sexp_grammar ->
+                  { untyped = Recursive ("t", [ _'a_sexp_grammar.untyped ]) }
+                in
+                [ { tycon = "t"
+                  ; tyvars = [ "a" ]
+                  ; grammar =
+                      Variant
+                        { case_sensitivity = Case_sensitive
+                        ; clauses =
+                            [ No_tag
+                                { name = "T"
+                                ; clause_kind =
+                                    List_clause
+                                      { args =
+                                          Cons
+                                            ( (t_sexp_grammar { untyped = Tyvar "a" })
+                                                .untyped
+                                            , Empty )
+                                      }
+                                }
+                            ]
+                        }
+                  }
+                ]))
       ;;
 
       let _ = grammars__002_
@@ -142,7 +156,10 @@ module _ = struct
     let t_sexp_grammar : 'a. 'a Sexplib0.Sexp_grammar.t -> 'a t Sexplib0.Sexp_grammar.t =
       fun _'a_sexp_grammar ->
       { untyped =
-          Tycon ("t", [ _'a_sexp_grammar.untyped ], Stdlib.Lazy.force grammars__002_)
+          Tycon
+            ( "t"
+            , [ _'a_sexp_grammar.untyped ]
+            , Basement.Portable_lazy.force grammars__002_ )
       }
     ;;
 

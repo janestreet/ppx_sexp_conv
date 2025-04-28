@@ -1,4 +1,4 @@
-open! Base
+open! Stdppx
 open Ppxlib
 open Ast_builder.Default
 
@@ -7,18 +7,26 @@ type 'a t =
   ; body : 'a
   }
 
-include Monad.Make (struct
-    type nonrec 'a t = 'a t
+let return body = { value_bindings = []; body }
 
-    let return body = { value_bindings = []; body }
+let bind a ~f =
+  let b = f a.body in
+  { value_bindings = a.value_bindings @ b.value_bindings; body = b.body }
+;;
 
-    let bind a ~f =
-      let b = f a.body in
-      { value_bindings = a.value_bindings @ b.value_bindings; body = b.body }
-    ;;
+let map a ~f = { a with body = f a.body }
 
-    let map = `Define_using_bind
-  end)
+module Monad_infix = struct
+  let ( >>| ) a f = map a ~f
+  let ( >>= ) a f = bind a ~f
+end
+
+open Monad_infix
+
+let all list =
+  List.fold_right list ~init:(return []) ~f:(fun head tail ->
+    head >>= fun head -> tail >>| fun tail -> head :: tail)
+;;
 
 let create ~loc ~prefix ~ty rhs =
   let name = gen_symbol ~prefix () in

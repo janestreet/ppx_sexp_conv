@@ -4,23 +4,20 @@ type t = T : ('a[@sexp.opaque]) -> t [@@deriving sexp] [@@deriving_inline sexp_g
 
 let _ = fun (_ : t) -> ()
 
-let (t_sexp_grammar : t Sexplib0.Sexp_grammar.t) =
+let t_sexp_grammar : t Sexplib0.Sexp_grammar.t =
   { untyped =
-      Lazy
-        (lazy
-          (Variant
-             { case_sensitivity = Case_sensitive_except_first_character
-             ; clauses =
-                 [ No_tag
-                     { name = "T"
-                     ; clause_kind =
-                         List_clause
-                           { args =
-                               Cons (Sexplib0.Sexp_conv.opaque_sexp_grammar.untyped, Empty)
-                           }
-                     }
-                 ]
-             }))
+      Variant
+        { case_sensitivity = Case_sensitive_except_first_character
+        ; clauses =
+            [ No_tag
+                { name = "T"
+                ; clause_kind =
+                    List_clause
+                      { args = Cons (Sexplib0.Sexp_conv.opaque_sexp_grammar.untyped, Empty)
+                      }
+                }
+            ]
+        }
   }
 ;;
 

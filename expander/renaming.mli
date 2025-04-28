@@ -20,7 +20,7 @@
    If we can't find a resulting name, like when looking up ['c] in the renaming, then we
    assume the variable is existentially quantified and treat it as [_] (which is ok,
    assuming there are no constraints). *)
-open! Base
+open! Stdppx
 open! Ppxlib
 
 type t

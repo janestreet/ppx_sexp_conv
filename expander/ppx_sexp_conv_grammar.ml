@@ -1,4 +1,4 @@
-open! Base
+open! Stdppx
 open! Ppxlib
 open Ast_builder.Default
 
@@ -112,7 +112,9 @@ let tycon_grammar ~loc tycon_name params defns =
   [%expr Tycon ([%e tycon_name], [%e params], [%e defns])]
 ;;
 
-let defns_type ~loc = [%type: Sexplib0.Sexp_grammar.defn Stdlib.List.t Stdlib.Lazy.t]
+let defns_type ~loc =
+  [%type: Sexplib0.Sexp_grammar.defn Stdlib.List.t Basement.Portable_lazy.t]
+;;
 
 let untyped_grammar ~loc expr =
   match expr with
@@ -347,35 +349,37 @@ and grammar_of_labeled_tuple ~loc ~rec_flag ~tags_of_doc_comments alist =
 
 and grammar_of_polymorphic_variant ~loc ~rec_flag ~tags_of_doc_comments rows =
   let inherits, clauses =
-    List.partition_map rows ~f:(fun row : (_, Variant_clause_type.t) Either.t ->
-      let tags = Tags.get row ~tags:Attrs.tags_poly ~tag:Attrs.tag_poly in
-      let comments = attr_doc_comments ~tags_of_doc_comments row.prf_attributes in
-      match Attribute.get Attrs.list_poly row with
-      | Some () ->
-        (match Row_field_type.of_row_field ~loc row.prf_desc with
-         | Tag_with_arg (name, [%type: [%t? ty] list]) ->
-           let clause_kind =
-             grammar_of_type ~rec_flag ~tags_of_doc_comments ty
-             |> many_grammar ~loc
-             |> list_clause ~loc
-           in
-           Second { name; comments; tags; clause_kind }
-         | _ -> Attrs.invalid_attribute ~loc Attrs.list_poly "_ list")
-      | None ->
-        (match Row_field_type.of_row_field ~loc row.prf_desc with
-         | Inherit core_type ->
-           First
-             (grammar_of_type ~rec_flag ~tags_of_doc_comments core_type
-              |> with_tags_as_grammar ~loc ~tags ~comments)
-         | Tag_no_arg name ->
-           Second { name; comments; tags; clause_kind = atom_clause ~loc }
-         | Tag_with_arg (name, core_type) ->
-           let clause_kind =
-             [ grammar_of_type ~rec_flag ~tags_of_doc_comments core_type ]
-             |> tuple_grammar ~loc
-             |> list_clause ~loc
-           in
-           Second { name; comments; tags; clause_kind }))
+    List.partition_map
+      (fun row : (_, Variant_clause_type.t) Either.t ->
+        let tags = Tags.get row ~tags:Attrs.tags_poly ~tag:Attrs.tag_poly in
+        let comments = attr_doc_comments ~tags_of_doc_comments row.prf_attributes in
+        match Attribute.get Attrs.list_poly row with
+        | Some () ->
+          (match Row_field_type.of_row_field ~loc row.prf_desc with
+           | Tag_with_arg (name, [%type: [%t? ty] list]) ->
+             let clause_kind =
+               grammar_of_type ~rec_flag ~tags_of_doc_comments ty
+               |> many_grammar ~loc
+               |> list_clause ~loc
+             in
+             Right { name; comments; tags; clause_kind }
+           | _ -> Attrs.invalid_attribute ~loc Attrs.list_poly "_ list")
+        | None ->
+          (match Row_field_type.of_row_field ~loc row.prf_desc with
+           | Inherit core_type ->
+             Left
+               (grammar_of_type ~rec_flag ~tags_of_doc_comments core_type
+                |> with_tags_as_grammar ~loc ~tags ~comments)
+           | Tag_no_arg name ->
+             Right { name; comments; tags; clause_kind = atom_clause ~loc }
+           | Tag_with_arg (name, core_type) ->
+             let clause_kind =
+               [ grammar_of_type ~rec_flag ~tags_of_doc_comments core_type ]
+               |> tuple_grammar ~loc
+               |> list_clause ~loc
+             in
+             Right { name; comments; tags; clause_kind }))
+      rows
   in
   variant_grammars ~loc ~case_sensitivity:[%expr Case_sensitive] ~clauses
   |> List.append inherits
@@ -483,7 +487,7 @@ let grammar_of_variant ~loc ~rec_flag ~tags_of_doc_comments clause_decls =
 
 let grammar_of_td ~ctxt ~rec_flag ~tags_of_doc_comments td =
   let loc = td.ptype_loc in
-  match td.ptype_kind with
+  match Ppxlib_jane.Shim.Type_kind.of_parsetree td.ptype_kind with
   | Ptype_open -> unsupported ~loc "open types"
   | Ptype_record fields ->
     record_expr
@@ -495,6 +499,7 @@ let grammar_of_td ~ctxt ~rec_flag ~tags_of_doc_comments td =
       fields
     |> fields_grammar ~loc
     |> list_grammar ~loc
+  | Ptype_record_unboxed_product _ -> unsupported ~loc "unboxed record types"
   | Ptype_variant clauses ->
     grammar_of_variant ~loc ~rec_flag ~tags_of_doc_comments clauses
   | Ptype_abstract ->
@@ -514,51 +519,55 @@ let pattern_of_td td =
        (combinator_type_of_type_declaration td ~f:grammar_type))
 ;;
 
-(* Any grammar expression that is purely a constant does no work, and does not need to be
-   wrapped in [Lazy]. *)
-let rec is_preallocated_constant expr =
+(* To avoid top-level effects (in particular, allocations, which both increase binary size
+   and start-up time), we wrap generated grammars in [lazy] if they might do non-trivial
+   work. In general, this should just be function applications, but to be conservative, we
+   always wrap with [lazy] unless they are clearly (recursively) static allocations:
+   - variant constructors, record constructors, tuple constructors
+   - field accesses
+   - variable lookups (note: even if the value that the variable points to is not
+     statically allocated, the compiler is still able to statically allocate the
+     new constructors)
+*)
+let rec grammar_is_statically_allocated expr =
   match
     Ppxlib_jane.Shim.Expression_desc.of_parsetree ~loc:expr.pexp_loc expr.pexp_desc
   with
-  | Pexp_constraint (expr, _, _) | Pexp_coerce (expr, _, _) | Pexp_open (_, expr) ->
-    is_preallocated_constant expr
-  | Pexp_constant _ -> true
-  | Pexp_tuple args -> List.for_all ~f:(fun (_, e) -> is_preallocated_constant e) args
-  | Pexp_variant (_, maybe_arg) | Pexp_construct (_, maybe_arg) ->
-    Option.for_all ~f:is_preallocated_constant maybe_arg
+  | Pexp_ident _ | Pexp_constant _ -> true
+  | Pexp_constraint (expr, _, _)
+  | Pexp_coerce (expr, _, _)
+  | Pexp_open (_, expr)
+  | Pexp_field (expr, _) -> grammar_is_statically_allocated expr
+  | Pexp_tuple args ->
+    List.for_all ~f:(fun (_, e) -> grammar_is_statically_allocated e) args
+  | Pexp_variant (_, None) | Pexp_construct (_, None) -> true
+  | Pexp_variant (_, Some arg) | Pexp_construct (_, Some arg) ->
+    grammar_is_statically_allocated arg
   | Pexp_record (fields, maybe_template) ->
-    List.for_all fields ~f:(fun (_, expr) -> is_preallocated_constant expr)
-    && Option.for_all ~f:is_preallocated_constant maybe_template
-  | _ -> false
-;;
-
-(* Any grammar expression that just refers to a previously defined grammar also does not
-   need to be wrapped in [Lazy]. Accessing the previous grammar is work, but building the
-   closure for a lazy value is at least as much work anyway. *)
-let rec is_variable_access expr =
-  match
-    Ppxlib_jane.Shim.Expression_desc.of_parsetree ~loc:expr.pexp_loc expr.pexp_desc
-  with
-  | Pexp_constraint (expr, _, _) | Pexp_coerce (expr, _, _) | Pexp_open (_, expr) ->
-    is_variable_access expr
-  | Pexp_ident _ -> true
-  | Pexp_field (expr, _) -> is_variable_access expr
-  | _ -> false
-;;
-
-let grammar_needs_lazy_wrapper expr =
-  not (is_preallocated_constant expr || is_variable_access expr)
+    List.for_all fields ~f:(fun (_, expr) -> grammar_is_statically_allocated expr)
+    &&
+      (match maybe_template with
+      | None -> true
+      | Some template -> grammar_is_statically_allocated template)
+  | _ ->
+    (* We conservatively assume unhandled code structures allocate at runtime *)
+    false
 ;;
 
 let lazy_grammar ~loc td expr =
   if List.is_empty td.ptype_params
      (* polymorphic types generate functions, so the body does not need a [lazy] wrapper *)
-     && grammar_needs_lazy_wrapper expr
-  then [%expr Lazy (lazy [%e expr])]
+     && not (grammar_is_statically_allocated expr)
+  then
+    [%expr
+      Lazy
+        (Basement.Portable_lazy.from_fun
+           (Basement.Portability_hacks.magic_portable__needs_base_and_core
+              (fun () : Sexplib0.Sexp_grammar.grammar -> [%e expr])))]
   else expr
 ;;
 
-let force_expr ~loc expr = [%expr Stdlib.Lazy.force [%e expr]]
+let force_expr ~loc expr = [%expr Basement.Portable_lazy.force [%e expr]]
 
 (* Definitions of grammars that do not refer to each other. *)
 let nonrecursive_grammars ~ctxt ~loc ~tags_of_doc_comments td_lists =
@@ -647,7 +656,12 @@ let recursive_grammars ~ctxt ~loc ~tags_of_doc_comments tds =
       let expr =
         recursive_grammar_defns ~ctxt ~loc ~tags_of_doc_comments tds
         |> pexp_let ~loc Nonrecursive (recursive_grammar_tycons tds)
-        |> pexp_lazy ~loc
+      in
+      let expr =
+        [%expr
+          Basement.Portable_lazy.from_fun
+            (Basement.Portability_hacks.magic_portable__needs_base_and_core
+               (fun () : Sexplib0.Sexp_grammar.defn list -> [%e expr]))]
       in
       let pat = ppat_constraint ~loc (pvar ~loc defns_name) (defns_type ~loc) in
       pstr_value ~loc Nonrecursive [ value_binding ~loc ~pat ~expr ]
@@ -680,7 +694,7 @@ let partition_recursive_and_nonrecursive ~rec_flag tds =
         end
       in
       let recursive, nonrecursive =
-        List.partition_tf tds ~f:(fun td ->
+        List.partition tds ~f:(fun td ->
           match obj#recursion td with
           | Recursive -> true
           | Nonrecursive -> false)
@@ -704,11 +718,12 @@ let str_type_decl ~ctxt (rec_flag, tds) tags_of_doc_comments =
 let sig_type_decl ~ctxt:_ (_rec_flag, tds) =
   List.map tds ~f:(fun td ->
     let loc = td.ptype_loc in
-    value_description
+    Ppxlib_jane.Ast_builder.Default.value_description
       ~loc
       ~name:(Loc.map td.ptype_name ~f:grammar_name)
       ~type_:(combinator_type_of_type_declaration td ~f:grammar_type)
       ~prim:[]
+      ~modalities:[ Modality "portable" ]
     |> psig_value ~loc)
 ;;
 

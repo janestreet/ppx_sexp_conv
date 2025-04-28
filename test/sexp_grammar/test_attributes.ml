@@ -25,14 +25,12 @@ let%expect_test "[@sexp_grammar.custom] in [@@deriving]" =
 
       let _ = fun (_ : t) -> ()
 
-      let (t_sexp_grammar : t Sexplib0.Sexp_grammar.t) =
+      let t_sexp_grammar : t Sexplib0.Sexp_grammar.t =
         { untyped =
-            Lazy
-              (lazy
-                (List
-                   (Cons
-                      ( (the_grammar : Grammarless.t Sexplib0.Sexp_grammar.t).untyped
-                      , Cons (int_sexp_grammar.untyped, Empty) ))))
+            List
+              (Cons
+                 ( (the_grammar : Grammarless.t Sexplib0.Sexp_grammar.t).untyped
+                 , Cons (int_sexp_grammar.untyped, Empty) ))
         }
       ;;
 

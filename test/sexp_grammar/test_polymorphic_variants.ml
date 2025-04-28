@@ -46,34 +46,31 @@ module _ = struct
 
   let _ = fun (_ : t) -> ()
 
-  let (t_sexp_grammar : t Sexplib0.Sexp_grammar.t) =
+  let t_sexp_grammar : t Sexplib0.Sexp_grammar.t =
     { untyped =
-        Lazy
-          (lazy
-            (Variant
-               { case_sensitivity = Case_sensitive
-               ; clauses =
-                   [ No_tag
-                       { name = "A"
-                       ; clause_kind =
-                           List_clause
-                             { args =
-                                 Cons
-                                   ( List
-                                       (Cons
-                                          ( int_sexp_grammar.untyped
-                                          , Cons (int_sexp_grammar.untyped, Empty) ))
-                                   , Empty )
-                             }
-                       }
-                   ; No_tag
-                       { name = "B"
-                       ; clause_kind =
-                           List_clause
-                             { args = Cons (string_sexp_grammar.untyped, Empty) }
-                       }
-                   ]
-               }))
+        Variant
+          { case_sensitivity = Case_sensitive
+          ; clauses =
+              [ No_tag
+                  { name = "A"
+                  ; clause_kind =
+                      List_clause
+                        { args =
+                            Cons
+                              ( List
+                                  (Cons
+                                     ( int_sexp_grammar.untyped
+                                     , Cons (int_sexp_grammar.untyped, Empty) ))
+                              , Empty )
+                        }
+                  }
+              ; No_tag
+                  { name = "B"
+                  ; clause_kind =
+                      List_clause { args = Cons (string_sexp_grammar.untyped, Empty) }
+                  }
+              ]
+          }
     }
   ;;
 
@@ -113,33 +110,38 @@ module _ = struct
 
   let _ = fun (_ : t) -> ()
 
-  let (t_sexp_grammar : t Sexplib0.Sexp_grammar.t) =
+  let t_sexp_grammar : t Sexplib0.Sexp_grammar.t =
     { untyped =
         Lazy
-          (lazy
-            (Variant
-               { case_sensitivity = Case_sensitive
-               ; clauses =
-                   [ No_tag
-                       { name = "Int"
-                       ; clause_kind =
-                           List_clause { args = Cons (int_sexp_grammar.untyped, Empty) }
-                       }
-                   ; No_tag
-                       { name = "List"
-                       ; clause_kind =
-                           List_clause
-                             { args =
-                                 Cons ((list_sexp_grammar int_sexp_grammar).untyped, Empty)
+          (Basement.Portable_lazy.from_fun
+             (Basement.Portability_hacks.magic_portable__needs_base_and_core
+                (fun () : Sexplib0.Sexp_grammar.grammar ->
+                   Variant
+                     { case_sensitivity = Case_sensitive
+                     ; clauses =
+                         [ No_tag
+                             { name = "Int"
+                             ; clause_kind =
+                                 List_clause
+                                   { args = Cons (int_sexp_grammar.untyped, Empty) }
                              }
-                       }
-                   ; No_tag
-                       { name = "Sexp_dot_list"
-                       ; clause_kind =
-                           List_clause { args = Many int_sexp_grammar.untyped }
-                       }
-                   ]
-               }))
+                         ; No_tag
+                             { name = "List"
+                             ; clause_kind =
+                                 List_clause
+                                   { args =
+                                       Cons
+                                         ( (list_sexp_grammar int_sexp_grammar).untyped
+                                         , Empty )
+                                   }
+                             }
+                         ; No_tag
+                             { name = "Sexp_dot_list"
+                             ; clause_kind =
+                                 List_clause { args = Many int_sexp_grammar.untyped }
+                             }
+                         ]
+                     })))
     }
   ;;
 

@@ -1,0 +1,64 @@
+open Base
+
+(* This test documents the behavior of [@@deriving sexp_of] on GADTs with type indexes. *)
+
+(* These GADTs are handled by ppx_sexp_conv, where the ['a] is implicitly opaqueified: *)
+
+module Silently_opaqueified = struct
+  type t1 = X1 : 'a -> t1 [@@deriving sexp_of]
+  type _ t2 = X2 : 'a -> 'b t2 [@@deriving sexp_of]
+
+  let t1 = sexp_of_t1 (X1 1)
+  let t2 = sexp_of_t2 [%sexp_of: int] (X2 2)
+  let () = Stdio.print_s t1
+  let () = Stdio.print_s t2
+end
+
+[%%expect
+  {|
+(X1 _)
+(X2 _)
+|}]
+
+(* This GADT is handled by ppx_sexp_conv, where [sexp_of_a] is passed in by the caller:
+*)
+
+module Not_opaque = struct
+  type _ t3 = X3 : 'a -> 'a t3 [@@deriving sexp_of]
+
+  let t3 = sexp_of_t3 [%sexp_of: int] (X3 3)
+  let () = Stdio.print_s t3
+end
+
+[%%expect
+  {|
+(X3 3)
+|}]
+
+(* This GADT is **NOT** handleable by ppx_sexp_conv without opaqueifying the constructor:
+   the type variable ['a] that appears in the constructor argument ['a] is not a simple
+   index of the "return type" ['a list t4] (instead, ['a list] is the index): *)
+
+module Error_if_not_opaqueified = struct
+  type _ t4 = X4 : 'a -> 'a list t4 [@@deriving sexp_of]
+end
+
+[%%expect
+  {|
+Line _, characters _-_:
+Error: ppx_sexp_conv: variable is not a parameter of the type constructor. Hint: mark all appearances of 'a in the constructor's arguments as [@sexp.opaque].
+|}]
+
+(* The error message encourages users to opt in to the explicitly-opaqueified version: *)
+
+module Explicitly_opaqueified = struct
+  type _ t5 = X5 : ('a[@sexp.opaque]) -> 'a list t5 [@@deriving sexp_of]
+
+  let t5 = sexp_of_t5 [%sexp_of: int list] (X5 5)
+  let () = Stdio.print_s t5
+end
+
+[%%expect
+  {|
+(X5 <opaque>)
+|}]

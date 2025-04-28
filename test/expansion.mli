@@ -448,3 +448,28 @@ module Opaque : sig
 
   [@@@end]
 end
+
+module Portable : sig
+  type t =
+    { u : int u
+    ; b : int
+    }
+
+  and 'a u =
+    { t : t
+    ; a : 'a
+    }
+  [@@deriving_inline sexp ~portable]
+
+  include sig
+    [@@@ocaml.warning "-32"]
+
+    val sexp_of_t : t -> Sexplib0.Sexp.t
+    val sexp_of_u : ('a -> Sexplib0.Sexp.t) -> 'a u -> Sexplib0.Sexp.t
+    val t_of_sexp : Sexplib0.Sexp.t -> t
+    val u_of_sexp : (Sexplib0.Sexp.t -> 'a) -> Sexplib0.Sexp.t -> 'a u
+  end
+  [@@ocaml.doc "@inline"]
+
+  [@@@end]
+end
