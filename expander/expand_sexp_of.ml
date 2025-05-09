@@ -31,8 +31,14 @@ module Sig_generate_sexp_of = struct
     | true -> [%type: [%t t] -> Sexplib0.Sexp.t]
   ;;
 
-  let mk_type td ~localize =
-    combinator_type_of_type_declaration td ~f:(type_of_sexp_of ~localize)
+  let mk_type td ~localize ~universally_quantify_if_jkind_annot =
+    let td = name_type_params_in_td td in
+    let typ = combinator_type_of_type_declaration td ~f:(type_of_sexp_of ~localize) in
+    let vars = List.map td.ptype_params ~f:Ppxlib_jane.get_type_param_name_and_jkind in
+    if universally_quantify_if_jkind_annot
+       && List.exists vars ~f:(fun (_, jkind) -> Option.is_some jkind)
+    then Ppxlib_jane.Ast_builder.Default.ptyp_poly ~loc:td.ptype_loc vars typ
+    else typ
   ;;
 
   let mk_val td ~localize ~portable =
@@ -43,7 +49,7 @@ module Sig_generate_sexp_of = struct
       (Ppxlib_jane.Ast_builder.Default.value_description
          ~loc
          ~name
-         ~type_:(mk_type td ~localize)
+         ~type_:(mk_type td ~localize ~universally_quantify_if_jkind_annot:true)
          ~modalities:(if portable then [ Ppxlib_jane.Modality "portable" ] else [])
          ~prim:[])
   ;;
@@ -827,7 +833,9 @@ module Str_generate_sexp_of = struct
           body
           ~localize
     in
-    let typ = Sig_generate_sexp_of.mk_type td ~localize in
+    let typ =
+      Sig_generate_sexp_of.mk_type td ~localize ~universally_quantify_if_jkind_annot:false
+    in
     let func_name = Printf.sprintf (fmt ~localize) type_name in
     let body =
       body

@@ -17,10 +17,18 @@ module Sig_generate_of_sexp = struct
     [%type: Sexplib0.Sexp.t -> [%t t]]
   ;;
 
-  let mk_type td = combinator_type_of_type_declaration td ~f:type_of_of_sexp
+  let mk_type ~universally_quantify_if_jkind_annot td =
+    let td = name_type_params_in_td td in
+    let typ = combinator_type_of_type_declaration td ~f:type_of_of_sexp in
+    let vars = List.map td.ptype_params ~f:Ppxlib_jane.get_type_param_name_and_jkind in
+    if universally_quantify_if_jkind_annot
+       && List.exists vars ~f:(fun (_, jkind) -> Option.is_some jkind)
+    then Ppxlib_jane.Ast_builder.Default.ptyp_poly ~loc:td.ptype_loc vars typ
+    else typ
+  ;;
 
   let sig_of_td ~poly ~portable td =
-    let of_sexp_type = mk_type td in
+    let of_sexp_type = mk_type ~universally_quantify_if_jkind_annot:true td in
     let loc = td.ptype_loc in
     let of_sexp_item =
       psig_value
@@ -1269,7 +1277,9 @@ module Str_generate_of_sexp = struct
       in
       with_error_source ~loc ~full_type_name body_with_lambdas
     in
-    let typ = Sig_generate_of_sexp.mk_type td in
+    let typ =
+      Sig_generate_of_sexp.mk_type ~universally_quantify_if_jkind_annot:false td
+    in
     let mk_binding func_name body =
       constrained_function_binding loc td typ ~tps ~func_name ~portable body
     in
