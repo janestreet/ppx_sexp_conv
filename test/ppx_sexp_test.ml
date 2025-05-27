@@ -1001,3 +1001,7 @@ module Default_values_and_polymorphism = struct
     }
   [@@deriving of_sexp]
 end
+
+module Type_parameter_with_constraint = struct
+  type 'a t = Foo constraint 'a = [< `Foo ] [@@deriving sexp]
+end

@@ -2,7 +2,6 @@
 
 open StdLabels
 open Ppxlib
-module Attrs = Ppx_sexp_conv_expander.Attrs
 
 let register_extension name f =
   let extension = Extension.declare name Expression Ast_pattern.(ptyp __) f in
@@ -63,12 +62,12 @@ module Sexp_of = struct
     Deriving.Generator.make
       (localize_and_portable_args ())
       (fun ~loc ~path tds localize portable ->
-        E.str_type_decl ~loc ~path tds ~localize ~portable)
-      ~attributes:
-        [ Attribute.T Attrs.default
-        ; Attribute.T Attrs.drop_default
-        ; Attribute.T Attrs.drop_if
-        ]
+         E.str_type_decl ~loc ~path tds ~localize ~portable)
+  ;;
+
+  let str_type_decl_local =
+    Deriving.Generator.make (portable_arg ()) (fun ~loc ~path tds portable ->
+      E.str_type_decl ~loc ~path tds ~localize:true ~portable)
   ;;
 
   let str_exception = Deriving.Generator.make_noarg E.str_exception
@@ -80,6 +79,11 @@ module Sexp_of = struct
          E.sig_type_decl ~loc ~path tds ~localize ~portable)
   ;;
 
+  let sig_type_decl_local =
+    Deriving.Generator.make (portable_arg ()) (fun ~loc ~path tds portable ->
+      E.sig_type_decl ~loc ~path tds ~localize:true ~portable)
+  ;;
+
   let sig_exception = Deriving.Generator.make_noarg E.sig_exception
 
   let deriver =
@@ -89,6 +93,13 @@ module Sexp_of = struct
       ~str_exception
       ~sig_type_decl
       ~sig_exception
+  ;;
+
+  let deriver_local =
+    Deriving.add
+      (name ~localize:true)
+      ~str_type_decl:str_type_decl_local
+      ~sig_type_decl:sig_type_decl_local
   ;;
 
   let () =
@@ -117,11 +128,8 @@ module Of_sexp = struct
   let name = "of_sexp"
 
   let str_type_decl =
-    Deriving.Generator.make
-      (portable_arg ())
-      (fun ~loc ~path tds portable ->
-        E.str_type_decl ~loc ~path tds ~poly:false ~portable)
-      ~attributes:[ Attribute.T Attrs.default ]
+    Deriving.Generator.make (portable_arg ()) (fun ~loc ~path tds portable ->
+      E.str_type_decl ~loc ~path tds ~poly:false ~portable)
   ;;
 
   let sig_type_decl =
@@ -151,10 +159,8 @@ module Of_sexp_poly = struct
   module E = Ppx_sexp_conv_expander.Of_sexp
 
   let str_type_decl =
-    Deriving.Generator.make
-      (portable_arg ())
-      (fun ~loc ~path tds portable -> E.str_type_decl ~loc ~path tds ~portable ~poly:true)
-      ~attributes:[ Attribute.T Attrs.default ]
+    Deriving.Generator.make (portable_arg ()) (fun ~loc ~path tds portable ->
+      E.str_type_decl ~loc ~path tds ~portable ~poly:true)
   ;;
 
   let sig_type_decl =
@@ -166,6 +172,7 @@ module Of_sexp_poly = struct
 end
 
 let sexp_of = Sexp_of.deriver
+let sexp_of__local = Sexp_of.deriver_local
 let of_sexp = Of_sexp.deriver
 let of_sexp_poly = Of_sexp_poly.deriver
 let sexp_grammar = Sexp_grammar.deriver
@@ -180,10 +187,22 @@ module Sexp_in_sig = struct
          E.sig_type_decl ~loc ~path tds ~localize ~portable)
   ;;
 
+  let sig_type_decl_local =
+    Deriving.Generator.make (portable_arg ()) (fun ~loc ~path tds portable ->
+      E.sig_type_decl ~loc ~path tds ~localize:true ~portable)
+  ;;
+
   let deriver =
     Deriving.add
       "ppx_sexp_conv: let this be a string that wouldn't parse if put in the source"
       ~sig_type_decl
+  ;;
+
+  let deriver_local =
+    Deriving.add
+      "ppx_sexp_conv: let this be a string that wouldn't parse if put in the source \
+       _local"
+      ~sig_type_decl:sig_type_decl_local
   ;;
 end
 
@@ -194,6 +213,15 @@ let sexp =
     ~sig_type_decl:[ Sexp_in_sig.deriver ]
     ~str_exception:[ sexp_of ]
     ~sig_exception:[ sexp_of ]
+;;
+
+let sexp__local =
+  Deriving.add_alias
+    "sexp__local"
+    [ sexp_of__local; of_sexp ]
+    ~sig_type_decl:[ Sexp_in_sig.deriver_local ]
+    ~str_exception:[ sexp_of__local ]
+    ~sig_exception:[ sexp_of__local ]
 ;;
 
 let sexp_poly = Deriving.add_alias "sexp_poly" [ sexp_of; of_sexp_poly ]

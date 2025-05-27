@@ -8,8 +8,8 @@ open struct
     | Some
 end
 
-module Abstract = struct
-  type t [@@deriving_inline sexp ~localize]
+module%template Abstract = struct
+  type t [@@deriving_inline sexp [@mode local]]
 
   let _ = fun (_ : t) -> ()
 
