@@ -1,12 +1,12 @@
 open! Base
 
-module Abstract : sig
-  type t [@@deriving_inline sexp]
+module%template Abstract : sig
+  type t [@@deriving_inline sexp [@mode local]]
 
   include sig
     [@@@ocaml.warning "-32"]
 
-    include Sexplib0.Sexpable.S with type t := t
+    include Sexplib0.Sexpable.S__local with type t := t
   end
   [@@ocaml.doc "@inline"]
 

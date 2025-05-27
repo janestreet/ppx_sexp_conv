@@ -67,7 +67,7 @@ let make_type_rigid ~rigid_types =
    Annotation are needed for non regular recursive datatypes and gadt when the return type
    of constructors are constrained. Unfortunately, putting rigid variables everywhere does
    not work because of certains types with constraints. We thus only use rigid variables
-   for sum types, which includes all GADTs. *)
+   for sum types without constraints, which includes all GADTs. *)
 
 type bound_var = string loc * Ppxlib_jane.jkind_annotation option
 
@@ -123,8 +123,8 @@ let constrained_function_binding
   in
   let body =
     let use_rigid_variables =
-      match td.ptype_kind with
-      | Ptype_variant _ -> true
+      match td.ptype_cstrs, td.ptype_kind with
+      | [], Ptype_variant _ -> true
       | _ -> false
     in
     if use_rigid_variables
