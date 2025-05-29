@@ -193,7 +193,8 @@ module Str_generate_of_sexp = struct
        | { ptyp_desc = Ptyp_class (_, _); _ }
        | { ptyp_desc = Ptyp_alias (_, _); _ }
        | { ptyp_desc = Ptyp_package _; _ }
-       | { ptyp_desc = Ptyp_extension _; _ } ->
+       | { ptyp_desc = Ptyp_extension _; _ }
+       | { ptyp_desc = Ptyp_open _; _ } ->
          Location.raise_errorf ~loc "Type unsupported for ppx [of_sexp] conversion")
 
   (* Conversion of (unlabeled) tuples *)
@@ -746,7 +747,7 @@ module Str_generate_of_sexp = struct
     in
     let default_case = case ~lhs:(ppat_any ~loc) ~guard:None ~rhs:(eint ~loc (-1)) in
     let cases = List.concat [ field_cases; [ default_case ] ] in
-    pexp_function ~loc cases
+    pexp_function_cases ~loc cases
   ;;
 
   let create_arg_for_record_of_sexp td fields ~loc ~constructor =

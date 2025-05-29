@@ -2,7 +2,7 @@ open! Base
 open! Ppxlib
 
 (** Sexp conversion function, expressed as either a single expression or as a collection
-    of [match] cases. Expressing as cases rather than wrapping directly in [pexp_function]
+    of [match] cases. Expressing as cases rather than wrapping directly in [pexp_function_cases]
     allows us to simplify some expressions built on this. *)
 type t
 
