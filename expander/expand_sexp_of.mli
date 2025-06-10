@@ -19,6 +19,10 @@ module Sig_generate_sexp_of : sig
 end
 
 module Str_generate_sexp_of : sig
+  (** Given an identifier for a type, produce a pattern for that type's [sexp_of]
+      conversion. *)
+  val sexp_of_pattern : longident loc -> localize:bool -> pattern
+
   (** Given a type, produce its [sexp_of] conversion. *)
   val sexp_of_core_type : core_type -> localize:bool -> expression
 

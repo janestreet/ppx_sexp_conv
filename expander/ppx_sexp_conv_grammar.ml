@@ -319,6 +319,7 @@ let rec grammar_of_type core_type ~rec_flag ~tags_of_doc_comments =
             grammar_of_polymorphic_variant ~loc ~rec_flag ~tags_of_doc_comments rows)
        | Ptyp_poly _ -> unsupported ~loc "explicitly polymorphic types"
        | Ptyp_package _ -> unsupported ~loc "first-class module types"
+       | Ptyp_of_kind _ -> unsupported ~loc "type of a fixed kind"
        | Ptyp_extension _ -> unsupported ~loc "unexpanded ppx extensions")
   in
   grammar_of_type_tags core_type grammar ~tags_of_doc_comments

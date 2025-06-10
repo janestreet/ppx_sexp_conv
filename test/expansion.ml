@@ -1,5 +1,7 @@
 open! Base
 
+[@@@disable_unused_warnings]
+
 open struct
   type _shadow_constructors =
     | []
@@ -1871,6 +1873,15 @@ module Opaque = struct
   [@@@end]
 end
 
+[@@@expand_inline
+  let [%sexp_of: Functor(T).t] = ()
+  let [%of_sexp: Functor(T).t] = ()]
+
+let sexp_of_functor__t = ()
+let functor__t_of_sexp = ()
+
+[@@@end]
+
 module Portable = struct
   type t =
     { u : int u
@@ -1915,7 +1926,7 @@ module Portable = struct
          x__381_
      : Sexplib0.Sexp.t -> t)
 
-  and u_of_sexp : 'a. (Sexplib0.Sexp.t -> 'a) -> Sexplib0.Sexp.t -> 'a u @@ portable =
+  and u_of_sexp : 'a. ((Sexplib0.Sexp.t -> 'a) -> Sexplib0.Sexp.t -> 'a u) @ portable =
     let error_source__384_ = "expansion.ml.Portable.u" in
     fun _of_a__382_ x__385_ ->
       Sexplib0.Sexp_conv_record.record_of_sexp
@@ -1963,7 +1974,7 @@ module Portable = struct
        Sexplib0.Sexp.List bnds__386_
      : t -> Sexplib0.Sexp.t)
 
-  and sexp_of_u : 'a. ('a -> Sexplib0.Sexp.t) -> 'a u -> Sexplib0.Sexp.t @@ portable =
+  and sexp_of_u : 'a. (('a -> Sexplib0.Sexp.t) -> 'a u -> Sexplib0.Sexp.t) @ portable =
     fun _of_a__391_ { t = t__393_; a = a__395_ } ->
     let bnds__392_ = ([] : _ Stdlib.List.t) in
     let bnds__392_ =

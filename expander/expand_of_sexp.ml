@@ -158,6 +158,10 @@ module Str_generate_of_sexp = struct
       Location.raise_errorf ~loc "unsupported: polymorphic variant empty type"
   ;;
 
+  let pattern_of_sexp id =
+    Ppx_helpers.type_constr_conv_pattern id ~f:(fun s -> s ^ "_of_sexp")
+  ;;
+
   let type_constr_of_sexp ?(internal = false) id args =
     type_constr_conv id args ~f:(fun s ->
       let s = s ^ "_of_sexp" in

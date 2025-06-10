@@ -1,8 +1,8 @@
 (library
  (name ppx_sexp_conv_expander)
  (public_name ppx_sexp_conv.expander)
- (libraries ppxlib.stdppx compiler-libs.common ppxlib ppxlib_jane
-   ppxlib.metaquot_lifters)
+ (libraries compiler-libs.common ppx_helpers ppxlib ppxlib.metaquot_lifters
+   ppxlib_jane ppxlib.stdppx)
  (ppx_runtime_libraries basement ppx_sexp_conv.runtime-lib sexplib0)
  (preprocess
   (pps ppxlib.metaquot ppxlib.traverse)))

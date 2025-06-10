@@ -16,6 +16,10 @@ module Sig_generate_of_sexp : sig
 end
 
 module Str_generate_of_sexp : sig
+  (** Given an identifier for a type, produce a pattern for that type's [of_sexp]
+      conversion. *)
+  val pattern_of_sexp : longident loc -> pattern
+
   (** Given a type, produce its [of_sexp] conversion. *)
   val core_type_of_sexp : path:string -> core_type -> expression
 

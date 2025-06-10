@@ -79,6 +79,10 @@ module Str_generate_sexp_of = struct
     ;;
   end
 
+  let sexp_of_pattern id ~localize =
+    Ppx_helpers.type_constr_conv_pattern id ~f:(Printf.sprintf (fmt ~localize))
+  ;;
+
   let sexp_of_type_constr ~loc id args ~localize =
     type_constr_conv ~loc id ~f:(Printf.sprintf (fmt ~localize)) args
   ;;

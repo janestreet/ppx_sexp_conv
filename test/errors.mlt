@@ -293,6 +293,36 @@ Error: Unbound value sexp_of_exn__local
 Hint: Did you mean sexp_of_int__local or sexp_of_ref__local?
 |}]
 
+let [%sexp_of: M.t] = ()
+
+[%%expect
+  {|
+Line _, characters _-_:
+Error: Invalid identifier M.t for converter in pattern position. Only simple
+       identifiers (like t or string) or applications of functors with simple
+       identifiers (like M(K).t) are supported
+|}]
+
+let [%sexp_of: 'a M.t] = ()
+
+[%%expect
+  {|
+Line _, characters _-_:
+Error: Invalid identifier M.t for converter in pattern position. Only simple
+       identifiers (like t or string) or applications of functors with simple
+       identifiers (like M(K).t) are supported
+|}]
+
+let [%sexp_of: M.F(N).t] = ()
+
+[%%expect
+  {|
+Line _, characters _-_:
+Error: Invalid identifier M.F(N).t for converter in pattern position. Only
+       simple identifiers (like t or string) or applications of functors with
+       simple identifiers (like M(K).t) are supported
+|}]
+
 (* Passing ~portable to sexp can give you better error messages in
    structure context.
 *)

@@ -85,3 +85,69 @@ module Polymorphic_recursion = struct
 end
 
 [%%expect {| |}]
+
+module type Sexpable = sig
+  type t [@@deriving sexp]
+end
+
+module Define_sexp_converters_manually : sig
+  type t [@@deriving sexp]
+
+  module Functor (M : Sexpable) : Sexpable with type t = t
+  module T : Sexpable with type t = t
+
+  type with_functor = { x : Functor(T).t } [@@deriving sexp]
+
+  module Parameterized : sig
+    type 'a t [@@deriving sexp]
+  end
+end = struct
+  open Base
+
+  type t = unit
+
+  let [%sexp_of: t] = fun () -> Sexp.Atom "unit"
+
+  let [%of_sexp: t] =
+    fun sexp ->
+    match [%of_sexp: string] sexp with
+    | "unit" -> ()
+    | _ -> failwith "Expected \"unit\""
+  ;;
+
+  module T = struct
+    type nonrec t = t
+
+    let [%sexp_of: t] = [%sexp_of: t]
+    let [%of_sexp: t] = [%of_sexp: t]
+  end
+
+  module Functor (M : Sexpable) = struct
+    module _ = M
+
+    type nonrec t = t [@@deriving sexp]
+  end
+
+  (* the raison d'etre *)
+  let [%sexp_of: Functor(T).t] = fun (module M : Sexpable) -> [%sexp_of: t]
+  let [%of_sexp: Functor(T).t] = fun (module M : Sexpable) -> [%of_sexp: t]
+
+  type with_functor = { x : Functor(T).t } [@@deriving sexp]
+
+  module Parameterized = struct
+    type 'a t = 'a * 'a
+
+    let [%sexp_of: a t] =
+      fun [%sexp_of: a] (x, y) -> Sexp.List [ [%sexp_of: a] x; [%sexp_of: a] y ]
+    ;;
+
+    let [%of_sexp: a t] =
+      fun [%of_sexp: a] sexp ->
+      match [%of_sexp: a list] sexp with
+      | [ x; y ] -> x, y
+      | _ -> failwith "Expected tuple of length two"
+    ;;
+  end
+end
+
+[%%expect {| |}]

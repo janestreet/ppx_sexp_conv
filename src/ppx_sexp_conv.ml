@@ -110,13 +110,20 @@ module Sexp_of = struct
 
   let () =
     let rules =
-      List.map [ false; true ] ~f:(fun localize ->
-        Context_free.Rule.extension
-          (Extension.declare
-             (name ~localize)
-             Core_type
-             Ast_pattern.(ptyp __)
-             (fun ~loc:_ ~path:_ ty -> E.type_extension ty ~localize)))
+      List.concat_map [ false; true ] ~f:(fun localize ->
+        [ Context_free.Rule.extension
+            (Extension.declare
+               (name ~localize)
+               Core_type
+               Ast_pattern.(ptyp __)
+               (fun ~loc:_ ~path:_ ty -> E.type_extension ty ~localize))
+        ; Context_free.Rule.extension
+            (Extension.declare
+               (name ~localize)
+               Pattern
+               Ast_pattern.(ptyp (ptyp_constr __' drop))
+               (fun ~loc:_ ~path:_ id -> E.pattern id ~localize))
+        ])
     in
     Driver.register_transformation (name ~localize:false) ~rules
   ;;
@@ -151,6 +158,12 @@ module Of_sexp = struct
                Core_type
                Ast_pattern.(ptyp __)
                (fun ~loc:_ ~path:_ ty -> E.type_extension ty))
+        ; Context_free.Rule.extension
+            (Extension.declare
+               name
+               Pattern
+               Ast_pattern.(ptyp (ptyp_constr __' drop))
+               (fun ~loc:_ ~path:_ id -> E.pattern id))
         ]
   ;;
 end
