@@ -38,4 +38,5 @@ val tags_type : (core_type, expression) Attribute.t
 val tags_ld : (label_declaration, expression) Attribute.t
 val tags_cd : (constructor_declaration, expression) Attribute.t
 val tags_poly : (row_field, expression) Attribute.t
-val non_value : (label_declaration, unit) Attribute.t
+val non_value_field : (label_declaration, unit) Attribute.t
+val non_value_type : (core_type, unit) Attribute.t

@@ -68,12 +68,16 @@ let opaque =
   Attribute.declare "sexp.opaque" Attribute.Context.core_type Ast_pattern.(pstr nil) ()
 ;;
 
-let non_value =
+let non_value_field =
   Attribute.declare
     "sexp.non_value"
     Attribute.Context.label_declaration
     Ast_pattern.(pstr nil)
     ()
+;;
+
+let non_value_type =
+  Attribute.declare "sexp.non_value" Attribute.Context.core_type Ast_pattern.(pstr nil) ()
 ;;
 
 let omit_nil =

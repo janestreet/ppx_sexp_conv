@@ -621,3 +621,74 @@ let opaque_sexp_grammar : opaque Sexplib0.Sexp_grammar.t =
 let _ = opaque_sexp_grammar
 
 [@@@end]
+
+type nonportable =
+  { x : string
+  ; y : int -> int
+  }
+[@@deriving sexp] [@@deriving_inline sexp_grammar]
+
+let _ = fun (_ : nonportable) -> ()
+
+let nonportable_sexp_grammar : nonportable Sexplib0.Sexp_grammar.t =
+  { untyped =
+      List
+        (Fields
+           { allow_extra_fields = false
+           ; fields =
+               [ No_tag
+                   { name = "x"
+                   ; required = true
+                   ; args = Cons (string_sexp_grammar.untyped, Empty)
+                   }
+               ; No_tag
+                   { name = "y"
+                   ; required = true
+                   ; args = Cons (Sexplib0.Sexp_conv.fun_sexp_grammar.untyped, Empty)
+                   }
+               ]
+           })
+  }
+;;
+
+let _ = nonportable_sexp_grammar
+
+[@@@end]
+
+type 'a nonportable1 =
+  { x : string
+  ; y : 'a -> int
+  }
+[@@deriving sexp] [@@deriving_inline sexp_grammar]
+
+let _ = fun (_ : 'a nonportable1) -> ()
+
+let nonportable1_sexp_grammar
+  : 'a. 'a Sexplib0.Sexp_grammar.t -> 'a nonportable1 Sexplib0.Sexp_grammar.t
+  =
+  fun _'a_sexp_grammar ->
+  { untyped =
+      List
+        (Fields
+           { allow_extra_fields = false
+           ; fields =
+               [ No_tag
+                   { name = "x"
+                   ; required = true
+                   ; args = Cons (string_sexp_grammar.untyped, Empty)
+                   }
+               ; No_tag
+                   { name = "y"
+                   ; required = true
+                   ; args = Cons (Sexplib0.Sexp_conv.fun_sexp_grammar.untyped, Empty)
+                   }
+               ]
+           })
+  }
+;;
+
+let _ = nonportable1_sexp_grammar
+
+[@@@end]
+
+let nonportable1_sexp_grammar = nonportable1_sexp_grammar

@@ -281,3 +281,35 @@ end
 [@@ocaml.doc "@inline"]
 
 [@@@end]
+
+type nonportable =
+  { x : string
+  ; y : int -> int
+  }
+[@@deriving sexp] [@@deriving_inline sexp_grammar ~nonportable]
+
+include sig
+  [@@@ocaml.warning "-32"]
+
+  val nonportable_sexp_grammar : nonportable Sexplib0.Sexp_grammar.t
+end
+[@@ocaml.doc "@inline"]
+
+[@@@end]
+
+type 'a nonportable1 =
+  { x : string
+  ; y : 'a -> int
+  }
+[@@deriving sexp] [@@deriving_inline sexp_grammar ~nonportable]
+
+include sig
+  [@@@ocaml.warning "-32"]
+
+  val nonportable1_sexp_grammar
+    :  'a Sexplib0.Sexp_grammar.t
+    -> 'a nonportable1 Sexplib0.Sexp_grammar.t
+end
+[@@ocaml.doc "@inline"]
+
+[@@@end]
