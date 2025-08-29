@@ -65,7 +65,9 @@ type 'a unary = 'a list [@@deriving sexp] [@@deriving_inline sexp_grammar]
 include sig
   [@@@ocaml.warning "-32"]
 
-  val unary_sexp_grammar : 'a Sexplib0.Sexp_grammar.t -> 'a unary Sexplib0.Sexp_grammar.t
+  val unary_sexp_grammar
+    : 'a.
+    'a Sexplib0.Sexp_grammar.t -> 'a unary Sexplib0.Sexp_grammar.t
 end
 [@@ocaml.doc "@inline"]
 
@@ -95,7 +97,8 @@ include sig
   [@@@ocaml.warning "-32"]
 
   val which_sexp_grammar
-    :  'a Sexplib0.Sexp_grammar.t
+    : 'a 'b.
+    'a Sexplib0.Sexp_grammar.t
     -> 'b Sexplib0.Sexp_grammar.t
     -> ('a, 'b) which Sexplib0.Sexp_grammar.t
 end
@@ -112,8 +115,8 @@ include sig
   [@@@ocaml.warning "-32"]
 
   val optional_sexp_grammar
-    :  'a Sexplib0.Sexp_grammar.t
-    -> 'a optional Sexplib0.Sexp_grammar.t
+    : 'a.
+    'a Sexplib0.Sexp_grammar.t -> 'a optional Sexplib0.Sexp_grammar.t
 end
 [@@ocaml.doc "@inline"]
 
@@ -136,8 +139,8 @@ include sig
   [@@@ocaml.warning "-32"]
 
   val phantom_sexp_grammar
-    :  'a__003_ Sexplib0.Sexp_grammar.t
-    -> 'a__003_ phantom Sexplib0.Sexp_grammar.t
+    : 'a__003_.
+    'a__003_ Sexplib0.Sexp_grammar.t -> 'a__003_ phantom Sexplib0.Sexp_grammar.t
 end
 [@@ocaml.doc "@inline"]
 
@@ -184,7 +187,9 @@ type 'a tree =
 include sig
   [@@@ocaml.warning "-32"]
 
-  val tree_sexp_grammar : 'a Sexplib0.Sexp_grammar.t -> 'a tree Sexplib0.Sexp_grammar.t
+  val tree_sexp_grammar
+    : 'a.
+    'a Sexplib0.Sexp_grammar.t -> 'a tree Sexplib0.Sexp_grammar.t
 end
 [@@ocaml.doc "@inline"]
 
@@ -307,8 +312,8 @@ include sig
   [@@@ocaml.warning "-32"]
 
   val nonportable1_sexp_grammar
-    :  'a Sexplib0.Sexp_grammar.t
-    -> 'a nonportable1 Sexplib0.Sexp_grammar.t
+    : 'a.
+    'a Sexplib0.Sexp_grammar.t -> 'a nonportable1 Sexplib0.Sexp_grammar.t
 end
 [@@ocaml.doc "@inline"]
 

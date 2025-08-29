@@ -700,7 +700,10 @@ let partition_recursive_and_nonrecursive ~rec_flag tds =
       let obj =
         object
           inherit type_is_recursive Recursive tds
-          method recursion td = {<type_names = [ td.ptype_name.txt ]>}#go ()
+
+          method recursion td =
+            let type_names_list = [ td.ptype_name.txt ] in
+            {<type_names = type_names_list>}#go ()
         end
       in
       let recursive, nonrecursive =
@@ -730,11 +733,16 @@ let sig_type_decl ~ctxt:_ (_rec_flag, tds) ~nonportable =
     if nonportable then [] else [ Modality "portable" ]
   in
   List.map tds ~f:(fun td ->
+    let td = Ppxlib.name_type_params_in_td td in
     let loc = td.ptype_loc in
     Ppxlib_jane.Ast_builder.Default.value_description
       ~loc
       ~name:(Loc.map td.ptype_name ~f:grammar_name)
-      ~type_:(combinator_type_of_type_declaration td ~f:grammar_type)
+      ~type_:
+        (Ppxlib_jane.Ast_builder.Default.ptyp_poly
+           ~loc
+           (List.map td.ptype_params ~f:Ppxlib_jane.get_type_param_name_and_jkind)
+           (combinator_type_of_type_declaration td ~f:grammar_type))
       ~prim:[]
       ~modalities
     |> psig_value ~loc)

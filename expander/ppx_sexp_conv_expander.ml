@@ -13,8 +13,14 @@ module Sexp_of = struct
       ~stackify
   ;;
 
+  let pattern_extension ty ~stackify =
+    Str_generate_sexp_of.pat_of_sexp_of
+      ~loc:{ ty.ptyp_loc with loc_ghost = true }
+      ty
+      ~stackify
+  ;;
+
   let core_type = Str_generate_sexp_of.sexp_of_core_type
-  let pattern id ~stackify = Str_generate_sexp_of.sexp_of_pattern id ~stackify
 
   let sig_type_decl ~loc ~path ~unboxed tds ~stackify ~portable =
     let stackify =
@@ -35,8 +41,8 @@ module Sexp_grammar = Ppx_sexp_conv_grammar
 
 module Of_sexp = struct
   let type_extension ty = Sig_generate_of_sexp.type_of_of_sexp ~loc:ty.ptyp_loc ty
+  let pattern_extension ty = Str_generate_of_sexp.pat_of_of_sexp ~loc:ty.ptyp_loc ty
   let core_type = Str_generate_of_sexp.core_type_of_sexp
-  let pattern = Str_generate_of_sexp.pattern_of_sexp
 
   let sig_type_decl ~poly ~loc ~path ~unboxed tds ~portable =
     Sig_generate_of_sexp.mk_sig ~poly ~loc ~path ~unboxed tds ~portable

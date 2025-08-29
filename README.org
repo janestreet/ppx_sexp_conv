@@ -62,6 +62,16 @@ putting underscores for that type name.
   => "((1 _)(2 _))"
 #+end_src
 
+Converters for the implicit unboxed version of a record can be derived with the =~unboxed=
+flag. For example,
+
+#+begin_src ocaml
+  type t = { x : int } [@@deriving sexp ~unboxed]
+#+end_src
+
+will give us =sexp_of_t= and =t_of_sexp=, as expected, along with
+=t_u_of_sexp : sexp -> t#= and =sexp_of_t_u : t# -> sexp=.
+
 * [@@deriving sexp_grammar]
 
 If =ppx_sexp_conv= can derive =of_sexp=, it can also generate a description of

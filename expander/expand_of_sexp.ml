@@ -184,12 +184,35 @@ module Str_generate_of_sexp = struct
       Location.raise_errorf ~loc "unsupported: polymorphic variant empty type"
   ;;
 
-  let pattern_of_sexp id =
-    Ppx_helpers.type_constr_conv_pat id ~f:(of_sexp_function_for_type ?internal:None)
+  let pat_of_of_sexp ~loc typ =
+    let loc = { loc with loc_ghost = true } in
+    match Ppxlib_jane.Shim.Core_type_desc.of_parsetree typ.ptyp_desc with
+    | Ptyp_constr (id, _) ->
+      Ppx_helpers.type_constr_conv_pat
+        ~loc
+        id
+        ~f:(of_sexp_function_for_type ?internal:None)
+    | Ptyp_var _ ->
+      Ast_builder.Default.ppat_extension
+        ~loc
+        (Location.error_extensionf
+           ~loc
+           "Type variables are disallowed here. Instead, consider using a locally \
+            abstract type.")
+    | _ ->
+      Ast_builder.Default.ppat_extension
+        ~loc
+        (Location.error_extensionf
+           ~loc
+           "Only type constructors are allowed here (e.g. [t], ['a t], or [M(X).t]).")
   ;;
 
-  let type_constr_of_sexp ?internal id args =
-    Ppx_helpers.type_constr_conv_expr id args ~f:(of_sexp_function_for_type ?internal)
+  let type_constr_of_sexp ~loc ?internal id args =
+    Ppx_helpers.type_constr_conv_expr
+      ~loc
+      id
+      args
+      ~f:(of_sexp_function_for_type ?internal)
   ;;
 
   let type_layout core_type : Layout.t =
@@ -289,7 +312,7 @@ module Str_generate_of_sexp = struct
     let fresh_sexp = Fresh_name.create "sexp" ~loc in
     let pexp_tuple = if unboxed then pexp_unboxed_tuple else pexp_tuple in
     [ [%pat? Sexplib0.Sexp.List [%p plist ~loc arguments]]
-      --> pexp_let ~loc Nonrecursive bindings (pexp_tuple ~loc converted)
+      --> pexp_let ~loc Immutable Nonrecursive bindings (pexp_tuple ~loc converted)
     ; Fresh_name.pattern fresh_sexp
       --> ([%expr
              Sexplib0.Sexp_conv_error.tuple_of_size_n_expected
@@ -507,7 +530,8 @@ module Str_generate_of_sexp = struct
       in
       [%expr
         match [%e Fresh_name.expression fresh_sexp_args] with
-        | [%p plist ~loc patts] -> [%e pexp_let ~loc Nonrecursive bindings good_arg_match]
+        | [%p plist ~loc patts] ->
+          [%e pexp_let ~loc Immutable Nonrecursive bindings good_arg_match]
         | _ ->
           [%e
             if is_variant
@@ -784,6 +808,7 @@ module Str_generate_of_sexp = struct
         let expr =
           pexp_let
             ~loc
+            Immutable
             Nonrecursive
             (List.map fresh_params ~f:(fun fresh ->
                let { loc; txt } = Fresh_name.to_string_loc fresh in

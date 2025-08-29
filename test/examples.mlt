@@ -106,14 +106,8 @@ end = struct
 
   type t = unit
 
-  let [%sexp_of: t] = fun () -> Sexp.Atom "unit"
-
-  let [%of_sexp: t] =
-    fun sexp ->
-    match [%of_sexp: string] sexp with
-    | "unit" -> ()
-    | _ -> failwith "Expected \"unit\""
-  ;;
+  let [%sexp_of: t] = [%sexp_of: unit]
+  let [%of_sexp: t] = [%of_sexp: unit]
 
   module T = struct
     type nonrec t = t
@@ -137,17 +131,67 @@ end = struct
   module Parameterized = struct
     type 'a t = 'a * 'a
 
-    let [%sexp_of: a t] =
-      fun [%sexp_of: a] (x, y) -> Sexp.List [ [%sexp_of: a] x; [%sexp_of: a] y ]
-    ;;
-
-    let [%of_sexp: a t] =
-      fun [%of_sexp: a] sexp ->
-      match [%of_sexp: a list] sexp with
-      | [ x; y ] -> x, y
-      | _ -> failwith "Expected tuple of length two"
-    ;;
+    let [%sexp_of: a t] = fun [%sexp_of: a] -> [%sexp_of: a * a]
+    let [%of_sexp: a t] = fun [%of_sexp: a] -> [%of_sexp: a * a]
   end
 end
 
 [%%expect {| |}]
+
+(* Banning this is fine because it's also banned in expression position. *)
+let [%sexp_of: 'a] = ()
+
+[%%expect
+  {|
+Line _, characters _-_:
+Error: Type variables are disallowed here. Instead, consider using a locally
+       abstract type.
+|}]
+
+(* Banning this is fine because it's also banned in expression position. *)
+let [%of_sexp: 'a] = ()
+
+[%%expect
+  {|
+Line _, characters _-_:
+Error: Type variables are disallowed here. Instead, consider using a locally
+       abstract type.
+|}]
+
+let [%sexp_of: _] = ()
+
+[%%expect
+  {|
+Line _, characters _-_:
+Error: Only type constructors are allowed here (e.g. [t], ['a t], or
+       [M(X).t]).
+|}]
+
+let [%of_sexp: _] = ()
+
+[%%expect
+  {|
+Line _, characters _-_:
+Error: Only type constructors are allowed here (e.g. [t], ['a t], or
+       [M(X).t]).
+|}]
+
+let [%sexp_of: M.N(X).t] = ()
+
+[%%expect
+  {|
+Line _, characters _-_:
+Error: Invalid identifier M.N(X).t for converter in pattern position. Only
+       simple identifiers (like t or string) or applications of functors with
+       simple identifiers (like M(K).t) are supported.
+|}]
+
+let [%of_sexp: M.N(X).t] = ()
+
+[%%expect
+  {|
+Line _, characters _-_:
+Error: Invalid identifier M.N(X).t for converter in pattern position. Only
+       simple identifiers (like t or string) or applications of functors with
+       simple identifiers (like M(K).t) are supported.
+|}]

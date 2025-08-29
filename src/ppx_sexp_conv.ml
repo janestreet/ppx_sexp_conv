@@ -140,8 +140,9 @@ module Sexp_of = struct
             (Extension.declare
                (name ~stackify)
                Pattern
-               Ast_pattern.(ptyp (ptyp_constr __' drop))
-               (fun ~loc:_ ~path:_ id -> E.pattern id ~stackify:(Option.is_some stackify)))
+               Ast_pattern.(ptyp __)
+               (fun ~loc:_ ~path:_ ty ->
+                 E.pattern_extension ty ~stackify:(Option.is_some stackify)))
         ])
     in
     Driver.register_transformation (name ~stackify:None) ~rules
@@ -185,8 +186,8 @@ module Of_sexp = struct
             (Extension.declare
                name
                Pattern
-               Ast_pattern.(ptyp (ptyp_constr __' drop))
-               (fun ~loc:_ ~path:_ id -> E.pattern id))
+               Ast_pattern.(ptyp __)
+               (fun ~loc:_ ~path:_ ty -> E.pattern_extension ty))
         ]
   ;;
 end

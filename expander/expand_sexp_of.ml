@@ -94,8 +94,27 @@ module Str_generate_sexp_of = struct
     sexp_of_typename ~stackify ~prefix typename
   ;;
 
-  let sexp_of_pattern id ~stackify =
-    Ppx_helpers.type_constr_conv_pat id ~f:(sexp_of_ident_for_constr_conv ~stackify)
+  let pat_of_sexp_of ~loc typ ~stackify =
+    let loc = { loc with loc_ghost = true } in
+    match Ppxlib_jane.Shim.Core_type_desc.of_parsetree typ.ptyp_desc with
+    | Ptyp_constr (id, _) ->
+      Ppx_helpers.type_constr_conv_pat
+        ~loc
+        id
+        ~f:(sexp_of_ident_for_constr_conv ~stackify)
+    | Ptyp_var _ ->
+      Ast_builder.Default.ppat_extension
+        ~loc
+        (Location.error_extensionf
+           ~loc
+           "Type variables are disallowed here. Instead, consider using a locally \
+            abstract type.")
+    | _ ->
+      Ast_builder.Default.ppat_extension
+        ~loc
+        (Location.error_extensionf
+           ~loc
+           "Only type constructors are allowed here (e.g. [t], ['a t], or [M(X).t]).")
   ;;
 
   let sexp_of_type_constr ~loc id args ~stackify =
@@ -171,7 +190,7 @@ module Str_generate_sexp_of = struct
       Conversion.apply_all ~loc fps
     in
     let in_expr = [%expr Sexplib0.Sexp.List [%e elist ~loc converted]] in
-    let expr = pexp_let ~loc Nonrecursive bindings in_expr in
+    let expr = pexp_let ~loc Immutable Nonrecursive bindings in_expr in
     let arguments = List.map arguments ~f:(fun p -> None, p) in
     let ppat_tuple = if unboxed then ppat_unboxed_tuple else ppat_tuple in
     ppat_tuple ~loc arguments Closed --> expr
@@ -193,7 +212,7 @@ module Str_generate_sexp_of = struct
               ]])
       in
       [%expr Sexplib0.Sexp.List [%e elist ~loc sexp_exprs]]
-      |> pexp_let ~loc Nonrecursive bindings
+      |> pexp_let ~loc Immutable Nonrecursive bindings
     in
     let ppat_tuple = if unboxed then ppat_unboxed_tuple else ppat_tuple in
     let pat =
@@ -768,6 +787,7 @@ module Str_generate_sexp_of = struct
             ppat_construct ~loc constr_lid (Some patt)
             --> pexp_let
                   ~loc
+                  Immutable
                   Nonrecursive
                   bindings
                   [%expr Sexplib0.Sexp.List [%e elist ~loc (cnstr_expr :: converted)]])

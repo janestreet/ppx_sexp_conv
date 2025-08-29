@@ -329,7 +329,7 @@ Error: Invalid identifier M.F(N).t for converter in pattern position. Only
 
 module Non_portable : sig
   type t [@@deriving sexp]
-end =
+end @ nonportable =
   Int
 
 type t =

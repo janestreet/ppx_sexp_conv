@@ -4,8 +4,8 @@ module Record_field_attrs = Record_field_attrs
 
 module Sexp_of : sig
   val type_extension : core_type -> stackify:bool -> core_type
+  val pattern_extension : core_type -> stackify:bool -> pattern
   val core_type : core_type -> stackify:bool -> expression
-  val pattern : longident loc -> stackify:bool -> pattern
 
   val sig_type_decl
     :  loc:Location.t
@@ -36,7 +36,7 @@ end
 
 module Of_sexp : sig
   val type_extension : core_type -> core_type
-  val pattern : longident loc -> pattern
+  val pattern_extension : core_type -> pattern
   val core_type : path:string -> core_type -> expression
 
   val sig_type_decl
