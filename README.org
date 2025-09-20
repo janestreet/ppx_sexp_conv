@@ -109,7 +109,7 @@ OCaml types.
 ** Basic types
 
 Basic types are represented as atoms.  For numbers like =int=,
-=int32=, =int64=, =float=, the string in the atom is what is accepted
+=int32=, =int64=, =float=, the string in the atom is what is accepted by
 the standard ocaml functions =int_of_string=, =Int32.of_string=, etc.
 For the types =char= or =string=, the string in the atom is
 respectively a one character string or the string itself.
