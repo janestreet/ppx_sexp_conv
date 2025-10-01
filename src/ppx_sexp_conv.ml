@@ -48,12 +48,17 @@ module Sexp_grammar = struct
     Extension.V3.declare name Core_type Ast_pattern.(ptyp __) E.type_extension
   ;;
 
+  let pattern_extension =
+    Extension.V3.declare name Pattern Ast_pattern.(ptyp __) E.pattern_extension
+  ;;
+
   let () =
     Driver.register_transformation
       "Ppxlib.Deriving.sexp_grammar"
       ~rules:
         [ Context_free.Rule.extension expr_extension
         ; Context_free.Rule.extension type_extension
+        ; Context_free.Rule.extension pattern_extension
         ]
   ;;
 end

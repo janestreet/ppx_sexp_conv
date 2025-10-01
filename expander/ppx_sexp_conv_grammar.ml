@@ -769,3 +769,19 @@ let type_extension ~ctxt core_type =
   let loc = extension_loc ~ctxt in
   core_type |> grammar_type ~loc
 ;;
+
+let pattern_extension ~ctxt core_type =
+  assert_no_attributes_in#core_type core_type;
+  let loc = extension_loc ~ctxt in
+  match Ppxlib_jane.Shim.Core_type_desc.of_parsetree core_type.ptyp_desc with
+  | Ptyp_constr (id, _) -> Ppx_helpers.type_constr_conv_pat ~loc:id.loc id ~f:grammar_name
+  | Ptyp_var (id, _) ->
+    [%pat? ([%p pvar ~loc (tyvar_grammar_name id)] : [%t grammar_type ~loc core_type])]
+  | _ ->
+    Ast_builder.Default.ppat_extension
+      ~loc
+      (Location.error_extensionf
+         ~loc
+         "Only type variables and constructors are allowed here (e.g. ['a], [t], ['a t], \
+          or [M(X).t]).")
+;;

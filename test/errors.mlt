@@ -280,8 +280,8 @@ type _ t = T : int -> string t [@@deriving of_sexp]
   {|
 Line _, characters _-_:
 Error: This expression has type string t
-       but an expression was expected of type a__098_ t
-       Type string is not compatible with type a__098_
+       but an expression was expected of type a__106_ t
+       Type string is not compatible with type a__106_
 |}]
 
 type t = exn [@@deriving sexp_of ~stackify]
@@ -323,6 +323,25 @@ Error: Invalid identifier M.F(N).t for converter in pattern position. Only
        simple identifiers (like M(K).t) are supported.
 |}]
 
+let [%sexp_grammar: M.F(N).t] = ()
+
+[%%expect
+  {|
+Line _, characters _-_:
+Error: Invalid identifier M.F(N).t for converter in pattern position. Only
+       simple identifiers (like t or string) or applications of functors with
+       simple identifiers (like M(K).t) are supported.
+|}]
+
+let [%sexp_grammar: _] = ()
+
+[%%expect
+  {|
+Line _, characters _-_:
+Error: Only type variables and constructors are allowed here (e.g. ['a], [t],
+       ['a t], or [M(X).t]).
+|}]
+
 (* Passing ~portable to sexp can give you better error messages in
    structure context.
 *)
@@ -341,5 +360,7 @@ type t =
 [%%expect
   {|
 Line _, characters _-_:
-Error: The value Non_portable.t_of_sexp is nonportable, so cannot be used inside a function that is portable.
+Error: The value Non_portable.t_of_sexp is nonportable
+       but is expected to be portable because it is used inside a function
+       which is expected to be portable.
 |}]

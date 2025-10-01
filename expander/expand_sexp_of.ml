@@ -36,14 +36,8 @@ module Sig_generate_sexp_of = struct
     | true -> [%type: [%t t] -> Sexplib0.Sexp.t]
   ;;
 
-  let mk_type td ~stackify ~universally_quantify_if_jkind_annot =
-    let td = name_type_params_in_td td in
-    let typ = combinator_type_of_type_declaration td ~f:(type_of_sexp_of ~stackify) in
-    let vars = List.map td.ptype_params ~f:Ppxlib_jane.get_type_param_name_and_jkind in
-    if universally_quantify_if_jkind_annot
-       && List.exists vars ~f:(fun (_, jkind) -> Option.is_some jkind)
-    then Ppxlib_jane.Ast_builder.Default.ptyp_poly ~loc:td.ptype_loc vars typ
-    else typ
+  let mk_type td ~stackify =
+    Ppx_helpers.combinator_type_of_type_declaration td ~f:(type_of_sexp_of ~stackify)
   ;;
 
   let mk_val td ~stackify ~portable =
@@ -54,7 +48,10 @@ module Sig_generate_sexp_of = struct
       (Ppxlib_jane.Ast_builder.Default.value_description
          ~loc
          ~name
-         ~type_:(mk_type td ~stackify ~universally_quantify_if_jkind_annot:true)
+         ~type_:
+           (mk_type td ~stackify
+            |> Ppx_helpers.Polytype.to_core_type
+                 ~universally_quantify_only_if_jkind_annotation:true)
          ~modalities:(if portable then [ Ppxlib_jane.Modality "portable" ] else [])
          ~prim:[])
   ;;
@@ -905,9 +902,7 @@ module Str_generate_sexp_of = struct
           body
           ~stackify
     in
-    let typ =
-      Sig_generate_sexp_of.mk_type td ~stackify ~universally_quantify_if_jkind_annot:false
-    in
+    let typ = Sig_generate_sexp_of.mk_type td ~stackify in
     let func_name = sexp_of_typename ~stackify ~prefix:"" type_name in
     let body =
       body
@@ -923,6 +918,7 @@ module Str_generate_sexp_of = struct
     in
     let body = Lifted.let_bind_user_expressions ~loc body in
     let sexp_of =
+      let ({ body = typ; vars = _; loc = _ } : Ppx_helpers.Polytype.t) = typ in
       constrained_function_binding loc td typ ~tps ~func_name ~portable body
     in
     sexp_of, func_name

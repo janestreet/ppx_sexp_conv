@@ -263,21 +263,6 @@ conversion of a sexp to the record.
   (A (a 0)(b b)) => A {a = 0}
 #+end_src
 
-*** Allowing unboxed type fields in records
-
-The =@sexp.non_value= annotation lets one specify that a record field is an
-unboxed type with a non-value layout. These language features are supported by
-[an experimental compiler
-branch](https://github.com/ocaml-flambda/flambda-backend). In the standard OCaml
-compiler, this annotation is essentially a no-op.
-
-#+begin_src ocaml
-  type t = { a : Float_u.t [@sexp.non_value] } [@@deriving sexp]
-  ((a 4.0)) => { a = #4.0 }
-#+end_src
-
-Forgetting this annotation will result in a type error.
-
 ** Variants
 
 Constant constructors in variants are represented as

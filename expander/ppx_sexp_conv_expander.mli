@@ -60,6 +60,7 @@ end
 
 module Sexp_grammar : sig
   val type_extension : ctxt:Expansion_context.Extension.t -> core_type -> core_type
+  val pattern_extension : ctxt:Expansion_context.Extension.t -> core_type -> pattern
 
   val core_type
     :  tags_of_doc_comments:bool
