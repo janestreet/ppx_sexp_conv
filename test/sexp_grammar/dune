@@ -14,5 +14,5 @@
     "%{bin:patdiff-for-review} %{bin:patdiff} %{deps} > %{targets} || true")))
 
 (alias
- (name DEFAULT)
+ (name default)
  (deps regular_vs_polymorphic_variants.diff))

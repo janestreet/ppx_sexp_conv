@@ -214,13 +214,14 @@ let rec is_value_expression expr =
   | Pexp_unboxed_field _
   | Pexp_setfield _
   | Pexp_array _
+  | Pexp_idx _
   | Pexp_ifthenelse _
   | Pexp_sequence _
   | Pexp_while _
   | Pexp_for _
   | Pexp_send _
   | Pexp_new _
-  | Pexp_setinstvar _
+  | Pexp_setvar _
   | Pexp_override _
   | Pexp_letmodule _
   | Pexp_letexception _

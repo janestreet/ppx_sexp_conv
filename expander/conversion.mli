@@ -10,11 +10,17 @@ type t
 val of_lambda : cases -> t
 
 (** Construct [t] from an identifier, possibly applied to arguments. Raise on any other
-    form of expression. *)
-val of_reference_exn : expression -> t
+    form of expression.
+
+    If [thunk], then [expression] should evaluate to something with type [() -> 'a], and
+    [of_reference_exn ~thunk:true |> to_value_expression] will evaluate to something of
+    type ['a]. [thunk] should only ever be set when working with unboxed types, as this is
+    a trick for circumventing the lack of layout polymorphism ([() -> 'a] has layout value
+    even if ['a] is unboxed). *)
+val of_reference_exn : thunk:bool -> expression -> t
 
 (** Convert [t] to an expression. *)
-val to_expression : t -> loc:location -> localize:bool -> expression
+val to_expression : t -> loc:location -> stackify:bool -> expression
 
 (** Convert [t] to an expression that is a syntactic value, i.e. a constant, identifier,
     or lambda expression that does no "work", can can be preallocated, and works in the
@@ -24,7 +30,7 @@ val to_value_expression
   -> loc:location
   -> rec_flag:rec_flag
   -> values_being_defined:String.Set.t
-  -> localize:bool
+  -> stackify:bool
   -> expression
 
 (** Apply [t] to an argument. *)

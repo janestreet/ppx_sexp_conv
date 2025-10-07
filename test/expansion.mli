@@ -1,12 +1,12 @@
 open! Base
 
 module%template Abstract : sig
-  type t [@@deriving_inline sexp [@mode local]]
+  type t [@@deriving_inline sexp [@alloc stack]]
 
   include sig
     [@@@ocaml.warning "-32"]
 
-    include Sexplib0.Sexpable.S__local with type t := t
+    include Sexplib0.Sexpable.S__stack with type t := t
   end
   [@@ocaml.doc "@inline"]
 

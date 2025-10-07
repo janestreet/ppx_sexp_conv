@@ -1,5 +1,5 @@
 type t = { a : int [@sexp_drop_default ( = )] [@sexp.omit_nil] }
-[@@deriving sexp_of ~localize]
+[@@deriving sexp_of ~stackify]
 
 [%%expect
   {|
@@ -7,7 +7,7 @@ Line _, characters _-_:
 Error: The following elements are mutually exclusive: sexp.sexp_drop_default sexp.omit_nil
 |}]
 
-type t = { a : int list [@sexp.list] [@sexp.omit_nil] } [@@deriving sexp_of ~localize]
+type t = { a : int list [@sexp.list] [@sexp.omit_nil] } [@@deriving sexp_of ~stackify]
 
 [%%expect
   {|
@@ -23,7 +23,7 @@ Line _, characters _-_:
 Error: The following elements are mutually exclusive: sexp.default sexp.omit_nil
 |}]
 
-type t = int [@@deriving sexp ~localize] [@@sexp.allow_extra_fields]
+type t = int [@@deriving sexp ~stackify] [@@sexp.allow_extra_fields]
 
 [%%expect
   {|
@@ -34,7 +34,7 @@ Error: ppx_sexp_conv: [@@allow_extra_fields] is only allowed on records.
 type 'a t = 'a option =
   | None
   | Some of 'a
-[@@deriving sexp ~localize] [@@sexp.allow_extra_fields]
+[@@deriving sexp ~stackify] [@@sexp.allow_extra_fields]
 
 [%%expect
   {|
@@ -42,7 +42,7 @@ Line _, characters _-_:
 Error: ppx_sexp_conv: [@@allow_extra_fields] is only allowed on records.
 |}]
 
-type 'a t = Some of { a : int } [@@deriving sexp ~localize] [@@sexp.allow_extra_fields]
+type 'a t = Some of { a : int } [@@deriving sexp ~stackify] [@@sexp.allow_extra_fields]
 
 [%%expect
   {|
@@ -53,7 +53,7 @@ Error: ppx_sexp_conv: [@@allow_extra_fields] only works on records. For inline r
 type 'a t =
   | Some of { a : int }
   | None [@sexp.allow_extra_fields]
-[@@deriving sexp ~localize]
+[@@deriving sexp ~stackify]
 
 [%%expect
   {|
@@ -64,7 +64,7 @@ Error: ppx_sexp_conv: [@allow_extra_fields] is only allowed on inline records.
 type t =
   | Non
   | Som of { next : t [@default Non] [@sexp_drop_default.equal] }
-[@@deriving sexp ~localize]
+[@@deriving sexp ~stackify]
 
 [%%expect
   {|
@@ -75,7 +75,7 @@ Consider using [@sexp_drop_if _] or [@sexp_drop_default.sexp] instead.
 |}]
 
 type nonrec 'a t = { foo : 'a option [@default None] [@sexp_drop_default.equal] }
-[@@deriving sexp ~localize]
+[@@deriving sexp ~stackify]
 
 [%%expect
   {|
@@ -87,7 +87,7 @@ Consider using [@sexp_drop_if _] or [@sexp_drop_default.sexp] instead.
 
 open Base
 
-type t = { a : int [@default 8] [@sexp_drop_default] } [@@deriving sexp_of ~localize]
+type t = { a : int [@default 8] [@sexp_drop_default] } [@@deriving sexp_of ~stackify]
 
 [%%expect
   {|
@@ -99,7 +99,7 @@ Error: Unsupported [@sexp_drop_default] payload; please use one of:
 - [@sexp_drop_default.sexp] if you want to compare the sexp representations
 |}]
 
-type t = { x : unit [@sexp.opaque] } [@@deriving sexp_of ~localize]
+type t = { x : unit [@sexp.opaque] } [@@deriving sexp_of ~stackify]
 type t = { x : unit [@sexp.opaque] } [@@deriving of_sexp]
 type t = { x : unit [@sexp.opaque] } [@@deriving sexp_grammar]
 
@@ -127,7 +127,7 @@ Error: Attribute `sexp.opaque' was not used.
        Did you put it at the wrong level?
 |}]
 
-type t = { x : unit [@sexp.option] } [@@deriving sexp_of ~localize]
+type t = { x : unit [@sexp.option] } [@@deriving sexp_of ~stackify]
 type t = { x : unit [@sexp.option] } [@@deriving of_sexp]
 type t = { x : unit [@sexp.option] } [@@deriving sexp_grammar]
 
@@ -143,7 +143,7 @@ Line _, characters _-_:
 Error: ppx_sexp_conv: [@sexp.option] is only allowed on type [_ option].
 |}]
 
-type t = { x : unit [@sexp.list] } [@@deriving sexp_of ~localize]
+type t = { x : unit [@sexp.list] } [@@deriving sexp_of ~stackify]
 type t = { x : unit [@sexp.list] } [@@deriving of_sexp]
 type t = { x : unit [@sexp.list] } [@@deriving sexp_grammar]
 
@@ -159,7 +159,7 @@ Line _, characters _-_:
 Error: ppx_sexp_conv: [@sexp.list] is only allowed on type [_ list].
 |}]
 
-type t = { x : unit [@sexp.array] } [@@deriving sexp_of ~localize]
+type t = { x : unit [@sexp.array] } [@@deriving sexp_of ~stackify]
 type t = { x : unit [@sexp.array] } [@@deriving of_sexp]
 type t = { x : unit [@sexp.array] } [@@deriving sexp_grammar]
 
@@ -175,7 +175,7 @@ Line _, characters _-_:
 Error: ppx_sexp_conv: [@sexp.array] is only allowed on type [_ array].
 |}]
 
-type t = { x : unit [@sexp.bool] } [@@deriving sexp_of ~localize]
+type t = { x : unit [@sexp.bool] } [@@deriving sexp_of ~stackify]
 type t = { x : unit [@sexp.bool] } [@@deriving of_sexp]
 type t = { x : unit [@sexp.bool] } [@@deriving sexp_grammar]
 
@@ -191,7 +191,7 @@ Line _, characters _-_:
 Error: ppx_sexp_conv: [@sexp.bool] is only allowed on type [bool].
 |}]
 
-type t = A of unit [@sexp.list] [@@deriving sexp_of ~localize]
+type t = A of unit [@sexp.list] [@@deriving sexp_of ~stackify]
 type t = A of unit [@sexp.list] [@@deriving of_sexp]
 type t = A of unit [@sexp.list] [@@deriving sexp_grammar]
 
@@ -207,7 +207,7 @@ Line _, characters _-_:
 Error: ppx_sexp_conv: [@sexp.list] is only allowed on type [_ list].
 |}]
 
-type t = [ `A of unit [@sexp.list] ] [@@deriving sexp_of ~localize]
+type t = [ `A of unit [@sexp.list] ] [@@deriving sexp_of ~stackify]
 type t = [ `A of unit [@sexp.list] ] [@@deriving of_sexp]
 type t = [ `A of unit [@sexp.list] ] [@@deriving sexp_grammar]
 
@@ -280,17 +280,17 @@ type _ t = T : int -> string t [@@deriving of_sexp]
   {|
 Line _, characters _-_:
 Error: This expression has type string t
-       but an expression was expected of type a__098_ t
-       Type string is not compatible with type a__098_
+       but an expression was expected of type a__106_ t
+       Type string is not compatible with type a__106_
 |}]
 
-type t = exn [@@deriving sexp_of ~localize]
+type t = exn [@@deriving sexp_of ~stackify]
 
 [%%expect
   {|
 Line _, characters _-_:
-Error: Unbound value sexp_of_exn__local
-Hint: Did you mean sexp_of_int__local or sexp_of_ref__local?
+Error: Unbound value sexp_of_exn__stack
+Hint: Did you mean sexp_of_int__stack or sexp_of_ref__stack?
 |}]
 
 let [%sexp_of: M.t] = ()
@@ -300,7 +300,7 @@ let [%sexp_of: M.t] = ()
 Line _, characters _-_:
 Error: Invalid identifier M.t for converter in pattern position. Only simple
        identifiers (like t or string) or applications of functors with simple
-       identifiers (like M(K).t) are supported
+       identifiers (like M(K).t) are supported.
 |}]
 
 let [%sexp_of: 'a M.t] = ()
@@ -310,7 +310,7 @@ let [%sexp_of: 'a M.t] = ()
 Line _, characters _-_:
 Error: Invalid identifier M.t for converter in pattern position. Only simple
        identifiers (like t or string) or applications of functors with simple
-       identifiers (like M(K).t) are supported
+       identifiers (like M(K).t) are supported.
 |}]
 
 let [%sexp_of: M.F(N).t] = ()
@@ -320,7 +320,26 @@ let [%sexp_of: M.F(N).t] = ()
 Line _, characters _-_:
 Error: Invalid identifier M.F(N).t for converter in pattern position. Only
        simple identifiers (like t or string) or applications of functors with
-       simple identifiers (like M(K).t) are supported
+       simple identifiers (like M(K).t) are supported.
+|}]
+
+let [%sexp_grammar: M.F(N).t] = ()
+
+[%%expect
+  {|
+Line _, characters _-_:
+Error: Invalid identifier M.F(N).t for converter in pattern position. Only
+       simple identifiers (like t or string) or applications of functors with
+       simple identifiers (like M(K).t) are supported.
+|}]
+
+let [%sexp_grammar: _] = ()
+
+[%%expect
+  {|
+Line _, characters _-_:
+Error: Only type variables and constructors are allowed here (e.g. ['a], [t],
+       ['a t], or [M(X).t]).
 |}]
 
 (* Passing ~portable to sexp can give you better error messages in
@@ -329,7 +348,7 @@ Error: Invalid identifier M.F(N).t for converter in pattern position. Only
 
 module Non_portable : sig
   type t [@@deriving sexp]
-end =
+end @ nonportable =
   Int
 
 type t =
@@ -341,5 +360,7 @@ type t =
 [%%expect
   {|
 Line _, characters _-_:
-Error: The value Non_portable.t_of_sexp is nonportable, so cannot be used inside a function that is portable.
+Error: The value Non_portable.t_of_sexp is nonportable
+       but is expected to be portable because it is used inside a function
+       which is expected to be portable.
 |}]

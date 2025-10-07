@@ -62,6 +62,16 @@ putting underscores for that type name.
   => "((1 _)(2 _))"
 #+end_src
 
+Converters for the implicit unboxed version of a record can be derived with the =~unboxed=
+flag. For example,
+
+#+begin_src ocaml
+  type t = { x : int } [@@deriving sexp ~unboxed]
+#+end_src
+
+will give us =sexp_of_t= and =t_of_sexp=, as expected, along with
+=t_u_of_sexp : sexp -> t#= and =sexp_of_t_u : t# -> sexp=.
+
 * [@@deriving sexp_grammar]
 
 If =ppx_sexp_conv= can derive =of_sexp=, it can also generate a description of
@@ -252,21 +262,6 @@ conversion of a sexp to the record.
   type t = A of { a : int } [@sexp.allow_extra_fields] [@@deriving sexp]
   (A (a 0)(b b)) => A {a = 0}
 #+end_src
-
-*** Allowing unboxed type fields in records
-
-The =@sexp.non_value= annotation lets one specify that a record field is an
-unboxed type with a non-value layout. These language features are supported by
-[an experimental compiler
-branch](https://github.com/ocaml-flambda/flambda-backend). In the standard OCaml
-compiler, this annotation is essentially a no-op.
-
-#+begin_src ocaml
-  type t = { a : Float_u.t [@sexp.non_value] } [@@deriving sexp]
-  ((a 4.0)) => { a = #4.0 }
-#+end_src
-
-Forgetting this annotation will result in a type error.
 
 ** Variants
 

@@ -84,8 +84,17 @@ let with_tags_as_grammar grammar ~loc ~tags ~comments =
   with_tags grammar ~wrap_tag:etagged ~wrap_tags ~loc ~tags ~comments
 ;;
 
-let grammar_name name = name ^ "_sexp_grammar"
-let tyvar_grammar_name name = grammar_name ("_'" ^ name)
+let grammar_name ?functor_:modname name =
+  let name, suffix = Ppx_helpers.demangle_template name in
+  let module_infix =
+    match modname with
+    | Some modname -> modname ^ "__"
+    | None -> ""
+  in
+  module_infix ^ name ^ "_sexp_grammar" ^ suffix
+;;
+
+let tyvar_grammar_name name = "_'" ^ name ^ "_sexp_grammar"
 let estr { loc; txt } = estring ~loc txt
 
 let grammar_type ~loc core_type =
@@ -307,7 +316,7 @@ let rec grammar_of_type core_type ~rec_flag ~tags_of_doc_comments =
          List.map args ~f:(fun core_type ->
            let loc = core_type.ptyp_loc in
            grammar_of_type ~rec_flag ~tags_of_doc_comments core_type |> typed_grammar ~loc)
-         |> type_constr_conv ~loc ~f:grammar_name id
+         |> Ppx_helpers.type_constr_conv_expr ~loc ~f:grammar_name id
          |> untyped_grammar ~loc
        | Ptyp_object _ -> unsupported ~loc "object types"
        | Ptyp_class _ -> unsupported ~loc "class types"
@@ -514,9 +523,9 @@ let pattern_of_td td =
   ppat_constraint
     ~loc
     (pvar ~loc (grammar_name txt))
-    (ptyp_poly
+    (Ppxlib_jane.Ast_builder.Default.ptyp_poly
        ~loc
-       (List.map td.ptype_params ~f:get_type_param_name)
+       (List.map td.ptype_params ~f:Ppxlib_jane.get_type_param_name_and_jkind)
        (combinator_type_of_type_declaration td ~f:grammar_type))
 ;;
 
@@ -691,7 +700,10 @@ let partition_recursive_and_nonrecursive ~rec_flag tds =
       let obj =
         object
           inherit type_is_recursive Recursive tds
-          method recursion td = {<type_names = [ td.ptype_name.txt ]>}#go ()
+
+          method recursion td =
+            let type_names_list = [ td.ptype_name.txt ] in
+            {<type_names = type_names_list>}#go ()
         end
       in
       let recursive, nonrecursive =
@@ -716,15 +728,23 @@ let str_type_decl ~ctxt (rec_flag, tds) tags_of_doc_comments =
   |> List.concat
 ;;
 
-let sig_type_decl ~ctxt:_ (_rec_flag, tds) =
+let sig_type_decl ~ctxt:_ (_rec_flag, tds) ~nonportable =
+  let modalities : Ppxlib_jane.Shim.Modality.t list =
+    if nonportable then [] else [ Modality "portable" ]
+  in
   List.map tds ~f:(fun td ->
+    let td = Ppxlib.name_type_params_in_td td in
     let loc = td.ptype_loc in
     Ppxlib_jane.Ast_builder.Default.value_description
       ~loc
       ~name:(Loc.map td.ptype_name ~f:grammar_name)
-      ~type_:(combinator_type_of_type_declaration td ~f:grammar_type)
+      ~type_:
+        (Ppxlib_jane.Ast_builder.Default.ptyp_poly
+           ~loc
+           (List.map td.ptype_params ~f:Ppxlib_jane.get_type_param_name_and_jkind)
+           (combinator_type_of_type_declaration td ~f:grammar_type))
       ~prim:[]
-      ~modalities:[ Modality "portable" ]
+      ~modalities
     |> psig_value ~loc)
 ;;
 
@@ -748,4 +768,20 @@ let type_extension ~ctxt core_type =
   assert_no_attributes_in#core_type core_type;
   let loc = extension_loc ~ctxt in
   core_type |> grammar_type ~loc
+;;
+
+let pattern_extension ~ctxt core_type =
+  assert_no_attributes_in#core_type core_type;
+  let loc = extension_loc ~ctxt in
+  match Ppxlib_jane.Shim.Core_type_desc.of_parsetree core_type.ptyp_desc with
+  | Ptyp_constr (id, _) -> Ppx_helpers.type_constr_conv_pat ~loc:id.loc id ~f:grammar_name
+  | Ptyp_var (id, _) ->
+    [%pat? ([%p pvar ~loc (tyvar_grammar_name id)] : [%t grammar_type ~loc core_type])]
+  | _ ->
+    Ast_builder.Default.ppat_extension
+      ~loc
+      (Location.error_extensionf
+         ~loc
+         "Only type variables and constructors are allowed here (e.g. ['a], [t], ['a t], \
+          or [M(X).t]).")
 ;;

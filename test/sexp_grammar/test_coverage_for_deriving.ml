@@ -81,12 +81,15 @@ let _ = pos_sexp_grammar
 
 [@@@end]
 
-type 'a unary = 'a list [@@deriving sexp] [@@deriving_inline sexp_grammar]
+type ('a : value_or_null) unary = 'a list
+[@@deriving sexp] [@@deriving_inline sexp_grammar]
 
-let _ = fun (_ : 'a unary) -> ()
+let _ = fun (_ : ('a : value_or_null) unary) -> ()
 
 let unary_sexp_grammar
-  : 'a. 'a Sexplib0.Sexp_grammar.t -> 'a unary Sexplib0.Sexp_grammar.t
+  : ('a : value_or_null).
+  ('a : value_or_null) Sexplib0.Sexp_grammar.t
+  -> ('a : value_or_null) unary Sexplib0.Sexp_grammar.t
   =
   fun _'a_sexp_grammar -> list_sexp_grammar _'a_sexp_grammar
 ;;
@@ -120,18 +123,18 @@ let _ = enum_sexp_grammar
 
 [@@@end]
 
-type ('a, 'b) which =
+type ('a : bits64, 'b : float64) which =
   | This of 'a
   | That of 'b
 [@@deriving sexp] [@@deriving_inline sexp_grammar]
 
-let _ = fun (_ : ('a, 'b) which) -> ()
+let _ = fun (_ : ('a : bits64, 'b : float64) which) -> ()
 
 let which_sexp_grammar
-  : 'a 'b.
-  'a Sexplib0.Sexp_grammar.t
-  -> 'b Sexplib0.Sexp_grammar.t
-  -> ('a, 'b) which Sexplib0.Sexp_grammar.t
+  : ('a : bits64) ('b : float64).
+  ('a : bits64) Sexplib0.Sexp_grammar.t
+  -> ('b : float64) Sexplib0.Sexp_grammar.t
+  -> ('a : bits64, 'b : float64) which Sexplib0.Sexp_grammar.t
   =
   fun _'a_sexp_grammar _'b_sexp_grammar ->
   { untyped =
@@ -200,9 +203,9 @@ type _ phantom = int [@@deriving sexp] [@@deriving_inline sexp_grammar]
 let _ = fun (_ : _ phantom) -> ()
 
 let phantom_sexp_grammar
-  : 'a__086_. 'a__086_ Sexplib0.Sexp_grammar.t -> 'a__086_ phantom Sexplib0.Sexp_grammar.t
+  : 'a__090_. 'a__090_ Sexplib0.Sexp_grammar.t -> 'a__090_ phantom Sexplib0.Sexp_grammar.t
   =
-  fun _'a__086__sexp_grammar -> int_sexp_grammar
+  fun _'a__090__sexp_grammar -> int_sexp_grammar
 ;;
 
 let _ = phantom_sexp_grammar
@@ -277,7 +280,7 @@ let _ = fun (_ : 'a tree) -> ()
 
 include struct
   open struct
-    let grammars__118_ : Sexplib0.Sexp_grammar.defn Stdlib.List.t Basement.Portable_lazy.t
+    let grammars__126_ : Sexplib0.Sexp_grammar.defn Stdlib.List.t Basement.Portable_lazy.t
       =
       Basement.Portable_lazy.from_fun
         (Basement.Portability_hacks.magic_portable__needs_base_and_core
@@ -316,7 +319,7 @@ include struct
               ]))
     ;;
 
-    let _ = grammars__118_
+    let _ = grammars__126_
   end
 
   let tree_sexp_grammar
@@ -327,7 +330,7 @@ include struct
         Tycon
           ( "tree"
           , [ _'a_sexp_grammar.untyped ]
-          , Basement.Portable_lazy.force grammars__118_ )
+          , Basement.Portable_lazy.force grammars__126_ )
     }
   ;;
 
@@ -351,7 +354,7 @@ let _ = fun (_ : gamma) -> ()
 
 include struct
   open struct
-    let grammars__131_ : Sexplib0.Sexp_grammar.defn Stdlib.List.t Basement.Portable_lazy.t
+    let grammars__143_ : Sexplib0.Sexp_grammar.defn Stdlib.List.t Basement.Portable_lazy.t
       =
       Basement.Portable_lazy.from_fun
         (Basement.Portability_hacks.magic_portable__needs_base_and_core
@@ -388,7 +391,7 @@ include struct
               ]))
     ;;
 
-    let _ = grammars__131_
+    let _ = grammars__143_
   end
 
   let alpha_sexp_grammar : alpha Sexplib0.Sexp_grammar.t =
@@ -397,7 +400,7 @@ include struct
           (Basement.Portable_lazy.from_fun
              (Basement.Portability_hacks.magic_portable__needs_base_and_core
                 (fun () : Sexplib0.Sexp_grammar.grammar ->
-                   Tycon ("alpha", [], Basement.Portable_lazy.force grammars__131_))))
+                   Tycon ("alpha", [], Basement.Portable_lazy.force grammars__143_))))
     }
 
   and beta_sexp_grammar : beta Sexplib0.Sexp_grammar.t =
@@ -406,7 +409,7 @@ include struct
           (Basement.Portable_lazy.from_fun
              (Basement.Portability_hacks.magic_portable__needs_base_and_core
                 (fun () : Sexplib0.Sexp_grammar.grammar ->
-                   Tycon ("beta", [], Basement.Portable_lazy.force grammars__131_))))
+                   Tycon ("beta", [], Basement.Portable_lazy.force grammars__143_))))
     }
   ;;
 
@@ -621,3 +624,74 @@ let opaque_sexp_grammar : opaque Sexplib0.Sexp_grammar.t =
 let _ = opaque_sexp_grammar
 
 [@@@end]
+
+type nonportable =
+  { x : string
+  ; y : int -> int
+  }
+[@@deriving sexp] [@@deriving_inline sexp_grammar]
+
+let _ = fun (_ : nonportable) -> ()
+
+let nonportable_sexp_grammar : nonportable Sexplib0.Sexp_grammar.t =
+  { untyped =
+      List
+        (Fields
+           { allow_extra_fields = false
+           ; fields =
+               [ No_tag
+                   { name = "x"
+                   ; required = true
+                   ; args = Cons (string_sexp_grammar.untyped, Empty)
+                   }
+               ; No_tag
+                   { name = "y"
+                   ; required = true
+                   ; args = Cons (Sexplib0.Sexp_conv.fun_sexp_grammar.untyped, Empty)
+                   }
+               ]
+           })
+  }
+;;
+
+let _ = nonportable_sexp_grammar
+
+[@@@end]
+
+type 'a nonportable1 =
+  { x : string
+  ; y : 'a -> int
+  }
+[@@deriving sexp] [@@deriving_inline sexp_grammar]
+
+let _ = fun (_ : 'a nonportable1) -> ()
+
+let nonportable1_sexp_grammar
+  : 'a. 'a Sexplib0.Sexp_grammar.t -> 'a nonportable1 Sexplib0.Sexp_grammar.t
+  =
+  fun _'a_sexp_grammar ->
+  { untyped =
+      List
+        (Fields
+           { allow_extra_fields = false
+           ; fields =
+               [ No_tag
+                   { name = "x"
+                   ; required = true
+                   ; args = Cons (string_sexp_grammar.untyped, Empty)
+                   }
+               ; No_tag
+                   { name = "y"
+                   ; required = true
+                   ; args = Cons (Sexplib0.Sexp_conv.fun_sexp_grammar.untyped, Empty)
+                   }
+               ]
+           })
+  }
+;;
+
+let _ = nonportable1_sexp_grammar
+
+[@@@end]
+
+let nonportable1_sexp_grammar @ nonportable = nonportable1_sexp_grammar
