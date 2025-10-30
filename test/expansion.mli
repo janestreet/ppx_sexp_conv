@@ -363,6 +363,7 @@ module Record_with_special_types : sig
     ; b : int list
     ; c : int array
     ; d : bool
+    ; e : int or_null
     }
   [@@deriving_inline sexp]
 

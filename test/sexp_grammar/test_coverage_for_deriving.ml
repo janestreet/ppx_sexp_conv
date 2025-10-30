@@ -1,5 +1,7 @@
 open Ppx_sexp_conv_lib.Conv
 
+type 'a or_null = 'a Ppx_sexp_conv_lib.Or_null.t
+
 [@@@warning "-37"] (* allow unused constructors *)
 
 type abstract_a [@@deriving sexp] [@@deriving_inline sexp_grammar]
@@ -394,19 +396,15 @@ include struct
   let alpha_sexp_grammar : alpha Sexplib0.Sexp_grammar.t =
     { untyped =
         Lazy
-          (Basement.Portable_lazy.from_fun
-             (Basement.Portability_hacks.magic_portable__needs_base_and_core
-                (fun () : Sexplib0.Sexp_grammar.grammar ->
-                   Tycon ("alpha", [], Basement.Portable_lazy.force grammars__143_))))
+          (Basement.Portable_lazy.from_fun (fun () : Sexplib0.Sexp_grammar.grammar ->
+             Tycon ("alpha", [], Basement.Portable_lazy.force grammars__143_)))
     }
 
   and beta_sexp_grammar : beta Sexplib0.Sexp_grammar.t =
     { untyped =
         Lazy
-          (Basement.Portable_lazy.from_fun
-             (Basement.Portability_hacks.magic_portable__needs_base_and_core
-                (fun () : Sexplib0.Sexp_grammar.grammar ->
-                   Tycon ("beta", [], Basement.Portable_lazy.force grammars__143_))))
+          (Basement.Portable_lazy.from_fun (fun () : Sexplib0.Sexp_grammar.grammar ->
+             Tycon ("beta", [], Basement.Portable_lazy.force grammars__143_)))
     }
   ;;
 
@@ -417,10 +415,8 @@ end
 let gamma_sexp_grammar : gamma Sexplib0.Sexp_grammar.t =
   { untyped =
       Lazy
-        (Basement.Portable_lazy.from_fun
-           (Basement.Portability_hacks.magic_portable__needs_base_and_core
-              (fun () : Sexplib0.Sexp_grammar.grammar ->
-                 (list_sexp_grammar beta_sexp_grammar).untyped)))
+        (Basement.Portable_lazy.from_fun (fun () : Sexplib0.Sexp_grammar.grammar ->
+           (list_sexp_grammar beta_sexp_grammar).untyped))
   }
 ;;
 
@@ -435,6 +431,7 @@ type record_attributes =
   ; d : string list [@sexp.list]
   ; e : bytes array [@sexp.array]
   ; f : Ppx_sexp_conv_lib.Sexp.t [@sexp.omit_nil]
+  ; g : char or_null [@sexp.or_null]
   }
 [@@sexp.allow_extra_fields] [@@deriving sexp] [@@deriving_inline sexp_grammar]
 
@@ -472,6 +469,11 @@ let record_attributes_sexp_grammar : record_attributes Sexplib0.Sexp_grammar.t =
                    ; required = false
                    ; args = Cons (Ppx_sexp_conv_lib.Sexp.t_sexp_grammar.untyped, Empty)
                    }
+               ; No_tag
+                   { name = "g"
+                   ; required = false
+                   ; args = Cons (char_sexp_grammar.untyped, Empty)
+                   }
                ]
            })
   }
@@ -491,6 +493,7 @@ type variant_attributes =
       ; d : string list [@sexp.list]
       ; e : bytes array [@sexp.array]
       ; f : Ppx_sexp_conv_lib.Sexp.t [@sexp.omit_nil]
+      ; g : char or_null [@sexp.or_null]
       } [@sexp.allow_extra_fields]
 [@@deriving sexp] [@@deriving_inline sexp_grammar]
 
@@ -546,6 +549,11 @@ let variant_attributes_sexp_grammar : variant_attributes Sexplib0.Sexp_grammar.t
                                         Cons
                                           ( Ppx_sexp_conv_lib.Sexp.t_sexp_grammar.untyped
                                           , Empty )
+                                    }
+                                ; No_tag
+                                    { name = "g"
+                                    ; required = false
+                                    ; args = Cons (char_sexp_grammar.untyped, Empty)
                                     }
                                 ]
                             }

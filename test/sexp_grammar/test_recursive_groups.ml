@@ -104,19 +104,15 @@ module _ = struct
     let t_sexp_grammar : t Sexplib0.Sexp_grammar.t =
       { untyped =
           Lazy
-            (Basement.Portable_lazy.from_fun
-               (Basement.Portability_hacks.magic_portable__needs_base_and_core
-                  (fun () : Sexplib0.Sexp_grammar.grammar ->
-                     Tycon ("t", [], Basement.Portable_lazy.force grammars__001_))))
+            (Basement.Portable_lazy.from_fun (fun () : Sexplib0.Sexp_grammar.grammar ->
+               Tycon ("t", [], Basement.Portable_lazy.force grammars__001_)))
       }
 
     and u_sexp_grammar : u Sexplib0.Sexp_grammar.t =
       { untyped =
           Lazy
-            (Basement.Portable_lazy.from_fun
-               (Basement.Portability_hacks.magic_portable__needs_base_and_core
-                  (fun () : Sexplib0.Sexp_grammar.grammar ->
-                     Tycon ("u", [], Basement.Portable_lazy.force grammars__001_))))
+            (Basement.Portable_lazy.from_fun (fun () : Sexplib0.Sexp_grammar.grammar ->
+               Tycon ("u", [], Basement.Portable_lazy.force grammars__001_)))
       }
     ;;
 

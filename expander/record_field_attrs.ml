@@ -9,6 +9,7 @@ module Generic = struct
     | Sexp_bool
     | Sexp_list of core_type
     | Sexp_option of core_type
+    | Sexp_or_null of core_type
     | Specific of 'specific
 end
 
@@ -31,6 +32,10 @@ let create ~loc specific_getters ld ~if_no_attribute =
           (match ty with
            | [%type: [%t? ty] option] -> Some (Sexp_option ty, "[@sexp.option]")
            | _ -> invalid_attribute ~loc option "_ option")
+        | ty when Option.is_some (Attribute.get or_null ld) ->
+          (match ty with
+           | [%type: [%t? ty] or_null] -> Some (Sexp_or_null ty, "[@sexp.or_null]")
+           | _ -> invalid_attribute ~loc or_null "_ or_null")
         | ty when Option.is_some (Attribute.get list ld) ->
           (match ty with
            | [%type: [%t? ty] list] -> Some (Sexp_list ty, "[@sexp.list]")

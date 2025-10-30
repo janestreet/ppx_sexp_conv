@@ -328,6 +328,8 @@ let rec grammar_of_type core_type ~rec_flag ~tags_of_doc_comments =
             grammar_of_polymorphic_variant ~loc ~rec_flag ~tags_of_doc_comments rows)
        | Ptyp_poly _ -> unsupported ~loc "explicitly polymorphic types"
        | Ptyp_package _ -> unsupported ~loc "first-class module types"
+       | Ptyp_quote _ -> unsupported ~loc "quoted types"
+       | Ptyp_splice _ -> unsupported ~loc "spliced types"
        | Ptyp_of_kind _ -> unsupported ~loc "type of a fixed kind"
        | Ptyp_extension _ -> unsupported ~loc "unexpanded ppx extensions")
   in
@@ -405,7 +407,12 @@ let record_expr ~loc ~rec_flag ~tags_of_doc_comments ~extra_attr syntax fields =
         match field_kind with
         | Specific Required -> true
         | Specific (Default _)
-        | Sexp_bool | Sexp_option _ | Sexp_array _ | Sexp_list _ | Omit_nil -> false
+        | Sexp_bool
+        | Sexp_option _
+        | Sexp_or_null _
+        | Sexp_array _
+        | Sexp_list _
+        | Omit_nil -> false
       in
       let args =
         match field_kind with
@@ -414,7 +421,7 @@ let record_expr ~loc ~rec_flag ~tags_of_doc_comments ~extra_attr syntax fields =
             Cons
               ([%e grammar_of_type ~tags_of_doc_comments ~rec_flag field.pld_type], Empty)]
         | Sexp_bool -> [%expr Empty]
-        | Sexp_option ty ->
+        | Sexp_option ty | Sexp_or_null ty ->
           [%expr Cons ([%e grammar_of_type ~tags_of_doc_comments ~rec_flag ty], Empty)]
         | Sexp_list ty | Sexp_array ty ->
           [%expr
@@ -571,9 +578,8 @@ let lazy_grammar ~loc td expr =
   then
     [%expr
       Lazy
-        (Basement.Portable_lazy.from_fun
-           (Basement.Portability_hacks.magic_portable__needs_base_and_core
-              (fun () : Sexplib0.Sexp_grammar.grammar -> [%e expr])))]
+        (Basement.Portable_lazy.from_fun (fun () : Sexplib0.Sexp_grammar.grammar ->
+           [%e expr]))]
   else expr
 ;;
 
@@ -729,9 +735,6 @@ let str_type_decl ~ctxt (rec_flag, tds) tags_of_doc_comments =
 ;;
 
 let sig_type_decl ~ctxt:_ (_rec_flag, tds) ~nonportable =
-  let modalities : Ppxlib_jane.Shim.Modality.t list =
-    if nonportable then [] else [ Modality "portable" ]
-  in
   List.map tds ~f:(fun td ->
     let td = Ppxlib.name_type_params_in_td td in
     let loc = td.ptype_loc in
@@ -744,7 +747,7 @@ let sig_type_decl ~ctxt:_ (_rec_flag, tds) ~nonportable =
            (List.map td.ptype_params ~f:Ppxlib_jane.get_type_param_name_and_jkind)
            (combinator_type_of_type_declaration td ~f:grammar_type))
       ~prim:[]
-      ~modalities
+      ~modalities:(if nonportable then [] else Ppxlib_jane.Shim.Modalities.portable ~loc)
     |> psig_value ~loc)
 ;;
 

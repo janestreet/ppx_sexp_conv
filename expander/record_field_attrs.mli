@@ -8,6 +8,7 @@ module Generic : sig
     | Sexp_bool
     | Sexp_list of core_type
     | Sexp_option of core_type
+    | Sexp_or_null of core_type
     | Specific of 'specific
 end
 

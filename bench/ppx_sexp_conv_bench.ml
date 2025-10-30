@@ -23,6 +23,7 @@ module%bench Record = struct
     ; i : int [@default 0] [@sexp_drop_default.equal]
     ; j : int [@default 0] [@sexp_drop_default.sexp]
     ; k : 'a. 'a list
+    ; l : int or_null [@sexp.or_null]
     }
   [@@deriving sexp]
 
@@ -40,6 +41,7 @@ module%bench Record = struct
       ; i = 10
       ; j = 11
       ; k = []
+      ; l = This 12
       }
   ;;
 
@@ -57,19 +59,22 @@ module%bench Record = struct
       ; i = 0
       ; j = 0
       ; k = []
+      ; l = Null
       }
   ;;
 
   let%bench_fun "t_of_sexp, full, in order" =
     bench_t_of_sexp
       ~t_of_sexp
-      "((a 1) (b (2)) (c) (d (3 4)) (e (5 6)) (f 7) (g 8) (h 9) (i 10) (j 11) (k ()))"
+      "((a 1) (b (2)) (c) (d (3 4)) (e (5 6)) (f 7) (g 8) (h 9) (i 10) (j 11) (k ()) (l \
+       12))"
   ;;
 
   let%bench_fun "t_of_sexp, full, reverse order" =
     bench_t_of_sexp
       ~t_of_sexp
-      "((k ()) (j 11) (i 10) (h 9) (g 8) (f 7) (e (5 6)) (d (3 4)) (c) (b (2)) (a 1))"
+      "((l 12) (k ()) (j 11) (i 10) (h 9) (g 8) (f 7) (e (5 6)) (d (3 4)) (c) (b (2)) (a \
+       1))"
   ;;
 
   let%bench_fun "t_of_sexp, empty" = bench_t_of_sexp ~t_of_sexp "((a 0) (k ()))"
@@ -92,6 +97,7 @@ module%bench Variant = struct
         ; i : int [@default 0] [@sexp_drop_default.equal]
         ; j : int [@default 0] [@sexp_drop_default.sexp]
         ; k : 'a. 'a list
+        ; l : int or_null [@sexp.or_null]
         }
   [@@deriving sexp]
 
@@ -115,6 +121,7 @@ module%bench Variant = struct
          ; i = 10
          ; j = 11
          ; k = []
+         ; l = This 12
          })
   ;;
 
@@ -133,6 +140,7 @@ module%bench Variant = struct
          ; i = 0
          ; j = 0
          ; k = []
+         ; l = Null
          })
   ;;
 
@@ -145,14 +153,14 @@ module%bench Variant = struct
     bench_t_of_sexp
       ~t_of_sexp
       "(Record (a 1) (b (2)) (c) (d (3 4)) (e (5 6)) (f 7) (g 8) (h 9) (i 10) (j 11) (k \
-       ()))"
+       ()) (l 12))"
   ;;
 
   let%bench_fun "t_of_sexp, record, full, reverse order" =
     bench_t_of_sexp
       ~t_of_sexp
-      "(Record (k ()) (j 11) (i 10) (h 9) (g 8) (f 7) (e (5 6)) (d (3 4)) (c) (b (2)) (a \
-       1))"
+      "(Record (l 12) (k ()) (j 11) (i 10) (h 9) (g 8) (f 7) (e (5 6)) (d (3 4)) (c) (b \
+       (2)) (a 1))"
   ;;
 
   let%bench_fun "t_of_sexp, record, empty" =

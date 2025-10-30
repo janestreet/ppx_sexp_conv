@@ -143,6 +143,22 @@ Line _, characters _-_:
 Error: ppx_sexp_conv: [@sexp.option] is only allowed on type [_ option].
 |}]
 
+type t = { x : unit [@sexp.or_null] } [@@deriving sexp_of ~stackify]
+type t = { x : unit [@sexp.or_null] } [@@deriving of_sexp]
+type t = { x : unit [@sexp.or_null] } [@@deriving sexp_grammar]
+
+[%%expect
+  {|
+Line _, characters _-_:
+Error: ppx_sexp_conv: [@sexp.or_null] is only allowed on type [_ or_null].
+
+Line _, characters _-_:
+Error: ppx_sexp_conv: [@sexp.or_null] is only allowed on type [_ or_null].
+
+Line _, characters _-_:
+Error: ppx_sexp_conv: [@sexp.or_null] is only allowed on type [_ or_null].
+|}]
+
 type t = { x : unit [@sexp.list] } [@@deriving sexp_of ~stackify]
 type t = { x : unit [@sexp.list] } [@@deriving of_sexp]
 type t = { x : unit [@sexp.list] } [@@deriving sexp_grammar]
@@ -280,8 +296,8 @@ type _ t = T : int -> string t [@@deriving of_sexp]
   {|
 Line _, characters _-_:
 Error: This expression has type string t
-       but an expression was expected of type a__106_ t
-       Type string is not compatible with type a__106_
+       but an expression was expected of type a__110_ t
+       Type string is not compatible with type a__110_
 |}]
 
 type t = exn [@@deriving sexp_of ~stackify]

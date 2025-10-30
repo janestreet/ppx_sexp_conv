@@ -72,16 +72,16 @@ module Sig_sexp = struct
 
     let rec of_jkind (jkind : Ppxlib_jane.Shim.jkind_annotation) =
       match jkind.pjkind_desc with
-      | Default | Kind_of _ ->
+      | Pjk_default | Pjk_kind_of _ ->
         (* [t : _] or [t : kind_of u] *)
         None
-      | Abbreviation ("value" | "immediate64" | "immediate") ->
+      | Pjk_abbreviation ("value" | "immediate64" | "immediate") ->
         (* [t : value] or [t : immediate64] or [t : immediate] *)
         Some Value
-      | Abbreviation _ | Product _ ->
+      | Pjk_abbreviation _ | Pjk_product _ ->
         (* [t : k] or [t : k1 & k2]*)
         Some Maybe_non_value
-      | Mod (jkind, _) | With (jkind, _, _) ->
+      | Pjk_mod (jkind, _) | Pjk_with (jkind, _, _) ->
         (* [t : k mod m] or [t : k with t] *)
         of_jkind jkind
     ;;

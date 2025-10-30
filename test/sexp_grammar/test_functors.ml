@@ -157,13 +157,11 @@ let _ = fun (_ : t) -> ()
 let t_sexp_grammar : t Sexplib0.Sexp_grammar.t =
   { untyped =
       Lazy
-        (Basement.Portable_lazy.from_fun
-           (Basement.Portability_hacks.magic_portable__needs_base_and_core
-              (fun () : Sexplib0.Sexp_grammar.grammar ->
-                 List
-                   (Cons
-                      ( (T2.t_sexp_grammar int_sexp_grammar).untyped
-                      , Cons ((T1.t_sexp_grammar int_sexp_grammar).untyped, Empty) )))))
+        (Basement.Portable_lazy.from_fun (fun () : Sexplib0.Sexp_grammar.grammar ->
+           List
+             (Cons
+                ( (T2.t_sexp_grammar int_sexp_grammar).untyped
+                , Cons ((T1.t_sexp_grammar int_sexp_grammar).untyped, Empty) ))))
   }
 ;;
 
