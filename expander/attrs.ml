@@ -68,18 +68,6 @@ let opaque =
   Attribute.declare "sexp.opaque" Attribute.Context.core_type Ast_pattern.(pstr nil) ()
 ;;
 
-let non_value_field =
-  Attribute.declare
-    "sexp.non_value"
-    Attribute.Context.label_declaration
-    Ast_pattern.(pstr nil)
-    ()
-;;
-
-let non_value_type =
-  Attribute.declare "sexp.non_value" Attribute.Context.core_type Ast_pattern.(pstr nil) ()
-;;
-
 let omit_nil =
   Attribute.declare
     "sexp.omit_nil"
@@ -91,6 +79,14 @@ let omit_nil =
 let option =
   Attribute.declare
     "sexp.option"
+    Attribute.Context.label_declaration
+    Ast_pattern.(pstr nil)
+    ()
+;;
+
+let or_null =
+  Attribute.declare
+    "sexp.or_null"
     Attribute.Context.label_declaration
     Ast_pattern.(pstr nil)
     ()
@@ -213,6 +209,10 @@ let tags_type = tags_attribute_for_context Core_type
 let tags_ld = tags_attribute_for_context Label_declaration
 let tags_cd = tags_attribute_for_context Constructor_declaration
 let tags_poly = tags_attribute_for_context Rtag
+
+let phantom =
+  Attribute.declare "sexp.phantom" Attribute.Context.core_type Ast_pattern.(pstr nil) ()
+;;
 
 let invalid_attribute ~loc attr description =
   Location.raise_errorf

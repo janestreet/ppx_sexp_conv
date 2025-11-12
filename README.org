@@ -160,13 +160,15 @@ key-value pair. Each pair consists of the name of the record field
 #+end_src
 
 Type specifications of records allow the use of several attributes. The
-attribute =sexp.option= indicates that a record field should be optional.
+attribute =sexp.option= indicates that an =option= record field should be optional, while
+the attribute =sexp.or_null= indicates that an =or_null= record field should be optional.
 /e.g./:
 
 #+begin_src ocaml
   type t =
     { x : int option;
       y : int option [@sexp.option];
+      z : int or_null [@sexp.or_null];
     } [@@deriving sexp]
 #+end_src
 
@@ -397,6 +399,33 @@ back to the original value.  Here is an example conversion:
 
 #+begin_src ocaml
   (42, some_stuff)  =>  (42 <opaque>)
+#+end_src
+
+** Phantom parameters
+
+Phantom type parameters are ones which are marked to not actually appear on the
+right-hand side of the type definition, and are thus excluded from the derived
+=sexp_of= and =of_sexp= combinators. To prevent the preprocessor from including
+type parameters when deriving or calling combinators, add the attribute
+=sexp.phantom= to the type parameter itself. Here is an example:
+
+#+begin_src ocaml
+  type ('a[@sexp.phantom], 'b) index = 'b
+  [@@deriving sexp]
+
+  type 'a[@sexp.phantom] int_index = ('a[@sexp.phantom], int) index
+  [@@deriving sexp]
+#+end_src
+
+The derived functions will have the following types. Note that none of them take
+a combinator for the phantom parameter as an argument.
+
+#+begin_src ocaml
+val sexp_of_index : ('b -> Sexp.t) -> ('a, 'b) index -> Sexp.t
+val index_of_sexp : (Sexp.t -> 'b) -> Sexp.t -> ('a, 'b) index
+
+val sexp_of_int_index : 'a int_index -> Sexp.t
+val int_index_of_sexp : Sexp.t -> 'a int_index
 #+end_src
 
 ** Exceptions

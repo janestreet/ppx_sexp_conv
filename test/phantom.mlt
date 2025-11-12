@@ -1,0 +1,71 @@
+open Ppx_sexp_conv_lib.Conv
+
+type 'a[@phantom] t = int [@@deriving sexp]
+type ('a[@phantom], 'b) u = 'b list [@@deriving sexp]
+type ('a[@phantom], 'b[@phantom]) v = string [@@deriving sexp]
+type ('a, 'b[@phantom]) w = 'a option [@@deriving sexp]
+
+[%%expect {| |}];;
+
+(* missing [[@phantom]]s *)
+
+[%sexp_of: int t] 42
+
+[%%expect
+  {|
+Line _, characters _-_:
+Error: The function sexp_of_t has type int -> Sexplib0.Sexp.t
+       It is applied to too many arguments
+Line _, characters _-_:
+  This extra argument is not expected.
+|}]
+
+
+type my_int1 = int
+
+let sexp_of_my_int1 x =
+  assert (Int.equal x 42);
+  sexp_of_int x
+;;
+
+type my_int2 = int
+
+let sexp_of_my_int2 = sexp_of_int;;
+
+print_endline
+  (Base.Sexp.to_string_hum ([%sexp_of: (my_int1, (my_int2[@phantom])) u] [ 42 ]))
+
+[%%expect
+  {|
+(42)
+|}]
+;;
+
+[%sexp_of: (my_int1, (my_int2[@phantom])) u] [ 43 ]
+
+[%%expect
+  {|
+Exception: "Assert_failure phantom.mlt:30:2".
+|}]
+;;
+
+(* extra [[@phantom]]s *)
+
+[%sexp_of: ((int[@phantom]), (string[@phantom])) u] [ "hello"; "world" ]
+
+[%%expect
+  {|
+Line _, characters _-_:
+Error: This expression should not be a list literal, the expected type is
+       'a -> Sexplib0.Sexp.t
+|}]
+;;
+
+[%sexp_of: ((int[@phantom]), (string[@phantom])) w] (Some 42)
+
+[%%expect
+  {|
+Line _, characters _-_:
+Error: This expression should not be a constructor, the expected type is
+       'a -> Sexplib0.Sexp.t
+|}]

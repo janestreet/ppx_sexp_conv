@@ -229,6 +229,7 @@ type record_attributes =
   ; d : string list
   ; e : bytes array
   ; f : Ppx_sexp_conv_lib.Sexp.t
+  ; g : char Ppx_sexp_conv_lib.Or_null.t
   }
 [@@deriving sexp] [@@deriving_inline sexp_grammar]
 
@@ -253,6 +254,7 @@ type variant_attributes =
       ; d : string list
       ; e : bytes array
       ; f : Ppx_sexp_conv_lib.Sexp.t
+      ; g : char Ppx_sexp_conv_lib.Or_null.t
       }
 [@@deriving sexp] [@@deriving_inline sexp_grammar]
 

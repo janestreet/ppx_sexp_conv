@@ -1,6 +1,7 @@
 (library
  (name ppx_sexp_conv_test)
- (libraries base expect_test_helpers_core.expect_test_helpers_base sexplib)
+ (libraries base expect_test_helpers_core.expect_test_helpers_base sexplib
+   stdio)
  (flags :standard -w -30)
  (preprocess
   (pps ppxlib ppx_sexp_conv ppx_compare ppx_disable_unused_warnings ppx_here

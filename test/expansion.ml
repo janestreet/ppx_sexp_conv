@@ -100,7 +100,7 @@ module Record = struct
               ; kind = Required
               ; conv =
                   (fun x__031_ ->
-                    let _x__032_ = int_of_sexp x__031_ in
+                    let _x__032_ = (int_of_sexp [@inlined never]) x__031_ in
                     fun () -> _x__032_)
               ; rest =
                   Field
@@ -108,7 +108,7 @@ module Record = struct
                     ; kind = Required
                     ; conv =
                         (fun x__029_ ->
-                          let _x__030_ = int_of_sexp x__029_ in
+                          let _x__030_ = (int_of_sexp [@inlined never]) x__029_ in
                           fun () -> _x__030_)
                     ; rest =
                         Field
@@ -116,7 +116,7 @@ module Record = struct
                           ; kind = Required
                           ; conv =
                               (fun x__027_ ->
-                                let _x__028_ = int_of_sexp x__027_ in
+                                let _x__028_ = (int_of_sexp [@inlined never]) x__027_ in
                                 fun () -> _x__028_)
                           ; rest = Empty
                           }
@@ -211,7 +211,7 @@ module Mutable_record = struct
               ; kind = Required
               ; conv =
                   (fun x__054_ ->
-                    let _x__055_ = int_of_sexp x__054_ in
+                    let _x__055_ = (int_of_sexp [@inlined never]) x__054_ in
                     fun () -> _x__055_)
               ; rest =
                   Field
@@ -219,7 +219,7 @@ module Mutable_record = struct
                     ; kind = Required
                     ; conv =
                         (fun x__052_ ->
-                          let _x__053_ = int_of_sexp x__052_ in
+                          let _x__053_ = (int_of_sexp [@inlined never]) x__052_ in
                           fun () -> _x__053_)
                     ; rest =
                         Field
@@ -227,7 +227,7 @@ module Mutable_record = struct
                           ; kind = Required
                           ; conv =
                               (fun x__050_ ->
-                                let _x__051_ = int_of_sexp x__050_ in
+                                let _x__051_ = (int_of_sexp [@inlined never]) x__050_ in
                                 fun () -> _x__051_)
                           ; rest = Empty
                           }
@@ -346,7 +346,7 @@ module Variant = struct
               ; kind = Required
               ; conv =
                   (fun x__086_ ->
-                    let _x__087_ = int_of_sexp x__086_ in
+                    let _x__087_ = (int_of_sexp [@inlined never]) x__086_ in
                     fun () -> _x__087_)
               ; rest =
                   Field
@@ -354,7 +354,7 @@ module Variant = struct
                     ; kind = Required
                     ; conv =
                         (fun x__084_ ->
-                          let _x__085_ = int_of_sexp x__084_ in
+                          let _x__085_ = (int_of_sexp [@inlined never]) x__084_ in
                           fun () -> _x__085_)
                     ; rest =
                         Field
@@ -362,7 +362,7 @@ module Variant = struct
                           ; kind = Required
                           ; conv =
                               (fun x__082_ ->
-                                let _x__083_ = int_of_sexp x__082_ in
+                                let _x__083_ = (int_of_sexp [@inlined never]) x__082_ in
                                 fun () -> _x__083_)
                           ; rest = Empty
                           }
@@ -390,7 +390,7 @@ module Variant = struct
               ; kind = Required
               ; conv =
                   (fun x__094_ ->
-                    let _x__095_ = int_of_sexp x__094_ in
+                    let _x__095_ = (int_of_sexp [@inlined never]) x__094_ in
                     fun () -> _x__095_)
               ; rest =
                   Field
@@ -398,7 +398,7 @@ module Variant = struct
                     ; kind = Required
                     ; conv =
                         (fun x__092_ ->
-                          let _x__093_ = int_of_sexp x__092_ in
+                          let _x__093_ = (int_of_sexp [@inlined never]) x__092_ in
                           fun () -> _x__093_)
                     ; rest =
                         Field
@@ -406,7 +406,7 @@ module Variant = struct
                           ; kind = Required
                           ; conv =
                               (fun x__090_ ->
-                                let _x__091_ = int_of_sexp x__090_ in
+                                let _x__091_ = (int_of_sexp [@inlined never]) x__090_ in
                                 fun () -> _x__091_)
                           ; rest = Empty
                           }
@@ -823,7 +823,7 @@ module Mutually_recursive = struct
               ; kind = Required
               ; conv =
                   (fun x__194_ ->
-                    let _x__195_ = a_of_sexp x__194_ in
+                    let _x__195_ = (a_of_sexp [@inlined never]) x__194_ in
                     fun () -> _x__195_)
               ; rest =
                   Field
@@ -831,7 +831,7 @@ module Mutually_recursive = struct
                     ; kind = Required
                     ; conv =
                         (fun x__192_ ->
-                          let _x__193_ = b_of_sexp x__192_ in
+                          let _x__193_ = (b_of_sexp [@inlined never]) x__192_ in
                           fun () -> _x__193_)
                     ; rest =
                         Field
@@ -839,7 +839,7 @@ module Mutually_recursive = struct
                           ; kind = Required
                           ; conv =
                               (fun x__190_ ->
-                                let _x__191_ = c_of_sexp x__190_ in
+                                let _x__191_ = (c_of_sexp [@inlined never]) x__190_ in
                                 fun () -> _x__191_)
                           ; rest = Empty
                           }
@@ -883,7 +883,7 @@ module Mutually_recursive = struct
               ; kind = Required
               ; conv =
                   (fun x__202_ ->
-                    let _x__203_ = a_of_sexp x__202_ in
+                    let _x__203_ = (a_of_sexp [@inlined never]) x__202_ in
                     fun () -> _x__203_)
               ; rest =
                   Field
@@ -891,7 +891,7 @@ module Mutually_recursive = struct
                     ; kind = Required
                     ; conv =
                         (fun x__200_ ->
-                          let _x__201_ = b_of_sexp x__200_ in
+                          let _x__201_ = (b_of_sexp [@inlined never]) x__200_ in
                           fun () -> _x__201_)
                     ; rest = Empty
                     }
@@ -1193,7 +1193,7 @@ module Recursive_record_containing_variant = struct
               ; conv =
                   (fun x__282_ ->
                     let _x__283_ =
-                      (fun sexp__281_ ->
+                      (fun [@inlined never] sexp__281_ ->
                         try
                           match sexp__281_ with
                           | Sexplib0.Sexp.Atom atom__274_ as _sexp__276_ ->
@@ -1242,7 +1242,7 @@ module Recursive_record_containing_variant = struct
                     ; conv =
                         (fun x__271_ ->
                           let _x__272_ =
-                            (fun sexp__270_ ->
+                            (fun [@inlined never] sexp__270_ ->
                               try
                                 match sexp__270_ with
                                 | Sexplib0.Sexp.Atom atom__266_ as _sexp__268_ ->
@@ -1476,7 +1476,7 @@ module Record_with_defaults = struct
               ; kind = Default (fun () -> default__322_)
               ; conv =
                   (fun x__337_ ->
-                    let _x__338_ = int_of_sexp x__337_ in
+                    let _x__338_ = (int_of_sexp [@inlined never]) x__337_ in
                     fun () -> _x__338_)
               ; rest =
                   Field
@@ -1484,7 +1484,7 @@ module Record_with_defaults = struct
                     ; kind = Default (fun () -> default__323_)
                     ; conv =
                         (fun x__335_ ->
-                          let _x__336_ = int_of_sexp x__335_ in
+                          let _x__336_ = (int_of_sexp [@inlined never]) x__335_ in
                           fun () -> _x__336_)
                     ; rest =
                         Field
@@ -1492,7 +1492,7 @@ module Record_with_defaults = struct
                           ; kind = Default (fun () -> default__324_)
                           ; conv =
                               (fun x__333_ ->
-                                let _x__334_ = int_of_sexp x__333_ in
+                                let _x__334_ = (int_of_sexp [@inlined never]) x__333_ in
                                 fun () -> _x__334_)
                           ; rest =
                               Field
@@ -1500,7 +1500,9 @@ module Record_with_defaults = struct
                                 ; kind = Default (fun () -> default__325_)
                                 ; conv =
                                     (fun x__331_ ->
-                                      let _x__332_ = int_of_sexp x__331_ in
+                                      let _x__332_ =
+                                        (int_of_sexp [@inlined never]) x__331_
+                                      in
                                       fun () -> _x__332_)
                                 ; rest =
                                     Field
@@ -1508,7 +1510,9 @@ module Record_with_defaults = struct
                                       ; kind = Default (fun () -> default__326_)
                                       ; conv =
                                           (fun x__329_ ->
-                                            let _x__330_ = int_of_sexp x__329_ in
+                                            let _x__330_ =
+                                              (int_of_sexp [@inlined never]) x__329_
+                                            in
                                             fun () -> _x__330_)
                                       ; rest =
                                           Field
@@ -1516,7 +1520,9 @@ module Record_with_defaults = struct
                                             ; kind = Required
                                             ; conv =
                                                 (fun x__327_ ->
-                                                  let _x__328_ = int_of_sexp x__327_ in
+                                                  let _x__328_ =
+                                                    (int_of_sexp [@inlined never]) x__327_
+                                                  in
                                                   fun () -> _x__328_)
                                             ; rest = Empty
                                             }
@@ -1617,6 +1623,7 @@ module Record_with_special_types = struct
     ; b : int list [@sexp.list]
     ; c : int array [@sexp.array]
     ; d : bool [@sexp.bool]
+    ; e : int or_null [@sexp.or_null]
     }
   [@@deriving_inline sexp]
 
@@ -1644,7 +1651,17 @@ module Record_with_special_types = struct
                           ; conv = int_of_sexp
                           ; rest =
                               Field
-                                { name = "d"; kind = Sexp_bool; conv = (); rest = Empty }
+                                { name = "d"
+                                ; kind = Sexp_bool
+                                ; conv = ()
+                                ; rest =
+                                    Field
+                                      { name = "e"
+                                      ; kind = Sexp_or_null
+                                      ; conv = int_of_sexp
+                                      ; rest = Empty
+                                      }
+                                }
                           }
                     }
               })
@@ -1653,9 +1670,10 @@ module Record_with_special_types = struct
            | "b" -> 1
            | "c" -> 2
            | "d" -> 3
+           | "e" -> 4
            | _ -> -1)
          ~allow_extra_fields:false
-         ~create:(fun (a, (b, (c, (d, ())))) : t -> { a; b; c; d })
+         ~create:(fun (a, (b, (c, (d, (e, ()))))) : t -> { a; b; c; d; e })
          x__377_
      : Sexplib0.Sexp.t -> t)
   ;;
@@ -1663,8 +1681,16 @@ module Record_with_special_types = struct
   let _ = t_of_sexp
 
   let sexp_of_t =
-    (fun { a = a__379_; b = b__384_; c = c__388_; d = d__391_ } ->
+    (fun { a = a__379_; b = b__384_; c = c__388_; d = d__391_; e = e__393_ } ->
        let bnds__378_ = ([] : _ Stdlib.List.t) in
+       let bnds__378_ =
+         match e__393_ with
+         | Ppx_sexp_conv_lib.Or_null.Null -> bnds__378_
+         | Ppx_sexp_conv_lib.Or_null.This v__394_ ->
+           let arg__396_ = sexp_of_int v__394_ in
+           let bnd__395_ = Sexplib0.Sexp.List [ Sexplib0.Sexp.Atom "e"; arg__396_ ] in
+           (bnd__395_ :: bnds__378_ : _ Stdlib.List.t)
+       in
        let bnds__378_ =
          if d__391_
          then (
@@ -1721,42 +1747,48 @@ module Record_with_omit_nil = struct
   let _ = fun (_ : t) -> ()
 
   let t_of_sexp =
-    (let error_source__394_ = "expansion.ml.Record_with_omit_nil.t" in
-     fun x__403_ ->
+    (let error_source__398_ = "expansion.ml.Record_with_omit_nil.t" in
+     fun x__407_ ->
        Sexplib0.Sexp_conv_record.record_of_sexp
-         ~caller:error_source__394_
+         ~caller:error_source__398_
          ~fields:
            (Field
               { name = "a"
               ; kind = Omit_nil
               ; conv =
-                  (fun x__401_ ->
-                    let _x__402_ = (option_of_sexp int_of_sexp) x__401_ in
-                    fun () -> _x__402_)
+                  (fun x__405_ ->
+                    let _x__406_ =
+                      (option_of_sexp int_of_sexp [@inlined never]) x__405_
+                    in
+                    fun () -> _x__406_)
               ; rest =
                   Field
                     { name = "b"
                     ; kind = Omit_nil
                     ; conv =
-                        (fun x__399_ ->
-                          let _x__400_ = (list_of_sexp int_of_sexp) x__399_ in
-                          fun () -> _x__400_)
+                        (fun x__403_ ->
+                          let _x__404_ =
+                            (list_of_sexp int_of_sexp [@inlined never]) x__403_
+                          in
+                          fun () -> _x__404_)
                     ; rest =
                         Field
                           { name = "c"
                           ; kind = Omit_nil
                           ; conv =
-                              (fun x__397_ ->
-                                let _x__398_ = unit_of_sexp x__397_ in
-                                fun () -> _x__398_)
+                              (fun x__401_ ->
+                                let _x__402_ = (unit_of_sexp [@inlined never]) x__401_ in
+                                fun () -> _x__402_)
                           ; rest =
                               Field
                                 { name = "d"
                                 ; kind = Omit_nil
                                 ; conv =
-                                    (fun x__395_ ->
-                                      let _x__396_ = int_of_sexp x__395_ in
-                                      fun () -> _x__396_)
+                                    (fun x__399_ ->
+                                      let _x__400_ =
+                                        (int_of_sexp [@inlined never]) x__399_
+                                      in
+                                      fun () -> _x__400_)
                                 ; rest = Empty
                                 }
                           }
@@ -1775,44 +1807,44 @@ module Record_with_omit_nil = struct
            let c = c () in
            let d = d () in
            { a; b; c; d })
-         x__403_
+         x__407_
      : Sexplib0.Sexp.t -> t)
   ;;
 
   let _ = t_of_sexp
 
   let sexp_of_t =
-    (fun { a = a__405_; b = b__407_; c = c__409_; d = d__411_ } ->
-       let bnds__404_ = ([] : _ Stdlib.List.t) in
-       let bnds__404_ =
-         match sexp_of_int d__411_ with
-         | Sexplib0.Sexp.List [] -> bnds__404_
+    (fun { a = a__409_; b = b__411_; c = c__413_; d = d__415_ } ->
+       let bnds__408_ = ([] : _ Stdlib.List.t) in
+       let bnds__408_ =
+         match sexp_of_int d__415_ with
+         | Sexplib0.Sexp.List [] -> bnds__408_
+         | arg__416_ ->
+           (Sexplib0.Sexp.List [ Sexplib0.Sexp.Atom "d"; arg__416_ ] :: bnds__408_
+            : _ Stdlib.List.t)
+       in
+       let bnds__408_ =
+         match sexp_of_unit c__413_ with
+         | Sexplib0.Sexp.List [] -> bnds__408_
+         | arg__414_ ->
+           (Sexplib0.Sexp.List [ Sexplib0.Sexp.Atom "c"; arg__414_ ] :: bnds__408_
+            : _ Stdlib.List.t)
+       in
+       let bnds__408_ =
+         match sexp_of_list sexp_of_int b__411_ with
+         | Sexplib0.Sexp.List [] -> bnds__408_
          | arg__412_ ->
-           (Sexplib0.Sexp.List [ Sexplib0.Sexp.Atom "d"; arg__412_ ] :: bnds__404_
+           (Sexplib0.Sexp.List [ Sexplib0.Sexp.Atom "b"; arg__412_ ] :: bnds__408_
             : _ Stdlib.List.t)
        in
-       let bnds__404_ =
-         match sexp_of_unit c__409_ with
-         | Sexplib0.Sexp.List [] -> bnds__404_
+       let bnds__408_ =
+         match sexp_of_option sexp_of_int a__409_ with
+         | Sexplib0.Sexp.List [] -> bnds__408_
          | arg__410_ ->
-           (Sexplib0.Sexp.List [ Sexplib0.Sexp.Atom "c"; arg__410_ ] :: bnds__404_
+           (Sexplib0.Sexp.List [ Sexplib0.Sexp.Atom "a"; arg__410_ ] :: bnds__408_
             : _ Stdlib.List.t)
        in
-       let bnds__404_ =
-         match sexp_of_list sexp_of_int b__407_ with
-         | Sexplib0.Sexp.List [] -> bnds__404_
-         | arg__408_ ->
-           (Sexplib0.Sexp.List [ Sexplib0.Sexp.Atom "b"; arg__408_ ] :: bnds__404_
-            : _ Stdlib.List.t)
-       in
-       let bnds__404_ =
-         match sexp_of_option sexp_of_int a__405_ with
-         | Sexplib0.Sexp.List [] -> bnds__404_
-         | arg__406_ ->
-           (Sexplib0.Sexp.List [ Sexplib0.Sexp.Atom "a"; arg__406_ ] :: bnds__404_
-            : _ Stdlib.List.t)
-       in
-       Sexplib0.Sexp.List bnds__404_
+       Sexplib0.Sexp.List bnds__408_
      : t -> Sexplib0.Sexp.t)
   ;;
 
@@ -1827,28 +1859,28 @@ module Variant_with_sexp_list = struct
   let _ = fun (_ : t) -> ()
 
   let t_of_sexp =
-    (let error_source__415_ = "expansion.ml.Variant_with_sexp_list.t" in
+    (let error_source__419_ = "expansion.ml.Variant_with_sexp_list.t" in
      function
      | Sexplib0.Sexp.List
-         (Sexplib0.Sexp.Atom (("a" | "A") as _tag__418_) :: sexp_args__419_) as
-       _sexp__417_ -> A (Sexplib0.Sexp_conv.list_map int_of_sexp sexp_args__419_)
-     | Sexplib0.Sexp.Atom ("a" | "A") as sexp__416_ ->
-       Sexplib0.Sexp_conv_error.stag_takes_args error_source__415_ sexp__416_
-     | Sexplib0.Sexp.List (Sexplib0.Sexp.List _ :: _) as sexp__414_ ->
-       Sexplib0.Sexp_conv_error.nested_list_invalid_sum error_source__415_ sexp__414_
-     | Sexplib0.Sexp.List [] as sexp__414_ ->
-       Sexplib0.Sexp_conv_error.empty_list_invalid_sum error_source__415_ sexp__414_
-     | sexp__414_ ->
-       Sexplib0.Sexp_conv_error.unexpected_stag error_source__415_ [ "A" ] sexp__414_
+         (Sexplib0.Sexp.Atom (("a" | "A") as _tag__422_) :: sexp_args__423_) as
+       _sexp__421_ -> A (Sexplib0.Sexp_conv.list_map int_of_sexp sexp_args__423_)
+     | Sexplib0.Sexp.Atom ("a" | "A") as sexp__420_ ->
+       Sexplib0.Sexp_conv_error.stag_takes_args error_source__419_ sexp__420_
+     | Sexplib0.Sexp.List (Sexplib0.Sexp.List _ :: _) as sexp__418_ ->
+       Sexplib0.Sexp_conv_error.nested_list_invalid_sum error_source__419_ sexp__418_
+     | Sexplib0.Sexp.List [] as sexp__418_ ->
+       Sexplib0.Sexp_conv_error.empty_list_invalid_sum error_source__419_ sexp__418_
+     | sexp__418_ ->
+       Sexplib0.Sexp_conv_error.unexpected_stag error_source__419_ [ "A" ] sexp__418_
      : Sexplib0.Sexp.t -> t)
   ;;
 
   let _ = t_of_sexp
 
   let sexp_of_t =
-    (fun (A l__420_) ->
+    (fun (A l__424_) ->
        Sexplib0.Sexp.List
-         (Sexplib0.Sexp.Atom "A" :: Sexplib0.Sexp_conv.list_map sexp_of_int l__420_)
+         (Sexplib0.Sexp.Atom "A" :: Sexplib0.Sexp_conv.list_map sexp_of_int l__424_)
      : t -> Sexplib0.Sexp.t)
   ;;
 
@@ -1863,42 +1895,42 @@ module Poly_variant_with_sexp_list = struct
   let _ = fun (_ : t) -> ()
 
   let __t_of_sexp__ =
-    (let error_source__427_ = "expansion.ml.Poly_variant_with_sexp_list.t" in
+    (let error_source__431_ = "expansion.ml.Poly_variant_with_sexp_list.t" in
      function
-     | Sexplib0.Sexp.Atom atom__422_ as _sexp__424_ ->
-       (match atom__422_ with
-        | "A" -> Sexplib0.Sexp_conv_error.ptag_takes_args error_source__427_ _sexp__424_
+     | Sexplib0.Sexp.Atom atom__426_ as _sexp__428_ ->
+       (match atom__426_ with
+        | "A" -> Sexplib0.Sexp_conv_error.ptag_takes_args error_source__431_ _sexp__428_
         | _ -> Sexplib0.Sexp_conv_error.no_variant_match ())
-     | Sexplib0.Sexp.List (Sexplib0.Sexp.Atom atom__422_ :: sexp_args__425_) as
-       _sexp__424_ ->
-       (match atom__422_ with
-        | "A" as _tag__426_ ->
-          `A (Sexplib0.Sexp_conv.list_map int_of_sexp sexp_args__425_)
+     | Sexplib0.Sexp.List (Sexplib0.Sexp.Atom atom__426_ :: sexp_args__429_) as
+       _sexp__428_ ->
+       (match atom__426_ with
+        | "A" as _tag__430_ ->
+          `A (Sexplib0.Sexp_conv.list_map int_of_sexp sexp_args__429_)
         | _ -> Sexplib0.Sexp_conv_error.no_variant_match ())
-     | Sexplib0.Sexp.List (Sexplib0.Sexp.List _ :: _) as sexp__423_ ->
-       Sexplib0.Sexp_conv_error.nested_list_invalid_poly_var error_source__427_ sexp__423_
-     | Sexplib0.Sexp.List [] as sexp__423_ ->
-       Sexplib0.Sexp_conv_error.empty_list_invalid_poly_var error_source__427_ sexp__423_
+     | Sexplib0.Sexp.List (Sexplib0.Sexp.List _ :: _) as sexp__427_ ->
+       Sexplib0.Sexp_conv_error.nested_list_invalid_poly_var error_source__431_ sexp__427_
+     | Sexplib0.Sexp.List [] as sexp__427_ ->
+       Sexplib0.Sexp_conv_error.empty_list_invalid_poly_var error_source__431_ sexp__427_
      : Sexplib0.Sexp.t -> t)
   ;;
 
   let _ = __t_of_sexp__
 
   let t_of_sexp =
-    (let error_source__429_ = "expansion.ml.Poly_variant_with_sexp_list.t" in
-     fun sexp__428_ ->
-       try __t_of_sexp__ sexp__428_ with
+    (let error_source__433_ = "expansion.ml.Poly_variant_with_sexp_list.t" in
+     fun sexp__432_ ->
+       try __t_of_sexp__ sexp__432_ with
        | Sexplib0.Sexp_conv_error.No_variant_match ->
-         Sexplib0.Sexp_conv_error.no_matching_variant_found error_source__429_ sexp__428_
+         Sexplib0.Sexp_conv_error.no_matching_variant_found error_source__433_ sexp__432_
      : Sexplib0.Sexp.t -> t)
   ;;
 
   let _ = t_of_sexp
 
   let sexp_of_t =
-    (fun (`A l__430_) ->
+    (fun (`A l__434_) ->
        Sexplib0.Sexp.List
-         (Sexplib0.Sexp.Atom "A" :: Sexplib0.Sexp_conv.list_map sexp_of_int l__430_)
+         (Sexplib0.Sexp.Atom "A" :: Sexplib0.Sexp_conv.list_map sexp_of_int l__434_)
      : t -> Sexplib0.Sexp.t)
   ;;
 
@@ -1913,18 +1945,18 @@ module Record_allowing_extra_fields = struct
   let _ = fun (_ : t) -> ()
 
   let t_of_sexp =
-    (let error_source__432_ = "expansion.ml.Record_allowing_extra_fields.t" in
-     fun x__435_ ->
+    (let error_source__436_ = "expansion.ml.Record_allowing_extra_fields.t" in
+     fun x__439_ ->
        Sexplib0.Sexp_conv_record.record_of_sexp
-         ~caller:error_source__432_
+         ~caller:error_source__436_
          ~fields:
            (Field
               { name = "a"
               ; kind = Required
               ; conv =
-                  (fun x__433_ ->
-                    let _x__434_ = int_of_sexp x__433_ in
-                    fun () -> _x__434_)
+                  (fun x__437_ ->
+                    let _x__438_ = (int_of_sexp [@inlined never]) x__437_ in
+                    fun () -> _x__438_)
               ; rest = Empty
               })
          ~index_of_field:(function
@@ -1934,21 +1966,21 @@ module Record_allowing_extra_fields = struct
          ~create:(fun (a, ()) : t ->
            let a = a () in
            { a })
-         x__435_
+         x__439_
      : Sexplib0.Sexp.t -> t)
   ;;
 
   let _ = t_of_sexp
 
   let sexp_of_t =
-    (fun { a = a__437_ } ->
-       let bnds__436_ = ([] : _ Stdlib.List.t) in
-       let bnds__436_ =
-         let arg__438_ = sexp_of_int a__437_ in
-         (Sexplib0.Sexp.List [ Sexplib0.Sexp.Atom "a"; arg__438_ ] :: bnds__436_
+    (fun { a = a__441_ } ->
+       let bnds__440_ = ([] : _ Stdlib.List.t) in
+       let bnds__440_ =
+         let arg__442_ = sexp_of_int a__441_ in
+         (Sexplib0.Sexp.List [ Sexplib0.Sexp.Atom "a"; arg__442_ ] :: bnds__440_
           : _ Stdlib.List.t)
        in
-       Sexplib0.Sexp.List bnds__436_
+       Sexplib0.Sexp.List bnds__440_
      : t -> Sexplib0.Sexp.t)
   ;;
 
@@ -1963,14 +1995,14 @@ module Opaque = struct
   let _ = fun (_ : t) -> ()
 
   let t_of_sexp =
-    (fun x__440_ -> list_of_sexp Sexplib0.Sexp_conv.opaque_of_sexp x__440_
+    (fun x__444_ -> list_of_sexp Sexplib0.Sexp_conv.opaque_of_sexp x__444_
      : Sexplib0.Sexp.t -> t)
   ;;
 
   let _ = t_of_sexp
 
   let sexp_of_t =
-    (fun x__441_ -> sexp_of_list (Sexplib0.Sexp_conv.sexp_of_opaque : _ -> _) x__441_
+    (fun x__445_ -> sexp_of_list (Sexplib0.Sexp_conv.sexp_of_opaque : _ -> _) x__445_
      : t -> Sexplib0.Sexp.t)
   ;;
 
@@ -2005,26 +2037,26 @@ module Portable = struct
 
   include struct
     let rec t_of_sexp @ portable =
-      (let error_source__443_ = "expansion.ml.Portable.t" in
-       fun x__448_ ->
+      (let error_source__447_ = "expansion.ml.Portable.t" in
+       fun x__452_ ->
          Sexplib0.Sexp_conv_record.record_of_sexp
-           ~caller:error_source__443_
+           ~caller:error_source__447_
            ~fields:
              (Field
                 { name = "u"
                 ; kind = Required
                 ; conv =
-                    (fun x__446_ ->
-                      let _x__447_ = (u_of_sexp int_of_sexp) x__446_ in
-                      fun () -> _x__447_)
+                    (fun x__450_ ->
+                      let _x__451_ = (u_of_sexp int_of_sexp [@inlined never]) x__450_ in
+                      fun () -> _x__451_)
                 ; rest =
                     Field
                       { name = "b"
                       ; kind = Required
                       ; conv =
-                          (fun x__444_ ->
-                            let _x__445_ = int_of_sexp x__444_ in
-                            fun () -> _x__445_)
+                          (fun x__448_ ->
+                            let _x__449_ = (int_of_sexp [@inlined never]) x__448_ in
+                            fun () -> _x__449_)
                       ; rest = Empty
                       }
                 })
@@ -2037,30 +2069,30 @@ module Portable = struct
              let u = u () in
              let b = b () in
              { u; b })
-           x__448_
+           x__452_
        : Sexplib0.Sexp.t -> t)
 
     and u_of_sexp : 'a. ((Sexplib0.Sexp.t -> 'a) -> Sexplib0.Sexp.t -> 'a u) @ portable =
-      let error_source__451_ = "expansion.ml.Portable.u" in
-      fun _of_a__449_ x__456_ ->
+      let error_source__455_ = "expansion.ml.Portable.u" in
+      fun _of_a__453_ x__460_ ->
         Sexplib0.Sexp_conv_record.record_of_sexp
-          ~caller:error_source__451_
+          ~caller:error_source__455_
           ~fields:
             (Field
                { name = "t"
                ; kind = Required
                ; conv =
-                   (fun x__454_ ->
-                     let _x__455_ = t_of_sexp x__454_ in
-                     fun () -> _x__455_)
+                   (fun x__458_ ->
+                     let _x__459_ = (t_of_sexp [@inlined never]) x__458_ in
+                     fun () -> _x__459_)
                ; rest =
                    Field
                      { name = "a"
                      ; kind = Required
                      ; conv =
-                         (fun x__452_ ->
-                           let _x__453_ = _of_a__449_ x__452_ in
-                           fun () -> _x__453_)
+                         (fun x__456_ ->
+                           let _x__457_ = (_of_a__453_ [@inlined never]) x__456_ in
+                           fun () -> _x__457_)
                      ; rest = Empty
                      }
                })
@@ -2073,7 +2105,7 @@ module Portable = struct
             let t = t () in
             let a = a () in
             { t; a })
-          x__456_
+          x__460_
     ;;
 
     let _ = t_of_sexp
@@ -2085,35 +2117,35 @@ module Portable = struct
 
   include struct
     let rec sexp_of_t @ portable =
-      (fun { u = u__458_; b = b__460_ } ->
-         let bnds__457_ = ([] : _ Stdlib.List.t) in
-         let bnds__457_ =
-           let arg__461_ = sexp_of_int b__460_ in
-           (Sexplib0.Sexp.List [ Sexplib0.Sexp.Atom "b"; arg__461_ ] :: bnds__457_
+      (fun { u = u__462_; b = b__464_ } ->
+         let bnds__461_ = ([] : _ Stdlib.List.t) in
+         let bnds__461_ =
+           let arg__465_ = sexp_of_int b__464_ in
+           (Sexplib0.Sexp.List [ Sexplib0.Sexp.Atom "b"; arg__465_ ] :: bnds__461_
             : _ Stdlib.List.t)
          in
-         let bnds__457_ =
-           let arg__459_ = sexp_of_u sexp_of_int u__458_ in
-           (Sexplib0.Sexp.List [ Sexplib0.Sexp.Atom "u"; arg__459_ ] :: bnds__457_
+         let bnds__461_ =
+           let arg__463_ = sexp_of_u sexp_of_int u__462_ in
+           (Sexplib0.Sexp.List [ Sexplib0.Sexp.Atom "u"; arg__463_ ] :: bnds__461_
             : _ Stdlib.List.t)
          in
-         Sexplib0.Sexp.List bnds__457_
+         Sexplib0.Sexp.List bnds__461_
        : t -> Sexplib0.Sexp.t)
 
     and sexp_of_u : 'a. (('a -> Sexplib0.Sexp.t) -> 'a u -> Sexplib0.Sexp.t) @ portable =
-      fun _of_a__462_ { t = t__464_; a = a__466_ } ->
-      let bnds__463_ = ([] : _ Stdlib.List.t) in
-      let bnds__463_ =
-        let arg__467_ = _of_a__462_ a__466_ in
-        (Sexplib0.Sexp.List [ Sexplib0.Sexp.Atom "a"; arg__467_ ] :: bnds__463_
+      fun _of_a__466_ { t = t__468_; a = a__470_ } ->
+      let bnds__467_ = ([] : _ Stdlib.List.t) in
+      let bnds__467_ =
+        let arg__471_ = _of_a__466_ a__470_ in
+        (Sexplib0.Sexp.List [ Sexplib0.Sexp.Atom "a"; arg__471_ ] :: bnds__467_
          : _ Stdlib.List.t)
       in
-      let bnds__463_ =
-        let arg__465_ = sexp_of_t t__464_ in
-        (Sexplib0.Sexp.List [ Sexplib0.Sexp.Atom "t"; arg__465_ ] :: bnds__463_
+      let bnds__467_ =
+        let arg__469_ = sexp_of_t t__468_ in
+        (Sexplib0.Sexp.List [ Sexplib0.Sexp.Atom "t"; arg__469_ ] :: bnds__467_
          : _ Stdlib.List.t)
       in
-      Sexplib0.Sexp.List bnds__463_
+      Sexplib0.Sexp.List bnds__467_
     ;;
 
     let _ = sexp_of_t

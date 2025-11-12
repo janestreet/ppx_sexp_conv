@@ -41,3 +41,4 @@ val is_value_expression : expression -> bool
 val really_recursive_respecting_opaque : rec_flag -> type_declaration list -> rec_flag
 
 val strip_attributes : Ppxlib_jane.Ast_traverse.map
+val include_param_in_combinator : core_type -> bool

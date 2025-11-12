@@ -805,6 +805,21 @@ module Optional = struct
   let%test _ = sexp_of_t__stack t = sexp
 end
 
+module Nullable = struct
+  type t = { nullable : int or_null [@sexp.or_null] }
+  [@@deriving sexp ~stackify, sexp_grammar]
+
+  let sexp = Sexplib.Sexp.of_string "()"
+  let t = { nullable = Null }
+  let%test _ = t_of_sexp sexp = t
+  let%test _ = sexp_of_t t = sexp
+  let%test _ = sexp_of_t__stack t = sexp
+  let sexp = Sexplib.Sexp.of_string "((nullable 5))"
+  let t = { nullable = This 5 }
+  let%test _ = t_of_sexp sexp = t
+  let%test _ = sexp_of_t__stack t = sexp
+end
+
 module Nonempty = struct
   type t =
     { list : int list [@sexp.list]

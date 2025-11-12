@@ -37,7 +37,10 @@ module Sig_generate_sexp_of = struct
   ;;
 
   let mk_type td ~stackify =
-    Ppx_helpers.combinator_type_of_type_declaration td ~f:(type_of_sexp_of ~stackify)
+    Ppx_helpers.combinator_type_of_type_declaration
+      td
+      ~f:(type_of_sexp_of ~stackify)
+      ~phantom_attr:Attrs.phantom
   ;;
 
   let mk_val td ~stackify ~portable =
@@ -52,7 +55,7 @@ module Sig_generate_sexp_of = struct
            (mk_type td ~stackify
             |> Ppx_helpers.Polytype.to_core_type
                  ~universally_quantify_only_if_jkind_annotation:true)
-         ~modalities:(if portable then [ Ppxlib_jane.Modality "portable" ] else [])
+         ~modalities:(if portable then Ppxlib_jane.Shim.Modalities.portable ~loc else [])
          ~prim:[])
   ;;
 
@@ -159,7 +162,8 @@ module Str_generate_sexp_of = struct
            (sexp_of_type_constr
               ~loc
               id
-              (List.map args ~f:(fun tp ->
+              (List.filter args ~f:include_param_in_combinator
+               |> List.map ~f:(fun tp ->
                  Conversion.to_expression
                    ~loc
                    (sexp_of_type ~renaming tp ~stackify)
@@ -561,6 +565,34 @@ module Str_generate_sexp_of = struct
             [%e expr]]
         in
         Lifted.return (patt, expr)
+      | Sexp_or_null tp ->
+        let v = Fresh_name.create "v" ~loc in
+        let bnd = Fresh_name.create "bnd" ~loc in
+        let arg = Fresh_name.create "arg" ~loc in
+        let patt = mk_rec_patt loc patt name fresh in
+        let vname = Fresh_name.expression v in
+        let cnv_expr =
+          Conversion.apply ~loc (sexp_of_type ~renaming tp ~stackify) vname
+        in
+        let expr =
+          [%expr
+            let [%p Fresh_name.pattern bnds] =
+              match [%e Fresh_name.expression fresh] with
+              | Ppx_sexp_conv_lib.Or_null.Null -> [%e Fresh_name.expression bnds]
+              | Ppx_sexp_conv_lib.Or_null.This [%p Fresh_name.pattern v] ->
+                let [%p Fresh_name.pattern arg] = [%e cnv_expr] in
+                let [%p Fresh_name.pattern bnd] =
+                  Sexplib0.Sexp.List
+                    [ Sexplib0.Sexp.Atom [%e estring ~loc name]
+                    ; [%e Fresh_name.expression arg]
+                    ]
+                in
+                ([%e Fresh_name.expression bnd] :: [%e Fresh_name.expression bnds]
+                 : _ Stdlib.List.t)
+            in
+            [%e expr]]
+        in
+        Lifted.return (patt, expr)
       | Sexp_bool ->
         let patt = mk_rec_patt loc patt name fresh in
         let bnd = Fresh_name.create "bnd" ~loc in
@@ -819,7 +851,10 @@ module Str_generate_sexp_of = struct
 
   let sexp_of_td ~types_being_defined td ~stackify ~portable =
     let td = name_type_params_in_td td in
-    let tps = List.map td.ptype_params ~f:Ppxlib_jane.get_type_param_name_and_jkind in
+    let tps =
+      List.filter td.ptype_params ~f:(fun (p, _) -> include_param_in_combinator p)
+      |> List.map ~f:Ppxlib_jane.get_type_param_name_and_jkind
+    in
     let { ptype_name = { txt = type_name; loc = _ }; ptype_loc = loc; _ } = td in
     let renaming = Renaming.of_type_declaration td ~prefix:"_of_" in
     let body =
