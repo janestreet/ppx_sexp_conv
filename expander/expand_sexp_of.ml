@@ -851,9 +851,16 @@ module Str_generate_sexp_of = struct
 
   let sexp_of_td ~types_being_defined td ~stackify ~portable =
     let td = name_type_params_in_td td in
-    let tps =
-      List.filter td.ptype_params ~f:(fun (p, _) -> include_param_in_combinator p)
-      |> List.map ~f:Ppxlib_jane.get_type_param_name_and_jkind
+    let all_tps, relevant_tps =
+      (* [all_tps] is used to generate locally abstract type variables, while
+         [relevant_tps] are only the ones that are used in the function combinator. *)
+      let pairs =
+        List.map td.ptype_params ~f:(fun param ->
+          let is_relevant = include_param_in_combinator (fst param) in
+          let tp = Ppxlib_jane.get_type_param_name_and_jkind param in
+          tp, if is_relevant then Some tp else None)
+      in
+      List.map pairs ~f:fst, List.filter_map pairs ~f:snd
     in
     let { ptype_name = { txt = type_name; loc = _ }; ptype_loc = loc; _ } = td in
     let renaming = Renaming.of_type_declaration td ~prefix:"_of_" in
@@ -864,7 +871,7 @@ module Str_generate_sexp_of = struct
           sexp_of_sum
             ~renaming
             ~types_being_defined
-            (List.map tps ~f:(fun (x, _) -> x.txt))
+            (List.map relevant_tps ~f:(fun (x, _) -> x.txt))
             cds
             ~stackify
         | Ptype_record lds ->
@@ -943,7 +950,7 @@ module Str_generate_sexp_of = struct
       body
       >>| fun body ->
       let patts =
-        List.map tps ~f:(fun (id, _) ->
+        List.map relevant_tps ~f:(fun (id, _) ->
           match Renaming.binding_kind renaming id.txt ~loc:id.loc with
           | Universally_bound name -> Fresh_name.pattern name
           | Existentially_bound -> assert false)
@@ -954,7 +961,7 @@ module Str_generate_sexp_of = struct
     let body = Lifted.let_bind_user_expressions ~loc body in
     let sexp_of =
       let ({ body = typ; vars = _; loc = _ } : Ppx_helpers.Polytype.t) = typ in
-      constrained_function_binding loc td typ ~tps ~func_name ~portable body
+      constrained_function_binding loc td typ ~tps:all_tps ~func_name ~portable body
     in
     sexp_of, func_name
   ;;

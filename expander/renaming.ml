@@ -48,9 +48,9 @@ let binding_kind t var ~loc =
      "y" -> Ok "b"
    v}
 
-   If a variable appears twice in the return type it will map to [Error _]. If a
-   variable cannot be mapped to a parameter of the type declaration, it will map to
-   [Error] (for instance [A : 'a -> 'a list t]).
+   If a variable appears twice in the return type it will map to [Error _]. If a variable
+   cannot be mapped to a parameter of the type declaration, it will map to [Error] (for
+   instance [A : 'a -> 'a list t]).
 
    It returns [original] on user error, to let the typer give the error message *)
 let with_constructor_declaration original cd ~type_parameters:tps =

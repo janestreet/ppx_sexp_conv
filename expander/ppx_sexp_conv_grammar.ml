@@ -291,12 +291,12 @@ let rec grammar_of_type core_type ~rec_flag ~tags_of_doc_comments =
          (match rec_flag with
           | Recursive ->
             (* For recursive grammars, [grammar_of_type] for any type variables is called
-                  inside a [defn]. The variables should therefore be resolved as [Tyvar]
-                  grammars. *)
+               inside a [defn]. The variables should therefore be resolved as [Tyvar]
+               grammars. *)
             tyvar_grammar ~loc (estring ~loc name)
           | Nonrecursive ->
             (* Outside recursive [defn]s, type variables are passed in as function
-                  arguments. *)
+               arguments. *)
             unapplied_type_constr_conv
               ~loc
               ~f:tyvar_grammar_name
@@ -349,7 +349,7 @@ and grammar_of_labeled_tuple ~loc ~rec_flag ~tags_of_doc_comments alist =
           ; tags =
               { defined_using_tags = None; defined_using_tag = [] }
               (* We can use empty comments and tags because it's not possible to attach an
-             attribute to a labeled tuple field. *)
+                 attribute to a labeled tuple field. *)
           ; clause_kind = list_clause ~loc [%expr Cons ([%e field], Empty)]
           }
         ]
@@ -543,8 +543,8 @@ let pattern_of_td td =
    - variant constructors, record constructors, tuple constructors
    - field accesses
    - variable lookups (note: even if the value that the variable points to is not
-     statically allocated, the compiler is still able to statically allocate the
-     new constructors)
+     statically allocated, the compiler is still able to statically allocate the new
+     constructors)
 *)
 let rec grammar_is_statically_allocated expr =
   match

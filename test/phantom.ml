@@ -98,3 +98,48 @@ let%expect_test "also in extensions" =
     y;
   [%expect {| |}]
 ;;
+
+[@@@ocamlformat "disable"]
+
+type 'a[@phantom] variant =
+  | X
+  | Y
+  | Z
+[@@deriving_inline sexp]
+
+let _ = fun (_ : 'a variant) -> ()
+
+let variant_of_sexp : 'a. Sexplib0.Sexp.t -> 'a variant =
+  fun (type a__052_) : (Sexplib0.Sexp.t -> a__052_ variant) ->
+  let error_source__050_ = "phantom.ml.variant" in
+  function
+  | Sexplib0.Sexp.Atom ("x" | "X") -> X
+  | Sexplib0.Sexp.Atom ("y" | "Y") -> Y
+  | Sexplib0.Sexp.Atom ("z" | "Z") -> Z
+  | Sexplib0.Sexp.List (Sexplib0.Sexp.Atom ("x" | "X" | "y" | "Y" | "z" | "Z") :: _) as
+    sexp__051_ -> Sexplib0.Sexp_conv_error.stag_no_args error_source__050_ sexp__051_
+  | Sexplib0.Sexp.List (Sexplib0.Sexp.List _ :: _) as sexp__049_ ->
+    Sexplib0.Sexp_conv_error.nested_list_invalid_sum error_source__050_ sexp__049_
+  | Sexplib0.Sexp.List [] as sexp__049_ ->
+    Sexplib0.Sexp_conv_error.empty_list_invalid_sum error_source__050_ sexp__049_
+  | sexp__049_ ->
+    Sexplib0.Sexp_conv_error.unexpected_stag
+      error_source__050_
+      [ "X"; "Y"; "Z" ]
+      sexp__049_
+;;
+
+let _ = variant_of_sexp
+
+let sexp_of_variant : 'a . 'a variant -> Sexplib0.Sexp.t =
+  fun (type a__054_) ->
+    (function
+     | X -> Sexplib0.Sexp.Atom "X"
+     | Y -> Sexplib0.Sexp.Atom "Y"
+     | Z -> Sexplib0.Sexp.Atom "Z" : a__054_ variant -> Sexplib0.Sexp.t)
+;;
+
+let _ = sexp_of_variant
+
+[@@@end]
+[@@@ocamlformat "enable"]

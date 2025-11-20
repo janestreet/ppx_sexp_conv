@@ -65,54 +65,17 @@ module Sig_sexp = struct
       ]
   ;;
 
-  module Is_value = struct
-    type t =
-      | Value
-      | Maybe_non_value
-
-    let rec of_jkind (jkind : Ppxlib_jane.Shim.jkind_annotation) =
-      match jkind.pjkind_desc with
-      | Pjk_default | Pjk_kind_of _ ->
-        (* [t : _] or [t : kind_of u] *)
-        None
-      | Pjk_abbreviation ("value" | "immediate64" | "immediate") ->
-        (* [t : value] or [t : immediate64] or [t : immediate] *)
-        Some Value
-      | Pjk_abbreviation _ | Pjk_product _ ->
-        (* [t : k] or [t : k1 & k2]*)
-        Some Maybe_non_value
-      | Pjk_mod (jkind, _) | Pjk_with (jkind, _, _) ->
-        (* [t : k mod m] or [t : k with t] *)
-        of_jkind jkind
-    ;;
-  end
-
   let sig_type_decl ~loc ~path ~unboxed (rf, tds) ~stackify ~portable =
     let tds = Ppx_helpers.with_implicit_unboxed_records ~unboxed tds in
     let include_infos =
       match tds with
       | [] | _ :: _ :: _ -> None
       | [ td ] ->
-        let sg_name =
-          let has_jkind_annotation =
-            match Ppxlib_jane.Shim.Type_declaration.extract_jkind_annotation td with
-            | None -> None
-            | Some jkind -> Is_value.of_jkind jkind
-          in
-          let default_is_value : Is_value.t =
-            match
-              Ppxlib_jane.Shim.Type_kind.of_parsetree td.ptype_kind, td.ptype_manifest
-            with
-            | (Ptype_variant _ | Ptype_record _ | Ptype_open), _ | Ptype_abstract, None ->
-              Value (* not necessarily true if the type is [@@unboxed] *)
-            | Ptype_record_unboxed_product _, _ | Ptype_abstract, Some _ ->
-              Maybe_non_value
-          in
-          match Option.value has_jkind_annotation ~default:default_is_value with
-          | Value -> "Sexplib0.Sexpable.S"
-          | Maybe_non_value -> "Sexplib0.Sexpable.S_any"
-        in
-        mk_named_sig ~loc ~sg_name ~handle_polymorphic_variant:false [ td ]
+        mk_named_sig
+          ~loc
+          ~sg_name:"Sexplib0.Sexpable.S"
+          ~handle_polymorphic_variant:false
+          [ td ]
     in
     match include_infos with
     | Some include_infos ->

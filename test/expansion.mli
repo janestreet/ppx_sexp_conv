@@ -19,7 +19,7 @@ module Tuple : sig
   include sig
     [@@@ocaml.warning "-32"]
 
-    include Sexplib0.Sexpable.S_any with type t := t
+    include Sexplib0.Sexpable.S with type t := t
   end
   [@@ocaml.doc "@inline"]
 
@@ -150,7 +150,7 @@ module Nonrecursive : sig
   include sig
     [@@@ocaml.warning "-32"]
 
-    include Sexplib0.Sexpable.S_any with type t := t
+    include Sexplib0.Sexpable.S with type t := t
   end
   [@@ocaml.doc "@inline"]
 
@@ -195,7 +195,7 @@ module Alias : sig
   include sig
     [@@@ocaml.warning "-32"]
 
-    include Sexplib0.Sexpable.S_any with type t := t
+    include Sexplib0.Sexpable.S with type t := t
   end
   [@@ocaml.doc "@inline"]
 
@@ -224,7 +224,7 @@ module Unary : sig
   include sig
     [@@@ocaml.warning "-32"]
 
-    include Sexplib0.Sexpable.S_any1 with type 'a t := 'a t
+    include Sexplib0.Sexpable.S1 with type 'a t := 'a t
   end
   [@@ocaml.doc "@inline"]
 
@@ -237,7 +237,7 @@ module Binary : sig
   include sig
     [@@@ocaml.warning "-32"]
 
-    include Sexplib0.Sexpable.S_any2 with type ('a, 'b) t := ('a, 'b) t
+    include Sexplib0.Sexpable.S2 with type ('a, 'b) t := ('a, 'b) t
   end
   [@@ocaml.doc "@inline"]
 
@@ -250,7 +250,7 @@ module First_order : sig
   include sig
     [@@@ocaml.warning "-32"]
 
-    include Sexplib0.Sexpable.S_any1 with type 'a t := 'a t
+    include Sexplib0.Sexpable.S1 with type 'a t := 'a t
   end
   [@@ocaml.doc "@inline"]
 
@@ -264,7 +264,7 @@ module Second_order : sig
   include sig
     [@@@ocaml.warning "-32"]
 
-    include Sexplib0.Sexpable.S_any2 with type ('a, 'b) t := ('a, 'b) t
+    include Sexplib0.Sexpable.S2 with type ('a, 'b) t := ('a, 'b) t
   end
   [@@ocaml.doc "@inline"]
 
@@ -277,7 +277,7 @@ module Named_arguments : sig
   include sig
     [@@@ocaml.warning "-32"]
 
-    include Sexplib0.Sexpable.S_any with type t := t
+    include Sexplib0.Sexpable.S with type t := t
   end
   [@@ocaml.doc "@inline"]
 
@@ -443,7 +443,7 @@ module Opaque : sig
   include sig
     [@@@ocaml.warning "-32"]
 
-    include Sexplib0.Sexpable.S_any with type t := t
+    include Sexplib0.Sexpable.S with type t := t
   end
   [@@ocaml.doc "@inline"]
 
