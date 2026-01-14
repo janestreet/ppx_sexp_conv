@@ -23,7 +23,7 @@ module%test Exceptions = struct
   (* now local exceptions *)
   let exn (type a) a sexp_of_a =
     let module M = struct
-      exception E of a [@@deriving sexp]
+      exception E of a [@@deriving sexp ~nonportable__magic_unsafe_in_parallel_programs]
     end
     in
     M.E a

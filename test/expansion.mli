@@ -357,6 +357,27 @@ module Record_with_defaults : sig
   [@@@end]
 end
 
+module Record_with_defaults_and_stackify : sig
+  type t =
+    { a : string
+    ; b : string
+    ; c : string
+    ; d : string
+    ; e : string
+    ; f : string
+    }
+  [@@deriving_inline sexp ~stackify]
+
+  include sig
+    [@@@ocaml.warning "-32"]
+
+    include Sexplib0.Sexpable.S__stack with type t := t
+  end
+  [@@ocaml.doc "@inline"]
+
+  [@@@end]
+end
+
 module Record_with_special_types : sig
   type t =
     { a : int option

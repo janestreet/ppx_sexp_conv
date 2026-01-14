@@ -66,7 +66,7 @@ module Sig_sexp = struct
   ;;
 
   let sig_type_decl ~loc ~path ~unboxed (rf, tds) ~stackify ~portable =
-    let tds = Ppx_helpers.with_implicit_unboxed_records ~unboxed tds in
+    let tds = Ppx_helpers.with_implicit_unboxed_records ~loc ~unboxed tds in
     let include_infos =
       match tds with
       | [] | _ :: _ :: _ -> None

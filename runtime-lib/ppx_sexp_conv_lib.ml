@@ -10,3 +10,11 @@ module Sexp = struct
 end
 
 module Sexpable = Sexplib0.Sexpable
+
+type converter = exn -> Sexp.t
+
+external magic_portable_exn_converter
+  :  converter
+  -> converter @ portable
+  @@ portable
+  = "%identity"

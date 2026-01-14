@@ -376,6 +376,7 @@ type t =
   {|
 Line _, characters _-_:
 Error: The value Non_portable.t_of_sexp is nonportable
-       but is expected to be portable because it is used inside a function
+       but is expected to be portable
+       because it is used inside the function at File "errors.mlt", lines 372-376, characters 0-27
        which is expected to be portable.
 |}]

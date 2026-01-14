@@ -8,3 +8,6 @@ val sexp__stack : Deriving.t
 val of_sexp_poly : Deriving.t
 val sexp_poly : Deriving.t
 val sexp_grammar : Deriving.t
+
+(* Useful for other ppxes to link against if expanding into templated code. *)
+val registered : unit

@@ -294,7 +294,7 @@ module Polymorphic_variant_inclusion = struct
         let sexp = Sexplib.Sexp.of_string sexp_as_str in
         assert ([%of_sexp: (string * string, float) t] sexp = t);
         assert ([%sexp_of: (string * string, float) t] t = sexp);
-        assert ([%sexp_of_stack: (string * string, float) t] t = sexp))
+        assert (([%sexp_of: (string * string, float) t] [@alloc stack]) t = sexp))
       cases
   ;;
 
@@ -314,7 +314,7 @@ module Polymorphic_variant_inclusion = struct
         let sexp = Sexplib.Sexp.of_string sexp_as_str in
         assert ([%of_sexp: u] sexp = u);
         assert ([%sexp_of: u] u = sexp);
-        assert ([%sexp_of_stack: u] u = sexp))
+        assert (([%sexp_of: u] [@alloc stack]) u = sexp))
       cases
   ;;
 end
@@ -481,7 +481,7 @@ module Drop_default = struct
   end
 
   module Equal = struct
-    let equal_my_int = equal_int
+    let%template[@mode _ = (local, global)] equal_my_int = equal_int
 
     type nonrec t = t = { a : my_int [@default 2] [@sexp_drop_default.equal] }
     [@@deriving sexp ~stackify, sexp_grammar]
@@ -490,7 +490,7 @@ module Drop_default = struct
   end
 
   module Compare = struct
-    let compare_my_int = compare_int
+    let%template[@mode _ = (local, global)] compare_my_int = compare_int
 
     type nonrec t = t = { a : my_int [@default 2] [@sexp_drop_default.compare] }
     [@@deriving sexp ~stackify, sexp_grammar]
@@ -649,7 +649,7 @@ module Gadt = struct
   type 'a s = Packed : 'a s [@@deriving sexp_of ~stackify]
 
   let%test_unit _ = is_eq ([%sexp_of: int s] Packed) "Packed"
-  let%test_unit _ = is_eq_local ([%sexp_of_stack: int s] Packed) "Packed"
+  let%test_unit _ = is_eq_local (([%sexp_of: int s] [@alloc stack]) Packed) "Packed"
 
   (* two kind of existential variables *)
   type 'a t = Packed : 'a * _ * ('b[@sexp.opaque]) -> 'a t [@warning "-3"]
@@ -660,20 +660,25 @@ module Gadt = struct
   ;;
 
   let%test_unit _ =
-    is_eq_local ([%sexp_of_stack: int t] (Packed (2, "asd", 1.))) "(Packed 2 _ <opaque>)"
+    is_eq_local
+      (([%sexp_of: int t] [@alloc stack]) (Packed (2, "asd", 1.)))
+      "(Packed 2 _ <opaque>)"
   ;;
 
   (* plain type with argument *)
   type 'a u = A : 'a -> 'a u [@@deriving sexp_of ~stackify]
 
   let%test_unit _ = is_eq ([%sexp_of: int u] (A 2)) "(A 2)"
-  let%test_unit _ = is_eq_local ([%sexp_of_stack: int u] (A 2)) "(A 2)"
+  let%test_unit _ = is_eq_local (([%sexp_of: int u] [@alloc stack]) (A 2)) "(A 2)"
 
   (* recursive *)
   type v = A : v option -> v [@@deriving sexp_of ~stackify]
 
   let%test_unit _ = is_eq ([%sexp_of: v] (A (Some (A None)))) "(A((A())))"
-  let%test_unit _ = is_eq_local ([%sexp_of_stack: v] (A (Some (A None)))) "(A((A())))"
+
+  let%test_unit _ =
+    is_eq_local (([%sexp_of: v] [@alloc stack]) (A (Some (A None)))) "(A((A())))"
+  ;;
 
   (* implicit existential variable *)
   type w = A : 'a * int * ('a -> string) -> w [@@deriving sexp_of ~stackify]
@@ -681,26 +686,31 @@ module Gadt = struct
   let%test_unit _ = is_eq ([%sexp_of: w] (A (1., 2, string_of_float))) "(A _ 2 <fun>)"
 
   let%test_unit _ =
-    is_eq_local ([%sexp_of_stack: w] (A (1., 2, string_of_float))) "(A _ 2 <fun>)"
+    is_eq_local
+      (([%sexp_of: w] [@alloc stack]) (A (1., 2, string_of_float)))
+      "(A _ 2 <fun>)"
   ;;
 
   (* tricky variable naming *)
   type 'a x = A : 'a -> 'b x [@@deriving sexp_of ~stackify]
 
   let%test_unit _ = is_eq ([%sexp_of: int x] (A 1.)) "(A _)"
-  let%test_unit _ = is_eq_local ([%sexp_of_stack: int x] (A 1.)) "(A _)"
+  let%test_unit _ = is_eq_local (([%sexp_of: int x] [@alloc stack]) (A 1.)) "(A _)"
 
   (* interaction with inline record *)
   type _ x2 = A : { x : 'c } -> 'c x2 [@@deriving sexp_of ~stackify]
 
   let%test_unit _ = is_eq ([%sexp_of: int x2] (A { x = 1 })) "(A (x 1))"
-  let%test_unit _ = is_eq_local ([%sexp_of_stack: int x2] (A { x = 1 })) "(A (x 1))"
+
+  let%test_unit _ =
+    is_eq_local (([%sexp_of: int x2] [@alloc stack]) (A { x = 1 })) "(A (x 1))"
+  ;;
 
   (* unused but colliding variables *)
   type (_, _) y = A : ('a, 'a) y [@@deriving sexp_of ~stackify]
 
   let%test_unit _ = is_eq ([%sexp_of: (int, int) y] A) "A"
-  let%test_unit _ = is_eq_local ([%sexp_of_stack: (int, int) y] A) "A"
+  let%test_unit _ = is_eq_local (([%sexp_of: (int, int) y] [@alloc stack]) A) "A"
 
   (* making sure we're not reversing parameters *)
   type (_, _) z = A : ('a * 'b) -> ('a, 'b) z [@@deriving sexp_of ~stackify]
@@ -708,21 +718,24 @@ module Gadt = struct
   let%test_unit _ = is_eq ([%sexp_of: (int, string) z] (A (1, "a"))) "(A (1 a))"
 
   let%test_unit _ =
-    is_eq_local ([%sexp_of_stack: (int, string) z] (A (1, "a"))) "(A (1 a))"
+    is_eq_local (([%sexp_of: (int, string) z] [@alloc stack]) (A (1, "a"))) "(A (1 a))"
   ;;
 
   (* interaction with universal quantifiers *)
   type _ z2 = A : { x : 'c. 'c option } -> 'c z2 [@@deriving sexp_of ~stackify]
 
   let%test_unit _ = is_eq ([%sexp_of: unit z2] (A { x = None })) "(A (x ()))"
-  let%test_unit _ = is_eq_local ([%sexp_of_stack: unit z2] (A { x = None })) "(A (x ()))"
+
+  let%test_unit _ =
+    is_eq_local (([%sexp_of: unit z2] [@alloc stack]) (A { x = None })) "(A (x ()))"
+  ;;
 end
 
 module Anonymous_variable = struct
   type _ t = int [@@deriving sexp ~stackify, sexp_grammar]
 
   let%test _ = [%sexp_of: _ t] 2 = Atom "2"
-  let%test _ = [%sexp_of_stack: _ t] 2 = Atom "2"
+  let%test _ = ([%sexp_of: _ t] [@alloc stack]) 2 = Atom "2"
   let%test _ = [%of_sexp: _ t] (Sexplib.Sexp.of_string "2") = 2
 
   (* making sure we don't generate signatures like (_ -> Sexp.t) -> _ t -> Sexp.t which

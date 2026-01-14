@@ -59,8 +59,8 @@ module Sig_generate_sexp_of = struct
          ~prim:[])
   ;;
 
-  let mk_sig ~loc:_ ~path:_ ~unboxed (_rf, tds) ~stackify ~portable =
-    let tds = Ppx_helpers.with_implicit_unboxed_records ~unboxed tds in
+  let mk_sig ~loc ~path:_ ~unboxed (_rf, tds) ~stackify ~portable =
+    let tds = Ppx_helpers.with_implicit_unboxed_records ~loc ~unboxed tds in
     List.map tds ~f:(mk_val ~stackify ~portable)
   ;;
 
@@ -489,7 +489,9 @@ module Str_generate_sexp_of = struct
             ~attr_name:"sexp_drop_default.compare"
             ~loc
             tp;
-          [%expr [%compare.equal: [%t tp]]])
+          if stackify
+          then [%expr [%compare.equal__local: [%t tp]]]
+          else [%expr [%compare.equal: [%t tp]]])
         |> Lifted.return
       | Equal ->
         inspect_value (fun loc ->
@@ -498,7 +500,7 @@ module Str_generate_sexp_of = struct
             ~attr_name:"sexp_drop_default.equal"
             ~loc
             tp;
-          [%expr [%equal: [%t tp]]])
+          if stackify then [%expr [%equal__local: [%t tp]]] else [%expr [%equal: [%t tp]]])
         |> Lifted.return
     in
     is_empty >>| sexp_of_record_field ~renaming ~bnds patt expr name tp ?sexp_of ~stackify
@@ -511,6 +513,7 @@ module Str_generate_sexp_of = struct
     flds
     ~wrap_expr
     ~stackify
+    ~use_local_arguments_in_custom_default_functions
     ~unboxed
     =
     let bnds = Fresh_name.create "bnds" ~loc in
@@ -536,7 +539,12 @@ module Str_generate_sexp_of = struct
       let name = ld.pld_name.txt in
       let loc = ld.pld_name.loc in
       let fresh = Fresh_name.create name ~loc in
-      match Record_field_attrs.Sexp_of.create ~loc ld with
+      match
+        Record_field_attrs.Sexp_of.create
+          ~loc
+          ~stackify:use_local_arguments_in_custom_default_functions
+          ld
+      with
       | Sexp_option tp ->
         let v = Fresh_name.create "v" ~loc in
         let bnd = Fresh_name.create "bnd" ~loc in
@@ -747,6 +755,7 @@ module Str_generate_sexp_of = struct
     constr_str
     args
     ~stackify
+    ~use_local_arguments_in_custom_default_functions
     =
     match args with
     | Pcstr_record lds ->
@@ -758,6 +767,7 @@ module Str_generate_sexp_of = struct
         lds
         ~wrap_expr:(fun expr -> [%expr Sexplib0.Sexp.List ([%e cnstr_expr] :: [%e expr])])
         ~stackify
+        ~use_local_arguments_in_custom_default_functions
         ~unboxed:false
       >>| fun (patt, expr) -> ppat_construct ~loc constr_lid (Some patt) --> expr
     | Pcstr_tuple pcd_args ->
@@ -823,7 +833,14 @@ module Str_generate_sexp_of = struct
          |> Lifted.return)
   ;;
 
-  let sexp_of_sum ~types_being_defined ~renaming tps cds ~stackify =
+  let sexp_of_sum
+    ~types_being_defined
+    ~renaming
+    tps
+    cds
+    ~stackify
+    ~use_local_arguments_in_custom_default_functions
+    =
     List.map cds ~f:(fun cd ->
       let renaming =
         Renaming.with_constructor_declaration renaming ~type_parameters:tps cd
@@ -839,7 +856,8 @@ module Str_generate_sexp_of = struct
         constr_lid
         constr_str
         cd.pcd_args
-        ~stackify)
+        ~stackify
+        ~use_local_arguments_in_custom_default_functions)
     |> Lifted.all
     >>| Conversion.of_lambda
   ;;
@@ -849,7 +867,13 @@ module Str_generate_sexp_of = struct
 
   (* Generate code from type definitions *)
 
-  let sexp_of_td ~types_being_defined td ~stackify ~portable =
+  let sexp_of_td
+    ~types_being_defined
+    td
+    ~stackify
+    ~use_local_arguments_in_custom_default_functions
+    ~portable
+    =
     let td = name_type_params_in_td td in
     let all_tps, relevant_tps =
       (* [all_tps] is used to generate locally abstract type variables, while
@@ -874,6 +898,7 @@ module Str_generate_sexp_of = struct
             (List.map relevant_tps ~f:(fun (x, _) -> x.txt))
             cds
             ~stackify
+            ~use_local_arguments_in_custom_default_functions
         | Ptype_record lds ->
           sexp_of_label_declaration_list
             ~renaming
@@ -882,6 +907,7 @@ module Str_generate_sexp_of = struct
             ~types_being_defined
             ~wrap_expr:(fun expr -> [%expr Sexplib0.Sexp.List [%e expr]])
             ~stackify
+            ~use_local_arguments_in_custom_default_functions
             ~unboxed:false
           >>| fun (patt, expr) -> Conversion.of_lambda [ patt --> expr ]
         | Ptype_record_unboxed_product lds ->
@@ -892,6 +918,7 @@ module Str_generate_sexp_of = struct
             ~types_being_defined
             ~wrap_expr:(fun expr -> [%expr Sexplib0.Sexp.List [%e expr]])
             ~stackify
+            ~use_local_arguments_in_custom_default_functions
             ~unboxed:true
           >>| fun (patt, expr) -> Conversion.of_lambda [ patt --> expr ]
         | Ptype_open ->
@@ -968,7 +995,7 @@ module Str_generate_sexp_of = struct
 
   let sexp_of_tds ~loc ~path:_ ~unboxed (rec_flag, tds) ~stackify ~portable =
     let rec_flag = really_recursive_respecting_opaque rec_flag tds in
-    let tds = Ppx_helpers.with_implicit_unboxed_records ~unboxed tds in
+    let tds = Ppx_helpers.with_implicit_unboxed_records ~loc ~unboxed tds in
     let (types_being_defined : Types_being_defined.t) =
       match rec_flag with
       | Nonrecursive -> Nonrec
@@ -977,6 +1004,7 @@ module Str_generate_sexp_of = struct
           (String.Set.of_list
              (List.map tds ~f:(fun td -> Ppx_helpers.mangle_unboxed td.ptype_name.txt)))
     in
+    let use_local_arguments_in_custom_default_functions = stackify in
     let stackify =
       match stackify with
       | false -> [ false ]
@@ -985,7 +1013,14 @@ module Str_generate_sexp_of = struct
     let bindings_and_names =
       List.map stackify ~f:(fun stackify ->
         let bindings_and_names =
-          List.map tds ~f:(sexp_of_td ~types_being_defined ~stackify ~portable)
+          List.map
+            tds
+            ~f:
+              (sexp_of_td
+                 ~types_being_defined
+                 ~stackify
+                 ~use_local_arguments_in_custom_default_functions
+                 ~portable)
         in
         let bindings = List.map bindings_and_names ~f:fst in
         let names = List.map bindings_and_names ~f:snd in
@@ -1009,7 +1044,7 @@ module Str_generate_sexp_of = struct
     else bindings
   ;;
 
-  let sexp_of_exn ~loc:_ ~path ec =
+  let sexp_of_exn ~loc:_ ~path ~nonportable_magic ec =
     let renaming = Renaming.without_type () in
     let get_full_cnstr str = path ^ "." ^ str in
     let loc = ec.ptyexn_loc in
@@ -1030,16 +1065,24 @@ module Str_generate_sexp_of = struct
           (estring ~loc (get_full_cnstr cnstr.txt))
           extension_constructor_kind
           ~stackify:false
+          ~use_local_arguments_in_custom_default_functions:false
         >>| fun converter ->
         let assert_false = ppat_any ~loc --> [%expr assert false] in
+        let converter =
+          Conversion.to_expression
+            ~loc
+            (Conversion.of_lambda [ converter; assert_false ])
+            ~stackify:false
+        in
+        let converter_maybe_magic =
+          if nonportable_magic
+          then [%expr Ppx_sexp_conv_lib.magic_portable_exn_converter [%e converter]]
+          else converter
+        in
         [%expr
           Sexplib0.Sexp_conv.Exn_converter.add
             [%extension_constructor [%e pexp_construct ~loc constr_lid None]]
-            [%e
-              Conversion.to_expression
-                ~loc
-                (Conversion.of_lambda [ converter; assert_false ])
-                ~stackify:false]]
+            [%e converter_maybe_magic]]
       | { pext_kind = Pext_decl (_, _, Some _); _ } ->
         Location.raise_errorf ~loc "sexp_of_exn/:"
       | { pext_kind = Pext_rebind _; _ } ->

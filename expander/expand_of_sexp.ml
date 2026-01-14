@@ -69,8 +69,8 @@ module Sig_generate_of_sexp = struct
       ]
   ;;
 
-  let mk_sig ~poly ~loc:_ ~path:_ ~unboxed (_rf, tds) ~portable =
-    let tds = Ppx_helpers.with_implicit_unboxed_records ~unboxed tds in
+  let mk_sig ~poly ~loc ~path:_ ~unboxed (_rf, tds) ~portable =
+    let tds = Ppx_helpers.with_implicit_unboxed_records ~loc ~unboxed tds in
     List.concat_map tds ~f:(sig_of_td ~poly ~portable)
   ;;
 end
@@ -1418,7 +1418,7 @@ module Str_generate_of_sexp = struct
   (* Generate code from type definitions *)
   let tds_of_sexp ~loc ~poly ~path ~portable ~unboxed (rec_flag, tds) =
     let tds = List.map ~f:name_type_params_in_td tds in
-    let tds = Ppx_helpers.with_implicit_unboxed_records ~unboxed tds in
+    let tds = Ppx_helpers.with_implicit_unboxed_records ~loc ~unboxed tds in
     let typevars td =
       List.fold_left td.ptype_params ~init:String.Map.empty ~f:(fun map param ->
         let name = get_type_param_name param in
