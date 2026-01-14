@@ -74,7 +74,7 @@ module Sexp_of = struct
     match stackify with
     | None -> "sexp_of"
     | Some For_deriving -> "sexp_of__stack"
-    | Some For_extension -> "sexp_of_stack"
+    | Some For_extension -> "sexp_of__stack"
   ;;
 
   let str_type_decl =
@@ -91,7 +91,12 @@ module Sexp_of = struct
          E.str_type_decl ~loc ~path ~unboxed tds ~stackify:true ~portable)
   ;;
 
-  let str_exception = Deriving.Generator.make_noarg E.str_exception
+  let str_exception =
+    Deriving.Generator.make
+      Deriving.Args.(empty +> flag "nonportable__magic_unsafe_in_parallel_programs")
+      (fun ~loc ~path ec nonportable_magic ->
+        E.str_exception ~loc ~path ~nonportable_magic ec)
+  ;;
 
   let sig_type_decl =
     Deriving.Generator.make
@@ -273,3 +278,4 @@ let sexp__stack =
 ;;
 
 let sexp_poly = Deriving.add_alias "sexp_poly" [ sexp_of; of_sexp_poly ]
+let registered = ()

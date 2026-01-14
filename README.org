@@ -242,7 +242,6 @@ are several ways to specify the equality function:
       b : u [@default u0] [@sexp_drop_default.compare]; (* uses [%compare.equal: u] *)
       c : u [@default u0] [@sexp_drop_default.equal]; (* uses [%equal: u] *)
       d : u [@default u0] [@sexp_drop_default.sexp]; (* compares sexp representations *)
-      e : u [@default u0] [@sexp_drop_default]; (* deprecated. uses polymorphic equality. *)
     } [@@deriving sexp]
 #+end_src
 

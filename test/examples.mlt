@@ -22,7 +22,7 @@ Line _, characters _-_:
 Error: ppx_sexp_conv: unbound type variable 'a
 |}]
 
-let _ = [%sexp_of_stack: 'a]
+let _ = [%sexp_of: 'a] [@alloc stack]
 
 [%%expect
   {|
@@ -45,7 +45,7 @@ end
 [%%expect {| |}]
 
 module type S = sig
-  val x : [%sexp_of_stack: 'a]
+  val x : ([%sexp_of: 'a][@alloc stack])
 end
 
 [%%expect {| |}]

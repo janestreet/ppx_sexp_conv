@@ -31,7 +31,12 @@ module Sexp_of : sig
     -> portable:bool
     -> structure
 
-  val str_exception : loc:Location.t -> path:string -> type_exception -> structure
+  val str_exception
+    :  loc:Location.t
+    -> path:string
+    -> nonportable_magic:bool
+    -> type_exception
+    -> structure
 end
 
 module Of_sexp : sig

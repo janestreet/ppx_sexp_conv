@@ -36,6 +36,15 @@ module Str_generate_sexp_of : sig
     -> portable:bool
     -> structure_item list
 
-  (** Derive a [sexp_of] implementation for an exception declaration. *)
-  val sexp_of_exn : loc:location -> path:string -> type_exception -> structure_item list
+  (** Derive a [sexp_of] implementation for an exception declaration.
+
+      If passed [~nonportable_magic:true], adds [Obj.magic_portable] around the generated
+      function before registering it with [Sexplib0]. This happens when the user derives
+      [[@@deriving sexp ~nonportable__magic_unsafe_in_parallel_programs]]. *)
+  val sexp_of_exn
+    :  loc:location
+    -> path:string
+    -> nonportable_magic:bool
+    -> type_exception
+    -> structure_item list
 end

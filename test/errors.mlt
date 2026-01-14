@@ -306,7 +306,7 @@ type t = exn [@@deriving sexp_of ~stackify]
   {|
 Line _, characters _-_:
 Error: Unbound value sexp_of_exn__stack
-Hint: Did you mean sexp_of_int__stack or sexp_of_ref__stack?
+Hint: Did you mean sexp_of_int__stack, sexp_of_many__stack or sexp_of_ref__stack?
 |}]
 
 let [%sexp_of: M.t] = ()
@@ -358,8 +358,7 @@ Error: Only type variables and constructors are allowed here (e.g. ['a], [t],
        ['a t], or [M(X).t]).
 |}]
 
-(* Passing ~portable to sexp can give you better error messages in
-   structure context.
+(* Passing ~portable to sexp can give you better error messages in structure context.
 *)
 
 module Non_portable : sig
@@ -377,6 +376,7 @@ type t =
   {|
 Line _, characters _-_:
 Error: The value Non_portable.t_of_sexp is nonportable
-       but is expected to be portable because it is used inside a function
+       but is expected to be portable
+       because it is used inside the function at File "errors.mlt", lines 372-376, characters 0-27
        which is expected to be portable.
 |}]

@@ -76,18 +76,24 @@ let lift_default ~loc ld expr =
   Lifted.create ~loc ~prefix:"default" ~ty expr
 ;;
 
-let lift_drop_default ~loc ld expr =
+let lift_drop_default ~loc ~stackify ld expr =
   let ty = strip_attributes#core_type ld.pld_type in
-  Lifted.create
-    ~loc
-    ~prefix:"drop_default"
-    ~ty:[%type: [%t ty] -> [%t ty] -> Stdlib.Bool.t]
-    expr
+  let ty =
+    match stackify with
+    | false -> [%type: [%t ty] -> [%t ty] -> Stdlib.Bool.t]
+    | true -> [%type: [%t ty] -> [%t ty] -> Stdlib.Bool.t]
+  in
+  Lifted.create ~loc ~prefix:"drop_default" ~ty expr
 ;;
 
-let lift_drop_if ~loc ld expr =
+let lift_drop_if ~loc ~stackify ld expr =
   let ty = strip_attributes#core_type ld.pld_type in
-  Lifted.create ~loc ~prefix:"drop_if" ~ty:[%type: [%t ty] -> Stdlib.Bool.t] expr
+  let ty =
+    match stackify with
+    | false -> [%type: [%t ty] -> Stdlib.Bool.t]
+    | true -> [%type: [%t ty] -> Stdlib.Bool.t]
+  in
+  Lifted.create ~loc ~prefix:"drop_if" ~ty expr
 ;;
 
 module Of_sexp = struct
@@ -120,15 +126,16 @@ module Sexp_of = struct
     | Drop_if of expression Lifted.t
     | Keep
 
-  let create ~loc ld =
+  let create ~loc ~stackify ld =
     create
       ~loc
       [ get_attribute drop_default ~f:(fun { to_lift = e } ->
-          Drop_default (Func (lift_drop_default ~loc ld e)))
+          Drop_default (Func (lift_drop_default ~loc ~stackify ld e)))
       ; get_attribute drop_default_equal ~f:(fun () -> Drop_default Equal)
       ; get_attribute drop_default_compare ~f:(fun () -> Drop_default Compare)
       ; get_attribute drop_default_sexp ~f:(fun () -> Drop_default Sexp)
-      ; get_attribute drop_if ~f:(fun { to_lift = x } -> Drop_if (lift_drop_if ~loc ld x))
+      ; get_attribute drop_if ~f:(fun { to_lift = x } ->
+          Drop_if (lift_drop_if ~loc ~stackify ld x))
       ]
       ld
       ~if_no_attribute:Keep

@@ -10,8 +10,8 @@ module%test Exceptions = struct
       if sexp_as_string <> string then failwith sexp_as_string
   ;;
 
-  (* first global exceptions, checking different arities since they
-       don't have the same representation *)
+  (* first global exceptions, checking different arities since they don't have the same
+     representation *)
   exception Arg0 [@@deriving sexp]
   exception Arg1 of int [@@deriving sexp]
   exception Arg2 of int * int [@@deriving sexp]
@@ -23,7 +23,7 @@ module%test Exceptions = struct
   (* now local exceptions *)
   let exn (type a) a sexp_of_a =
     let module M = struct
-      exception E of a [@@deriving sexp]
+      exception E of a [@@deriving sexp ~nonportable__magic_unsafe_in_parallel_programs]
     end
     in
     M.E a

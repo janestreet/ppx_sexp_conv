@@ -34,7 +34,7 @@ module Sexp_of : sig
     | Drop_if of expression Lifted.t
     | Keep
 
-  val create : loc:Location.t -> label_declaration -> t Generic.t
+  val create : loc:Location.t -> stackify:bool -> label_declaration -> t Generic.t
 end
 
 (** Lift the contents of [Attrs.default]. *)
