@@ -456,7 +456,7 @@ module Drop_default = struct
   open! Base
   open Expect_test_helpers_base
 
-  type t = { a : int } [@@deriving equal]
+  type t = { a : int } [@@deriving equal ~localize]
 
   let test ?cr t_of_sexp sexp_of_t sexp_of_t__stack =
     let ( = ) = Sexp.equal in
@@ -473,6 +473,9 @@ module Drop_default = struct
 
   type my_int = int [@@deriving sexp ~stackify, sexp_grammar]
 
+  let%template[@mode _ = local] equal_my_int = equal_int
+  let%template[@mode _ = local] compare_my_int = compare_int
+
   module Poly = struct
     type nonrec t = t = { a : my_int [@default 2] [@sexp_drop_default Poly.( = )] }
     [@@deriving sexp ~stackify, sexp_grammar]
@@ -481,18 +484,28 @@ module Drop_default = struct
   end
 
   module Equal = struct
-    let%template[@mode _ = (local, global)] equal_my_int = equal_int
-
-    type nonrec t = t = { a : my_int [@default 2] [@sexp_drop_default.equal] }
+    type nonrec t = t = { a : my_int [@default 2] [@sexp_drop_default.equal.local] }
     [@@deriving sexp ~stackify, sexp_grammar]
 
     let%test_unit _ = test t_of_sexp sexp_of_t sexp_of_t__stack
   end
 
   module Compare = struct
-    let%template[@mode _ = (local, global)] compare_my_int = compare_int
+    type nonrec t = t = { a : my_int [@default 2] [@sexp_drop_default.compare.local] }
+    [@@deriving sexp ~stackify, sexp_grammar]
 
-    type nonrec t = t = { a : my_int [@default 2] [@sexp_drop_default.compare] }
+    let%test_unit _ = test t_of_sexp sexp_of_t sexp_of_t__stack
+  end
+
+  module Equal_local = struct
+    type nonrec t = t = { a : my_int [@default 2] [@sexp_drop_default.equal.local] }
+    [@@deriving sexp ~stackify, sexp_grammar]
+
+    let%test_unit _ = test t_of_sexp sexp_of_t sexp_of_t__stack
+  end
+
+  module Compare_local = struct
+    type nonrec t = t = { a : my_int [@default 2] [@sexp_drop_default.compare.local] }
     [@@deriving sexp ~stackify, sexp_grammar]
 
     let%test_unit _ = test t_of_sexp sexp_of_t sexp_of_t__stack

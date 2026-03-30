@@ -16,8 +16,9 @@ let portable_and_unboxed_args () =
 
 let nonportable_arg () = Deriving.Args.(empty +> flag "nonportable")
 
-let stackify_portable_unboxed_args () =
-  Deriving.Args.(empty +> flag "stackify" +> flag "portable" +> flag "unboxed")
+let stackify_portable_unboxed_local_args () =
+  Deriving.Args.(
+    empty +> flag "stackify" +> flag "portable" +> flag "unboxed" +> flag "localize")
 ;;
 
 module Sexp_grammar = struct
@@ -70,25 +71,39 @@ module Sexp_of = struct
     | For_deriving
     | For_extension
 
-  let name ~stackify =
-    match stackify with
-    | None -> "sexp_of"
-    | Some For_deriving -> "sexp_of__stack"
-    | Some For_extension -> "sexp_of__stack"
+  type localize_kind = For_deriving
+
+  type kind =
+    | Default
+    | Stackify of stackify_kind
+    | Localize of localize_kind
+
+  let name = function
+    | Default -> "sexp_of"
+    | Stackify For_deriving -> "sexp_of__stack"
+    | Stackify For_extension -> "sexp_of__stack"
+    | Localize For_deriving -> "sexp_of__local"
   ;;
 
   let str_type_decl =
     Deriving.Generator.make
-      (stackify_portable_unboxed_args ())
-      (fun ~loc ~path tds stackify portable unboxed ->
-         E.str_type_decl ~loc ~path ~unboxed tds ~stackify ~portable)
+      (stackify_portable_unboxed_local_args ())
+      (fun ~loc ~path tds stackify portable unboxed localize ->
+         E.str_type_decl ~loc ~path ~unboxed tds ~stackify ~portable ~localize)
   ;;
 
   let str_type_decl_stack =
     Deriving.Generator.make
       (portable_and_unboxed_args ())
       (fun ~loc ~path tds portable unboxed ->
-         E.str_type_decl ~loc ~path ~unboxed tds ~stackify:true ~portable)
+         E.str_type_decl ~loc ~path ~unboxed tds ~stackify:true ~portable ~localize:false)
+  ;;
+
+  let str_type_decl_local =
+    Deriving.Generator.make
+      (portable_and_unboxed_args ())
+      (fun ~loc ~path tds portable unboxed ->
+         E.str_type_decl ~loc ~path ~unboxed tds ~stackify:false ~portable ~localize:true)
   ;;
 
   let str_exception =
@@ -100,23 +115,30 @@ module Sexp_of = struct
 
   let sig_type_decl =
     Deriving.Generator.make
-      (stackify_portable_unboxed_args ())
-      (fun ~loc ~path tds stackify portable unboxed ->
-         E.sig_type_decl ~loc ~path ~unboxed tds ~stackify ~portable)
+      (stackify_portable_unboxed_local_args ())
+      (fun ~loc ~path tds stackify portable unboxed localize ->
+         E.sig_type_decl ~loc ~path ~unboxed tds ~stackify ~portable ~localize)
   ;;
 
   let sig_type_decl_stack =
     Deriving.Generator.make
       (portable_and_unboxed_args ())
       (fun ~loc ~path tds portable unboxed ->
-         E.sig_type_decl ~loc ~path ~unboxed tds ~stackify:true ~portable)
+         E.sig_type_decl ~loc ~path ~unboxed tds ~stackify:true ~portable ~localize:false)
+  ;;
+
+  let sig_type_decl_local =
+    Deriving.Generator.make
+      (portable_and_unboxed_args ())
+      (fun ~loc ~path tds portable unboxed ->
+         E.sig_type_decl ~loc ~path ~unboxed tds ~stackify:false ~portable ~localize:true)
   ;;
 
   let sig_exception = Deriving.Generator.make_noarg E.sig_exception
 
   let deriver =
     Deriving.add
-      (name ~stackify:None)
+      (name Default)
       ~str_type_decl
       ~str_exception
       ~sig_type_decl
@@ -125,37 +147,46 @@ module Sexp_of = struct
 
   let deriver_stack =
     Deriving.add
-      (name ~stackify:(Some For_deriving))
+      (name (Stackify For_deriving))
       ~str_type_decl:str_type_decl_stack
       ~sig_type_decl:sig_type_decl_stack
   ;;
 
+  let deriver_local =
+    Deriving.add
+      (name (Localize For_deriving))
+      ~str_type_decl:str_type_decl_local
+      ~sig_type_decl:sig_type_decl_local
+  ;;
+
   let () =
-    List.iter [ None; Some For_extension ] ~f:(fun stackify ->
-      register_extension (name ~stackify) (fun ~loc:_ ~path:_ ctyp ->
-        E.core_type ctyp ~stackify:(Option.is_some stackify)))
+    List.iter
+      [ Default, false; Stackify For_extension, true ]
+      ~f:(fun (kind, stackify) ->
+        register_extension (name kind) (fun ~loc:_ ~path:_ ctyp ->
+          E.core_type ctyp ~stackify))
   ;;
 
   let () =
     let rules =
-      List.concat_map [ None; Some For_extension ] ~f:(fun stackify ->
-        [ Context_free.Rule.extension
-            (Extension.declare
-               (name ~stackify)
-               Core_type
-               Ast_pattern.(ptyp __)
-               (fun ~loc:_ ~path:_ ty ->
-                 E.type_extension ty ~stackify:(Option.is_some stackify)))
-        ; Context_free.Rule.extension
-            (Extension.declare
-               (name ~stackify)
-               Pattern
-               Ast_pattern.(ptyp __)
-               (fun ~loc:_ ~path:_ ty ->
-                 E.pattern_extension ty ~stackify:(Option.is_some stackify)))
-        ])
+      List.concat_map
+        [ Default, false; Stackify For_extension, true ]
+        ~f:(fun (kind, stackify) ->
+          [ Context_free.Rule.extension
+              (Extension.declare
+                 (name kind)
+                 Core_type
+                 Ast_pattern.(ptyp __)
+                 (fun ~loc:_ ~path:_ ty -> E.type_extension ty ~stackify ~localize:false))
+          ; Context_free.Rule.extension
+              (Extension.declare
+                 (name kind)
+                 Pattern
+                 Ast_pattern.(ptyp __)
+                 (fun ~loc:_ ~path:_ ty -> E.pattern_extension ty ~stackify))
+          ])
     in
-    Driver.register_transformation (name ~stackify:None) ~rules
+    Driver.register_transformation (name Default) ~rules
   ;;
 end
 
@@ -224,6 +255,7 @@ end
 
 let sexp_of = Sexp_of.deriver
 let sexp_of__stack = Sexp_of.deriver_stack
+let sexp_of__local = Sexp_of.deriver_local
 let of_sexp = Of_sexp.deriver
 let of_sexp_poly = Of_sexp_poly.deriver
 let sexp_grammar = Sexp_grammar.deriver
@@ -233,16 +265,23 @@ module Sexp_in_sig = struct
 
   let sig_type_decl =
     Deriving.Generator.make
-      (stackify_portable_unboxed_args ())
-      (fun ~loc ~path tds stackify portable unboxed ->
-         E.sig_type_decl ~loc ~path ~unboxed tds ~stackify ~portable)
+      (stackify_portable_unboxed_local_args ())
+      (fun ~loc ~path tds stackify portable unboxed localize ->
+         E.sig_type_decl ~loc ~path ~unboxed tds ~stackify ~portable ~localize)
   ;;
 
   let sig_type_decl_stack =
     Deriving.Generator.make
       (portable_and_unboxed_args ())
       (fun ~loc ~path tds portable unboxed ->
-         E.sig_type_decl ~loc ~path ~unboxed tds ~stackify:true ~portable)
+         E.sig_type_decl ~loc ~path ~unboxed tds ~stackify:true ~portable ~localize:false)
+  ;;
+
+  let sig_type_decl_local =
+    Deriving.Generator.make
+      (portable_and_unboxed_args ())
+      (fun ~loc ~path tds portable unboxed ->
+         E.sig_type_decl ~loc ~path ~unboxed tds ~stackify:false ~portable ~localize:true)
   ;;
 
   let deriver =
@@ -257,6 +296,13 @@ module Sexp_in_sig = struct
        _stack"
       ~sig_type_decl:sig_type_decl_stack
   ;;
+
+  let deriver_local =
+    Deriving.add
+      "ppx_sexp_conv: let this be a string that wouldn't parse if put in the source \
+       _local"
+      ~sig_type_decl:sig_type_decl_local
+  ;;
 end
 
 let sexp =
@@ -266,6 +312,15 @@ let sexp =
     ~sig_type_decl:[ Sexp_in_sig.deriver ]
     ~str_exception:[ sexp_of ]
     ~sig_exception:[ sexp_of ]
+;;
+
+let sexp__local =
+  Deriving.add_alias
+    "sexp__local"
+    [ sexp_of__local; of_sexp ]
+    ~sig_type_decl:[ Sexp_in_sig.deriver_local ]
+    ~str_exception:[ sexp_of__local ]
+    ~sig_exception:[ sexp_of__local ]
 ;;
 
 let sexp__stack =

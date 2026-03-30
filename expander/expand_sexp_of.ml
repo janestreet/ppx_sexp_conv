@@ -29,21 +29,24 @@ let sexp_of_opaque ~loc ~stackify =
 
 (* Generates the signature for type conversion to S-expressions *)
 module Sig_generate_sexp_of = struct
-  let type_of_sexp_of ~loc t ~stackify =
+  let type_of_sexp_of ~loc t ~stackify ~localize =
     let loc = { loc with loc_ghost = true } in
-    match stackify with
-    | false -> [%type: [%t t] -> Sexplib0.Sexp.t]
-    | true -> [%type: [%t t] -> Sexplib0.Sexp.t]
+    let local_if b = if b then Ppxlib_jane.Shim.Modes.local ~loc else [] in
+    ptyp_arrow
+      ~loc
+      { arg_label = Nolabel; arg_type = t; arg_modes = local_if (stackify || localize) }
+      { result_type = [%type: Sexplib0.Sexp.t]; result_modes = local_if stackify }
   ;;
 
-  let mk_type td ~stackify =
+  let mk_type td ~stackify ~localize =
     Ppx_helpers.combinator_type_of_type_declaration
       td
-      ~f:(type_of_sexp_of ~stackify)
+      ~f:(type_of_sexp_of ~stackify ~localize)
       ~phantom_attr:Attrs.phantom
+      ~phantom_td_attr:Attrs.phantom_td
   ;;
 
-  let mk_val td ~stackify ~portable =
+  let mk_val td ~stackify ~portable ~localize =
     let loc = td.ptype_loc in
     let name = Located.map (sexp_of_typename ~stackify ~prefix:"") td.ptype_name in
     psig_value
@@ -52,16 +55,16 @@ module Sig_generate_sexp_of = struct
          ~loc
          ~name
          ~type_:
-           (mk_type td ~stackify
+           (mk_type td ~stackify ~localize
             |> Ppx_helpers.Polytype.to_core_type
                  ~universally_quantify_only_if_jkind_annotation:true)
          ~modalities:(if portable then Ppxlib_jane.Shim.Modalities.portable ~loc else [])
          ~prim:[])
   ;;
 
-  let mk_sig ~loc ~path:_ ~unboxed (_rf, tds) ~stackify ~portable =
-    let tds = Ppx_helpers.with_implicit_unboxed_records ~loc ~unboxed tds in
-    List.map tds ~f:(mk_val ~stackify ~portable)
+  let mk_sig ~loc ~path:_ ~unboxed (_rf, tds) ~stackify ~portable ~localize =
+    let tds = Ppx_helpers.with_implicit_unboxed_types ~loc ~unboxed tds in
+    List.map tds ~f:(mk_val ~stackify ~portable ~localize)
   ;;
 
   let mk_sig_exn ~loc:_ ~path:_ _te = []
@@ -162,7 +165,13 @@ module Str_generate_sexp_of = struct
            (sexp_of_type_constr
               ~loc
               id
-              (List.filter args ~f:include_param_in_combinator
+              (List.filter
+                 args
+                 ~f:
+                   (include_param_in_combinator
+                    (* We only provide [[@@phantom]] attributes for type declarations, not
+                       core types *)
+                      ~phantom_params:String.Set.empty)
                |> List.map ~f:(fun tp ->
                  Conversion.to_expression
                    ~loc
@@ -482,25 +491,27 @@ module Str_generate_sexp_of = struct
             [%expr Sexplib0.Sexp_conv.( = ) ([%e cnv_expr] [%e default]) [%e sexp_expr]])
         |> Lifted.return
       | Func lifted -> lifted >>| fun f -> inspect_value (fun _ -> f)
-      | Compare ->
+      | Compare { local } ->
         inspect_value (fun loc ->
           disallow_type_variables_and_recursive_occurrences
             ~types_being_defined
-            ~attr_name:"sexp_drop_default.compare"
+            ~attr_name:("sexp_drop_default.compare" ^ if local then ".local" else "")
             ~loc
             tp;
-          if stackify
+          if local || stackify
           then [%expr [%compare.equal__local: [%t tp]]]
           else [%expr [%compare.equal: [%t tp]]])
         |> Lifted.return
-      | Equal ->
+      | Equal { local } ->
         inspect_value (fun loc ->
           disallow_type_variables_and_recursive_occurrences
             ~types_being_defined
-            ~attr_name:"sexp_drop_default.equal"
+            ~attr_name:("sexp_drop_default.equal" ^ if local then ".local" else "")
             ~loc
             tp;
-          if stackify then [%expr [%equal__local: [%t tp]]] else [%expr [%equal: [%t tp]]])
+          if local || stackify
+          then [%expr [%equal__local: [%t tp]]]
+          else [%expr [%equal: [%t tp]]])
         |> Lifted.return
     in
     is_empty >>| sexp_of_record_field ~renaming ~bnds patt expr name tp ?sexp_of ~stackify
@@ -873,14 +884,16 @@ module Str_generate_sexp_of = struct
     ~stackify
     ~use_local_arguments_in_custom_default_functions
     ~portable
+    ~localize
     =
     let td = name_type_params_in_td td in
+    let phantom_params = phantom_params_of_td td in
     let all_tps, relevant_tps =
       (* [all_tps] is used to generate locally abstract type variables, while
          [relevant_tps] are only the ones that are used in the function combinator. *)
       let pairs =
         List.map td.ptype_params ~f:(fun param ->
-          let is_relevant = include_param_in_combinator (fst param) in
+          let is_relevant = include_param_in_combinator ~phantom_params (fst param) in
           let tp = Ppxlib_jane.get_type_param_name_and_jkind param in
           tp, if is_relevant then Some tp else None)
       in
@@ -895,7 +908,7 @@ module Str_generate_sexp_of = struct
           sexp_of_sum
             ~renaming
             ~types_being_defined
-            (List.map relevant_tps ~f:(fun (x, _) -> x.txt))
+            (List.map all_tps ~f:(fun (x, _) -> x.txt))
             cds
             ~stackify
             ~use_local_arguments_in_custom_default_functions
@@ -971,7 +984,7 @@ module Str_generate_sexp_of = struct
           body
           ~stackify
     in
-    let typ = Sig_generate_sexp_of.mk_type td ~stackify in
+    let typ = Sig_generate_sexp_of.mk_type td ~stackify ~localize in
     let func_name = sexp_of_typename ~stackify ~prefix:"" type_name in
     let body =
       body
@@ -993,9 +1006,9 @@ module Str_generate_sexp_of = struct
     sexp_of, func_name
   ;;
 
-  let sexp_of_tds ~loc ~path:_ ~unboxed (rec_flag, tds) ~stackify ~portable =
+  let sexp_of_tds ~loc ~path:_ ~unboxed (rec_flag, tds) ~stackify ~portable ~localize =
     let rec_flag = really_recursive_respecting_opaque rec_flag tds in
-    let tds = Ppx_helpers.with_implicit_unboxed_records ~loc ~unboxed tds in
+    let tds = Ppx_helpers.with_implicit_unboxed_types ~loc ~unboxed tds in
     let (types_being_defined : Types_being_defined.t) =
       match rec_flag with
       | Nonrecursive -> Nonrec
@@ -1004,7 +1017,7 @@ module Str_generate_sexp_of = struct
           (String.Set.of_list
              (List.map tds ~f:(fun td -> Ppx_helpers.mangle_unboxed td.ptype_name.txt)))
     in
-    let use_local_arguments_in_custom_default_functions = stackify in
+    let use_local_arguments_in_custom_default_functions = stackify || localize in
     let stackify =
       match stackify with
       | false -> [ false ]
@@ -1019,6 +1032,7 @@ module Str_generate_sexp_of = struct
               (sexp_of_td
                  ~types_being_defined
                  ~stackify
+                 ~localize
                  ~use_local_arguments_in_custom_default_functions
                  ~portable)
         in

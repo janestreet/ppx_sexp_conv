@@ -3,7 +3,12 @@ open! Ppxlib
 
 module Sig_generate_sexp_of : sig
   (** Given a type, produce the type of its [sexp_of] conversion. *)
-  val type_of_sexp_of : loc:location -> core_type -> stackify:bool -> core_type
+  val type_of_sexp_of
+    :  loc:location
+    -> core_type
+    -> stackify:bool
+    -> localize:bool
+    -> core_type
 
   (** Derive a [sexp_of] interface for a list of type declarations. *)
   val mk_sig
@@ -13,6 +18,7 @@ module Sig_generate_sexp_of : sig
     -> rec_flag * type_declaration list
     -> stackify:bool
     -> portable:bool
+    -> localize:bool
     -> signature_item list
 
   (** Derive a [sexp_of] interface for an exception declaration. *)
@@ -34,6 +40,7 @@ module Str_generate_sexp_of : sig
     -> rec_flag * type_declaration list
     -> stackify:bool
     -> portable:bool
+    -> localize:bool
     -> structure_item list
 
   (** Derive a [sexp_of] implementation for an exception declaration.

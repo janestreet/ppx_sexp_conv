@@ -115,8 +115,8 @@ end
 module Sexp_of = struct
   module Drop = struct
     type t =
-      | Compare
-      | Equal
+      | Compare of { local : bool }
+      | Equal of { local : bool }
       | Sexp
       | Func of expression Lifted.t
   end
@@ -131,8 +131,14 @@ module Sexp_of = struct
       ~loc
       [ get_attribute drop_default ~f:(fun { to_lift = e } ->
           Drop_default (Func (lift_drop_default ~loc ~stackify ld e)))
-      ; get_attribute drop_default_equal ~f:(fun () -> Drop_default Equal)
-      ; get_attribute drop_default_compare ~f:(fun () -> Drop_default Compare)
+      ; get_attribute drop_default_equal ~f:(fun () ->
+          Drop_default (Equal { local = false }))
+      ; get_attribute drop_default_compare ~f:(fun () ->
+          Drop_default (Compare { local = false }))
+      ; get_attribute drop_default_equal_local ~f:(fun () ->
+          Drop_default (Equal { local = true }))
+      ; get_attribute drop_default_compare_local ~f:(fun () ->
+          Drop_default (Compare { local = true }))
       ; get_attribute drop_default_sexp ~f:(fun () -> Drop_default Sexp)
       ; get_attribute drop_if ~f:(fun { to_lift = x } ->
           Drop_if (lift_drop_if ~loc ~stackify ld x))

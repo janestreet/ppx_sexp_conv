@@ -3,7 +3,7 @@ module Attrs = Attrs
 module Record_field_attrs = Record_field_attrs
 
 module Sexp_of : sig
-  val type_extension : core_type -> stackify:bool -> core_type
+  val type_extension : core_type -> stackify:bool -> localize:bool -> core_type
   val pattern_extension : core_type -> stackify:bool -> pattern
   val core_type : core_type -> stackify:bool -> expression
 
@@ -14,6 +14,7 @@ module Sexp_of : sig
     -> rec_flag * type_declaration list
     -> stackify:bool
     -> portable:bool
+    -> localize:bool
     -> signature_item list
 
   val sig_exception
@@ -29,6 +30,7 @@ module Sexp_of : sig
     -> rec_flag * type_declaration list
     -> stackify:bool
     -> portable:bool
+    -> localize:bool
     -> structure
 
   val str_exception
@@ -94,5 +96,6 @@ module Sig_sexp : sig
     -> rec_flag * type_declaration list
     -> stackify:bool
     -> portable:bool
+    -> localize:bool
     -> signature_item list
 end

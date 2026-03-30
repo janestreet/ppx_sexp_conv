@@ -41,4 +41,12 @@ val is_value_expression : expression -> bool
 val really_recursive_respecting_opaque : rec_flag -> type_declaration list -> rec_flag
 
 val strip_attributes : Ppxlib_jane.Ast_traverse.map
-val include_param_in_combinator : core_type -> bool
+
+(** Extract phantom parameter names from [[@@phantom: 'a]] or [[@@phantom: 'a * 'b]] on a
+    type declaration. *)
+val phantom_params_of_td : type_declaration -> String.Set.t
+
+(** Returns [true] if a type parameter should be included in the combinator (i.e. is not
+    phantom). A parameter is phantom if it has [[@@phantom]] or its name is in
+    [phantom_params]. *)
+val include_param_in_combinator : phantom_params:String.Set.t -> core_type -> bool

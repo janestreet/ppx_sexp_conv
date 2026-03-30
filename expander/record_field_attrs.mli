@@ -23,8 +23,8 @@ end
 module Sexp_of : sig
   module Drop : sig
     type t =
-      | Compare
-      | Equal
+      | Compare of { local : bool }
+      | Equal of { local : bool }
       | Sexp
       | Func of expression Lifted.t
   end

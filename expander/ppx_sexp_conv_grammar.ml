@@ -327,6 +327,7 @@ let rec grammar_of_type core_type ~rec_flag ~tags_of_doc_comments =
           | Closed ->
             grammar_of_polymorphic_variant ~loc ~rec_flag ~tags_of_doc_comments rows)
        | Ptyp_poly _ -> unsupported ~loc "explicitly polymorphic types"
+       | Ptyp_repr _ -> unsupported ~loc "kind-polymorphic types"
        | Ptyp_package _ -> unsupported ~loc "first-class module types"
        | Ptyp_quote _ -> unsupported ~loc "quoted types"
        | Ptyp_splice _ -> unsupported ~loc "spliced types"
