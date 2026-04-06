@@ -19,8 +19,8 @@ module%bench Record = struct
     ; e : int list [@sexp.list]
     ; f : int option [@sexp.option]
     ; g : int [@default 0] [@sexp_drop_default ( = )]
-    ; h : int [@default 0] [@sexp_drop_default.compare]
-    ; i : int [@default 0] [@sexp_drop_default.equal]
+    ; h : int [@default 0] [@sexp_drop_default.compare.local]
+    ; i : int [@default 0] [@sexp_drop_default.equal.local]
     ; j : int [@default 0] [@sexp_drop_default.sexp]
     ; k : 'a. 'a list
     ; l : int or_null [@sexp.or_null]
@@ -93,8 +93,8 @@ module%bench Variant = struct
         ; e : int list [@sexp.list]
         ; f : int option [@sexp.option]
         ; g : int [@default 0] [@sexp_drop_default ( = )]
-        ; h : int [@default 0] [@sexp_drop_default.compare]
-        ; i : int [@default 0] [@sexp_drop_default.equal]
+        ; h : int [@default 0] [@sexp_drop_default.compare.local]
+        ; i : int [@default 0] [@sexp_drop_default.equal.local]
         ; j : int [@default 0] [@sexp_drop_default.sexp]
         ; k : 'a. 'a list
         ; l : int or_null [@sexp.or_null]

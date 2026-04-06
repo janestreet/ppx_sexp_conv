@@ -22,14 +22,14 @@ module Sexp_of = struct
 
   let core_type = Str_generate_sexp_of.sexp_of_core_type
 
-  let sig_type_decl ~loc ~path ~unboxed tds ~stackify ~portable =
+  let sig_type_decl ~loc ~path ~unboxed tds ~stackify ~portable ~localize =
     let stackify =
       match stackify with
       | false -> [ false ]
       | true -> [ false; true ]
     in
     List.concat_map stackify ~f:(fun stackify ->
-      Sig_generate_sexp_of.mk_sig ~loc ~path ~unboxed tds ~stackify ~portable)
+      Sig_generate_sexp_of.mk_sig ~loc ~path ~unboxed tds ~stackify ~portable ~localize)
   ;;
 
   let sig_exception = Sig_generate_sexp_of.mk_sig_exn
@@ -54,22 +54,44 @@ module Of_sexp = struct
 end
 
 module Sig_sexp = struct
-  let mk_sig ~loc ~path ~unboxed decls ~stackify ~portable =
+  let mk_sig ~loc ~path ~unboxed decls ~stackify ~portable ~localize =
     List.concat
-      [ Sig_generate_sexp_of.mk_sig ~loc ~path ~unboxed decls ~stackify:false ~portable
+      [ Sig_generate_sexp_of.mk_sig
+          ~loc
+          ~path
+          ~unboxed
+          decls
+          ~stackify:false
+          ~portable
+          ~localize
       ; (if stackify
          then
-           Sig_generate_sexp_of.mk_sig ~loc ~path ~unboxed decls ~stackify:true ~portable
+           Sig_generate_sexp_of.mk_sig
+             ~loc
+             ~path
+             ~unboxed
+             decls
+             ~stackify:true
+             ~portable
+             ~localize
          else [])
       ; Sig_generate_of_sexp.mk_sig ~poly:false ~loc ~path ~unboxed decls ~portable
       ]
   ;;
 
-  let sig_type_decl ~loc ~path ~unboxed (rf, tds) ~stackify ~portable =
-    let tds = Ppx_helpers.with_implicit_unboxed_records ~loc ~unboxed tds in
+  let sig_type_decl ~loc ~path ~unboxed (rf, tds) ~stackify ~portable ~localize =
+    let tds = Ppx_helpers.with_implicit_unboxed_types ~loc ~unboxed tds in
+    (* Don't derive [sexp] by including [Sexpable.S] if there are phantom params, since
+       the include wouldn't reflect the reduced arity. *)
+    let has_phantom_params td =
+      Option.is_some (Attribute.get Attrs.phantom_td td)
+      || List.exists td.ptype_params ~f:(fun (param, _) ->
+        Option.is_some (Attribute.get Attrs.phantom param))
+    in
     let include_infos =
       match tds with
       | [] | _ :: _ :: _ -> None
+      | [ td ] when has_phantom_params td -> None
       | [ td ] ->
         mk_named_sig
           ~loc
@@ -78,7 +100,7 @@ module Sig_sexp = struct
           [ td ]
     in
     match include_infos with
-    | Some include_infos ->
+    | Some include_infos when not localize ->
       let include_infos =
         match stackify with
         | false -> include_infos
@@ -90,6 +112,6 @@ module Sig_sexp = struct
             (if portable then [ Loc.make ~loc (Ppxlib_jane.Modality "portable") ] else [])
           include_infos
       ]
-    | None -> mk_sig ~loc ~path ~unboxed:false (rf, tds) ~stackify ~portable
+    | _ -> mk_sig ~loc ~path ~unboxed:false (rf, tds) ~stackify ~portable ~localize
   ;;
 end

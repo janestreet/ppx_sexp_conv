@@ -14,6 +14,8 @@ val drop_if : (label_declaration, expression To_lift.t) Attribute.t
 val drop_default_equal : (label_declaration, unit) Attribute.t
 val drop_default_compare : (label_declaration, unit) Attribute.t
 val drop_default_sexp : (label_declaration, unit) Attribute.t
+val drop_default_equal_local : (label_declaration, unit) Attribute.t
+val drop_default_compare_local : (label_declaration, unit) Attribute.t
 val omit_nil : (label_declaration, unit) Attribute.t
 val option : (label_declaration, unit) Attribute.t
 val or_null : (label_declaration, unit) Attribute.t
@@ -22,6 +24,7 @@ val array : (label_declaration, unit) Attribute.t
 val bool : (label_declaration, unit) Attribute.t
 val opaque : (core_type, unit) Attribute.t
 val phantom : (core_type, unit) Attribute.t
+val phantom_td : (type_declaration, string list) Attribute.t
 val list_variant : (constructor_declaration, unit) Attribute.t
 val list_exception : (type_exception, unit) Attribute.t
 val list_poly : (row_field, unit) Attribute.t

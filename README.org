@@ -72,6 +72,55 @@ flag. For example,
 will give us =sexp_of_t= and =t_of_sexp=, as expected, along with
 =t_u_of_sexp : sexp -> t#= and =sexp_of_t_u : t# -> sexp=.
 
+** ~stackify
+
+The =~stackify= flag generates an additional =sexp_of_t__stack= function
+alongside the usual =sexp_of_t=. The =__stack= variant takes a local
+input and produces a local sexp, allowing sexp conversion without heap
+allocation.
+
+#+begin_src ocaml
+  type t = int * int * int [@@deriving sexp ~stackify]
+#+end_src
+
+This produces:
+
+#+begin_src ocaml
+  val sexp_of_t : t -> Sexp.t
+  val sexp_of_t__stack : local_ t -> local_ Sexp.t
+  val t_of_sexp : Sexp.t -> t
+#+end_src
+
+You can also use it with =[%sexp_of]= via the =[%sexp_of__stack]= extension
+point. Or with ppx-template =([@sexp_of: ...] [@alloc stack])=.
+
+** ~localize
+
+The =~localize= flag changes =sexp_of_t= to accept a local input while still
+returning a heap-allocated sexp. This is more general than the default, as you
+can still pass a global =t= to it. However, you may need extra type annotations
+to coerce the =local_ t -> Sexp.t= back into a =t -> Sexp.t=.
+
+#+begin_src ocaml
+  type t = { a : int } [@@deriving sexp ~localize]
+#+end_src
+
+This produces:
+
+#+begin_src ocaml
+  val sexp_of_t : local_ t -> Sexp.t
+  val t_of_sexp : Sexp.t -> t
+#+end_src
+
+The two flags can be combined:
+
+#+begin_src ocaml
+  type t = { a : int } [@@deriving sexp ~localize ~stackify]
+#+end_src
+
+This produces both =sexp_of_t : local_ t -> Sexp.t= and
+=sexp_of_t__stack : local_ t -> local_ Sexp.t=.
+
 * [@@deriving sexp_grammar]
 
 If =ppx_sexp_conv= can derive =of_sexp=, it can also generate a description of
@@ -399,6 +448,21 @@ back to the original value.  Here is an example conversion:
 #+begin_src ocaml
   (42, some_stuff)  =>  (42 <opaque>)
 #+end_src
+
+** Function types
+
+When using =ppx_sexp_conv= on types that are functions, the derived
+converters have limited behavior.  For example:
+
+#+begin_src ocaml
+  type t = unit -> unit [@@deriving sexp]
+#+end_src
+
+The derived =sexp_of_t= function will generate a dummy s-expression
+=<fun>=, since functions cannot be meaningfully serialized.  The
+derived =t_of_sexp= function will raise an exception on all
+s-expressions, since there is no way to deserialize a function from an
+s-expression.
 
 ** Phantom parameters
 

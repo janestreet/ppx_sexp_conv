@@ -32,21 +32,19 @@ let drop_default =
            - [@sexp_drop_default.sexp] if you want to compare the sexp representations\n")
 ;;
 
-let drop_default_equal =
+let drop_default_comparison ~f ~local =
+  let suffix = if local then ".local" else "" in
   Attribute.declare
-    "sexp.@sexp_drop_default.equal"
+    ("sexp.@sexp_drop_default" ^ "." ^ f ^ suffix)
     Attribute.Context.label_declaration
     Ast_pattern.(pstr nil)
     ()
 ;;
 
-let drop_default_compare =
-  Attribute.declare
-    "sexp.@sexp_drop_default.compare"
-    Attribute.Context.label_declaration
-    Ast_pattern.(pstr nil)
-    ()
-;;
+let drop_default_equal = drop_default_comparison ~f:"equal" ~local:false
+let drop_default_compare = drop_default_comparison ~f:"compare" ~local:false
+let drop_default_equal_local = drop_default_comparison ~f:"equal" ~local:true
+let drop_default_compare_local = drop_default_comparison ~f:"compare" ~local:true
 
 let drop_default_sexp =
   Attribute.declare
@@ -212,6 +210,17 @@ let tags_poly = tags_attribute_for_context Rtag
 
 let phantom =
   Attribute.declare "sexp.phantom" Attribute.Context.core_type Ast_pattern.(pstr nil) ()
+;;
+
+let phantom_td =
+  let open Ast_pattern in
+  let single = ptyp_var __ |> map1 ~f:(fun x -> [ x ]) in
+  let tuple = ptyp_tuple (many (ptyp_var __)) in
+  Attribute.declare
+    "sexp.phantom"
+    Attribute.Context.type_declaration
+    (ptyp (single ||| tuple))
+    (fun names -> names)
 ;;
 
 let invalid_attribute ~loc attr description =

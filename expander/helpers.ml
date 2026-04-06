@@ -194,7 +194,7 @@ let rec is_value_expression expr =
   | Pexp_tuple lexprs -> List.for_all lexprs ~f:(fun (_, e) -> is_value_expression e)
   | Pexp_unboxed_tuple lexprs ->
     List.for_all lexprs ~f:(fun (_, e) -> is_value_expression e)
-  | Pexp_construct (_, None) -> true
+  | Pexp_construct (_, None) | Pexp_unboxed_unit | Pexp_unboxed_bool _ -> true
   | Pexp_construct (_, Some expr) -> is_value_expression expr
   | Pexp_variant (_, None) -> true
   | Pexp_variant (_, Some expr) -> is_value_expression expr
@@ -236,6 +236,7 @@ let rec is_value_expression expr =
   | Pexp_overwrite _
   | Pexp_quote _
   | Pexp_splice _
+  | Pexp_borrow _
   | Pexp_hole -> false
 ;;
 
@@ -295,6 +296,16 @@ let strip_attributes =
   end
 ;;
 
-let include_param_in_combinator param =
-  not (Option.is_some (Attribute.get Attrs.phantom param))
+let phantom_params_of_td td =
+  match Attribute.get Attrs.phantom_td td with
+  | None -> String.Set.empty
+  | Some names -> String.Set.of_list names
+;;
+
+let include_param_in_combinator ~phantom_params param =
+  not
+    (Ppx_helpers.is_phantom_param
+       ~phantom_attr:Attrs.phantom
+       ~phantom_names:phantom_params
+       (param, ()))
 ;;

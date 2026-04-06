@@ -2,4 +2,4 @@
  (name ppx_sexp_conv_bench)
  (libraries base parsexp)
  (preprocess
-  (pps ppx_bench ppx_compare ppx_sexp_conv)))
+  (pps ppx_bench ppx_compare ppx_sexp_conv -compare-require-explicit-locality)))
