@@ -135,3 +135,41 @@ end = struct
 
   [@@@end]
 end
+
+module Phantom_td_syntax' : sig
+  type ('a, 'b) t = ('a, 'b) Phantom_td_syntax.t [@@phantom: 'a] [@@deriving_inline sexp]
+
+  val sexp_of_t : ('b -> Sexplib0.Sexp.t) -> ('a, 'b) t -> Sexplib0.Sexp.t
+  val t_of_sexp : (Sexplib0.Sexp.t -> 'b) -> Sexplib0.Sexp.t -> ('a, 'b) t
+
+  [@@@end]
+
+  type ('a, 'b) u = ('a, 'b) Phantom_td_syntax.u
+  [@@phantom: 'a * 'b] [@@deriving_inline sexp]
+
+  val sexp_of_u : ('a, 'b) u -> Sexplib0.Sexp.t
+  val u_of_sexp : Sexplib0.Sexp.t -> ('a, 'b) u
+
+  [@@@end]
+end = struct
+  type ('a, 'b) t = (('a[@phantom]), 'b) Phantom_td_syntax.t
+  [@@phantom: 'a] [@@deriving_inline sexp]
+
+  let t_of_sexp : 'b 'a. (Sexplib0.Sexp.t -> 'b) -> Sexplib0.Sexp.t -> ('a, 'b) t =
+    Phantom_td_syntax.t_of_sexp
+  ;;
+
+  let sexp_of_t : 'b 'a. ('b -> Sexplib0.Sexp.t) -> ('a, 'b) t -> Sexplib0.Sexp.t =
+    Phantom_td_syntax.sexp_of_t
+  ;;
+
+  [@@@end]
+
+  type ('a, 'b) u = (('a[@phantom]), ('b[@phantom])) Phantom_td_syntax.u
+  [@@phantom: 'a * 'b] [@@deriving_inline sexp]
+
+  let u_of_sexp : 'a 'b. Sexplib0.Sexp.t -> ('a, 'b) u = Phantom_td_syntax.u_of_sexp
+  let sexp_of_u : 'a 'b. ('a, 'b) u -> Sexplib0.Sexp.t = Phantom_td_syntax.sexp_of_u
+
+  [@@@end]
+end

@@ -771,7 +771,7 @@ module Str_generate_of_sexp = struct
         List.map params ~f:(fun { loc; txt } -> Fresh_name.create ~loc ("_" ^ txt))
       in
       let pat = Fresh_name.pattern fresh_sexp in
-      let body =
+      let outer_body =
         let label = Located.map_lident (Fresh_name.to_string_loc type_and_field_name) in
         let typevars =
           List.fold_left2
@@ -780,7 +780,7 @@ module Str_generate_of_sexp = struct
             ~init:typevars
             ~f:(fun typevars param fresh -> String.Map.add param.txt fresh typevars)
         in
-        let expr =
+        let field_expr =
           pexp_let
             ~loc
             Immutable
@@ -797,9 +797,15 @@ module Str_generate_of_sexp = struct
                ~loc
                (Fresh_name.expression fresh_sexp))
         in
-        pexp_record ~loc [ label, expr ] None
+        (* Bind the field expression in an outer [let] before constructing the record, so
+           that the body is a syntactic value and we don't run into a problem with the
+           value restriction when trying to give it a polymorphic type. *)
+        let field_var = gen_symbol () in
+        [%expr
+          let [%p pvar ~loc field_var] = [%e field_expr] in
+          [%e pexp_record ~loc [ label, evar ~loc field_var ] None]]
       in
-      eabstract ~loc [ pat ] (close_over_non_value ~loc body)
+      eabstract ~loc [ pat ] (close_over_non_value ~loc outer_body)
   ;;
 
   let fields_arg_for_record_of_sexp poly_fields ~loc ~error_source ~typevars =

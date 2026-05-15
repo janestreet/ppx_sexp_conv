@@ -157,11 +157,11 @@ OCaml types.
 
 ** Basic types
 
-Basic types are represented as atoms.  For numbers like =int=,
-=int32=, =int64=, =float=, the string in the atom is what is accepted
-the standard ocaml functions =int_of_string=, =Int32.of_string=, etc.
-For the types =char= or =string=, the string in the atom is
-respectively a one character string or the string itself.
+Basic types are represented as atoms. For numbers like =int=, =int32=, =int64=,
+=float=, the string in the atom is what is accepted by the standard ocaml
+functions =int_of_string=, =Int32.of_string=, etc. For the types =char= or
+=string=, the string in the atom is respectively a one character string or the
+string itself.
 
 ** Lists and arrays
 
@@ -489,6 +489,22 @@ val index_of_sexp : (Sexp.t -> 'b) -> Sexp.t -> ('a, 'b) index
 
 val sexp_of_int_index : 'a int_index -> Sexp.t
 val int_index_of_sexp : Sexp.t -> 'a int_index
+#+end_src
+
+Alternatively, you can use =@@sexp.phantom= as a type-declaration attribute
+instead of annotating each type parameter individually. This syntax is
+compatible with upstream OCaml (which does not allow attributes on type
+parameters). The payload is a type variable or tuple of type variables to treat
+as phantom:
+
+#+begin_src ocaml
+  type 'a t = int
+  [@@sexp.phantom: 'a]
+  [@@deriving sexp]
+
+  type ('a, 'b) t2 = ('a[@sexp.phantom]) t2
+  [@@sexp.phantom: 'a * 'b]
+  [@@deriving sexp]
 #+end_src
 
 ** Exceptions
