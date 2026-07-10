@@ -46,25 +46,29 @@ module Sig_generate_sexp_of = struct
       ~phantom_td_attr:Attrs.phantom_td
   ;;
 
-  let mk_val td ~stackify ~portable ~localize =
+  let mk_val td ~stackify ~portable ~localize ~disable_w32 =
     let loc = td.ptype_loc in
     let name = Located.map (sexp_of_typename ~stackify ~prefix:"") td.ptype_name in
-    psig_value
+    Ppxlib_jane.Ast_builder.Default.value_description
       ~loc
-      (Ppxlib_jane.Ast_builder.Default.value_description
-         ~loc
-         ~name
-         ~type_:
-           (mk_type td ~stackify ~localize
-            |> Ppx_helpers.Polytype.to_core_type
-                 ~universally_quantify_only_if_jkind_annotation:true)
-         ~modalities:(if portable then Ppxlib_jane.Shim.Modalities.portable ~loc else [])
-         ~prim:[])
+      ~name
+      ~type_:
+        (mk_type td ~stackify ~localize
+         |> Ppx_helpers.Polytype.to_core_type
+              ~universally_quantify_only_if_jkind_annotation:true)
+      ~modalities:(if portable then Ppxlib_jane.Shim.Modalities.portable ~loc else [])
+      ~prim:[]
+    |> (if disable_w32 then Helpers.disable_w32 ~loc else Fn.id)
+    |> psig_value ~loc
   ;;
 
   let mk_sig ~loc ~path:_ ~unboxed (_rf, tds) ~stackify ~portable ~localize =
     let tds = Ppx_helpers.with_implicit_unboxed_types ~loc ~unboxed tds in
-    List.map tds ~f:(mk_val ~stackify ~portable ~localize)
+    List.map tds ~f:(fun td ->
+      let disable_w32 =
+        unboxed && not (Ppx_helpers.is_implicit_unboxed td.ptype_name.txt)
+      in
+      mk_val td ~stackify ~portable ~localize ~disable_w32)
   ;;
 
   let mk_sig_exn ~loc:_ ~path:_ _te = []
