@@ -268,9 +268,11 @@ let rec grammar_of_type core_type ~rec_flag ~tags_of_doc_comments =
       with
       | Some _, Some _ ->
         Some
-          [%expr
-            [%ocaml.warning
-              "[@sexp_grammar.custom] and [@sexp_grammar.any] are mutually exclusive"]]
+          (pexp_extension
+             ~loc
+             (Location.error_extensionf
+                ~loc
+                "[@sexp_grammar.custom] and [@sexp_grammar.any] are mutually exclusive"))
       | Some expr, None ->
         Some (untyped_grammar ~loc (annotated_grammar ~loc expr core_type))
       | None, Some maybe_name ->

@@ -31,7 +31,7 @@ module Sig_generate_of_sexp = struct
       ~phantom_td_attr:Attrs.phantom_td
   ;;
 
-  let sig_of_td ~poly ~portable td =
+  let sig_of_td ~poly ~portable ~disable_w32 td =
     let of_sexp_type =
       mk_type td
       |> Ppx_helpers.Polytype.to_core_type
@@ -39,15 +39,14 @@ module Sig_generate_of_sexp = struct
     in
     let loc = td.ptype_loc in
     let of_sexp_item =
-      psig_value
+      Ppxlib_jane.Ast_builder.Default.value_description
         ~loc
-        (Ppxlib_jane.Ast_builder.Default.value_description
-           ~loc
-           ~name:(Located.map of_sexp_function_for_type td.ptype_name)
-           ~type_:of_sexp_type
-           ~modalities:
-             (if portable then Ppxlib_jane.Shim.Modalities.portable ~loc else [])
-           ~prim:[])
+        ~name:(Located.map of_sexp_function_for_type td.ptype_name)
+        ~type_:of_sexp_type
+        ~modalities:(if portable then Ppxlib_jane.Shim.Modalities.portable ~loc else [])
+        ~prim:[]
+      |> (if disable_w32 then Helpers.disable_w32 ~loc else Fn.id)
+      |> psig_value ~loc
     in
     match poly, is_polymorphic_variant td ~sig_:true with
     | true, `Surely_not ->
@@ -58,21 +57,24 @@ module Sig_generate_of_sexp = struct
     | false, (`Surely_not | `Maybe) -> [ of_sexp_item ]
     | (true | false), `Definitely | true, `Maybe ->
       [ of_sexp_item
-      ; psig_value
+      ; Ppxlib_jane.Ast_builder.Default.value_description
           ~loc
-          (Ppxlib_jane.Ast_builder.Default.value_description
-             ~loc
-             ~name:(Located.map (of_sexp_function_for_type ~internal:true) td.ptype_name)
-             ~type_:of_sexp_type
-             ~modalities:
-               (if portable then Ppxlib_jane.Shim.Modalities.portable ~loc else [])
-             ~prim:[])
+          ~name:(Located.map (of_sexp_function_for_type ~internal:true) td.ptype_name)
+          ~type_:of_sexp_type
+          ~modalities:(if portable then Ppxlib_jane.Shim.Modalities.portable ~loc else [])
+          ~prim:[]
+        |> (if disable_w32 then Helpers.disable_w32 ~loc else Fn.id)
+        |> psig_value ~loc
       ]
   ;;
 
   let mk_sig ~poly ~loc ~path:_ ~unboxed (_rf, tds) ~portable =
     let tds = Ppx_helpers.with_implicit_unboxed_types ~loc ~unboxed tds in
-    List.concat_map tds ~f:(sig_of_td ~poly ~portable)
+    List.concat_map tds ~f:(fun td ->
+      let disable_w32 =
+        unboxed && not (Ppx_helpers.is_implicit_unboxed td.ptype_name.txt)
+      in
+      sig_of_td ~poly ~portable ~disable_w32 td)
   ;;
 end
 

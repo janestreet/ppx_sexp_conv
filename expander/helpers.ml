@@ -309,3 +309,11 @@ let include_param_in_combinator ~phantom_params param =
        ~phantom_names:phantom_params
        (param, ()))
 ;;
+
+let disable_w32 ~loc value_description =
+  { value_description with
+    pval_attributes =
+      attribute ~loc ~name:(Loc.make ~loc "ocaml.warning") ~payload:(PStr [%str "-32"])
+      :: value_description.pval_attributes
+  }
+;;

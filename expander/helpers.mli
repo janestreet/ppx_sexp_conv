@@ -50,3 +50,7 @@ val phantom_params_of_td : type_declaration -> String.Set.t
     phantom). A parameter is phantom if it has [[@@phantom]] or its name is in
     [phantom_params]. *)
 val include_param_in_combinator : phantom_params:String.Set.t -> core_type -> bool
+
+(** Adds an attribute to a [value_description] to disable the ["unused-value-declaration"]
+    warning. *)
+val disable_w32 : loc:Location.t -> value_description -> value_description

@@ -359,6 +359,20 @@ Error: Only type variables and constructors are allowed here (e.g. ['a], [t],
        ['a t], or [M(X).t]).
 |}]
 
+(* Mutually exclusive attributes *)
+
+type t = (int[@sexp_grammar.any] [@sexp_grammar.custom int_sexp_grammar])
+[@@deriving sexp_grammar]
+
+[%%expect
+  {|
+Line _, characters _-_:
+Error: [@sexp_grammar.custom] and [@sexp_grammar.any] are mutually exclusive
+|}]
+;;
+
+#reset_line_numbers
+
 (* Passing ~portable to sexp can give you better error messages in structure context.
 *)
 
@@ -378,6 +392,6 @@ type t =
 Line _, characters _-_:
 Error: The value Non_portable.t_of_sexp is nonportable
        but is expected to be portable
-         because it is used inside the function at file "errors.mlt", lines 373-377, characters 0-27
+         because it is used inside the function at file "errors.mlt", lines 6-10, characters 0-27
          which is expected to be portable.
 |}]

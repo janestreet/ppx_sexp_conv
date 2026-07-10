@@ -433,7 +433,8 @@ module Type_alias = struct
   end
 
   module C : sig
-    type t = int as 'a [@@deriving sexp ~stackify, sexp_grammar]
+    type t = int as 'a
+    [@@warning "-unused-type-declaration"] [@@deriving sexp ~stackify, sexp_grammar]
   end = struct
     type t = int [@@deriving sexp ~stackify, sexp_grammar]
   end

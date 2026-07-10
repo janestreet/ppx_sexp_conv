@@ -80,7 +80,6 @@ module Sig_sexp = struct
   ;;
 
   let sig_type_decl ~loc ~path ~unboxed (rf, tds) ~stackify ~portable ~localize =
-    let tds = Ppx_helpers.with_implicit_unboxed_types ~loc ~unboxed tds in
     (* Don't derive [sexp] by including [Sexpable.S] if there are phantom params, since
        the include wouldn't reflect the reduced arity. *)
     let has_phantom_params td =
@@ -89,7 +88,7 @@ module Sig_sexp = struct
         Option.is_some (Attribute.get Attrs.phantom param))
     in
     let include_infos =
-      match tds with
+      match Ppx_helpers.with_implicit_unboxed_types ~loc ~unboxed tds with
       | [] | _ :: _ :: _ -> None
       | [ td ] when has_phantom_params td -> None
       | [ td ] ->
@@ -112,6 +111,6 @@ module Sig_sexp = struct
             (if portable then [ Loc.make ~loc (Ppxlib_jane.Modality "portable") ] else [])
           include_infos
       ]
-    | _ -> mk_sig ~loc ~path ~unboxed:false (rf, tds) ~stackify ~portable ~localize
+    | _ -> mk_sig ~loc ~path ~unboxed (rf, tds) ~stackify ~portable ~localize
   ;;
 end
