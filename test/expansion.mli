@@ -495,3 +495,8 @@ module Portable : sig
 
   [@@@end]
 end
+
+module Custom : sig
+  type t = (int * int * int) list [@@deriving sexp]
+  type 'a t1 = ('a * 'a) list [@@deriving sexp]
+end

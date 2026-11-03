@@ -113,13 +113,13 @@ let constrained_function_binding
     | [] -> false
     | _ :: _ -> true
   in
-  let pat =
-    let pat = pvar ~loc func_name in
+  let pat = pvar ~loc func_name in
+  let constraint_ =
     if not has_vars
-    then pat
+    then None
     else (
       let annot = Ppxlib_jane.Ast_builder.Default.ptyp_poly ~loc bound_vars typ in
-      ppat_constraint ~loc pat annot)
+      Some (Pvc_constraint { locally_abstract_univars = []; typ = annot }))
   in
   let body =
     let use_rigid_variables =
@@ -147,6 +147,7 @@ let constrained_function_binding
     ~loc
     ~pat
     ~expr:body
+    ~constraint_
     ~modes:(if portable then [ { txt = Mode "portable"; loc } ] else [])
 ;;
 
@@ -240,16 +241,65 @@ let rec is_value_expression expr =
   | Pexp_hole -> false
 ;;
 
-let really_recursive_respecting_opaque rec_flag tds =
-  (object
+module Custom_or_opaque = struct
+  type t =
+    | Custom of core_type
+    | Opaque
+end
+
+let get_custom_or_opaque_attr ?mark_as_seen typ : Custom_or_opaque.t option =
+  match
+    ( Attribute.get ?mark_as_seen Attrs.custom typ
+    , Attribute.get ?mark_as_seen Attrs.opaque typ )
+  with
+  | Some (_ : core_type), Some () ->
+    Location.raise_errorf
+      ~loc:typ.ptyp_loc
+      "ppx_sexp_conv: [@sexp.custom] and [@sexp.opaque] are mutually exclusive"
+  | Some payload, None -> Some (Custom payload)
+  | None, Some () -> Some Opaque
+  | None, None -> None
+;;
+
+module Custom_opaque_or_addr = struct
+  type t =
+    | Custom of core_type
+    | Opaque
+    | Addr of Addr.t
+end
+
+let get_custom_opaque_or_addr_attr ?mark_as_seen typ : Custom_opaque_or_addr.t option =
+  let addrs =
+    List.filter_map Attrs.addr_type ~f:(fun (addr, attr) ->
+      Option.map (Attribute.get ?mark_as_seen attr typ) ~f:(fun () -> addr))
+  in
+  match get_custom_or_opaque_attr ?mark_as_seen typ, addrs with
+  | Some _, _ :: _ | None, _ :: _ :: _ ->
+    Location.raise_errorf
+      ~loc:typ.ptyp_loc
+      "ppx_sexp_conv: Incompatible attributes on this type:\n\
+       Only one [@sexp.custom], [@sexp.opaque], or [@sexp.addr] allowed"
+  | Some (Custom payload), [] -> Some (Custom payload)
+  | Some Opaque, [] -> Some Opaque
+  | None, [ addr ] -> Some (Addr addr)
+  | None, [] -> None
+;;
+
+let really_recursive_respecting_opaque_and_custom rec_flag tds =
+  (object (self)
      inherit type_is_recursive rec_flag tds as super
 
      method! core_type ctype =
-       match ctype with
-       | _ when Option.is_some (Attribute.get ~mark_as_seen:false Attrs.opaque ctype) ->
-         ()
-       | [%type: [%t? _] sexp_opaque] -> ()
-       | _ -> super#core_type ctype
+       match get_custom_or_opaque_attr ~mark_as_seen:false ctype with
+       | Some (Custom payload) ->
+         (* The generated code refers to the converters of the payload type, not those of
+            the annotated type. *)
+         self#core_type payload
+       | Some Opaque -> ()
+       | None ->
+         (match ctype with
+          | [%type: [%t? _] sexp_opaque] -> ()
+          | _ -> super#core_type ctype)
   end)
     #go
     ()

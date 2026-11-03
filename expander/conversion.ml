@@ -78,7 +78,7 @@ module Lambda = struct
           List.map cases ~f:(fun case ->
             { case with pc_rhs = maybe_exclave ~loc case.pc_rhs ~stackify })
         in
-        pexp_function ~loc cases
+        pexp_function_cases ~loc cases
       | Some arg -> pexp_match ~loc arg cases
     in
     with_types ~loc ~types (with_let ~loc ~binds expr)

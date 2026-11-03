@@ -817,6 +817,139 @@ module Opaque = struct
   ;;
 end
 
+module Custom = struct
+  (* An [int] with converters distinguishable from the default ones. *)
+  module Prefixed_int = struct
+    type t = int
+
+    let sexp_of_t t = Sexp.Atom ("custom_" ^ string_of_int t)
+    let sexp_of_t__stack t = sexp_of_t t
+
+    let chop_prefix_exn s ~prefix =
+      if String.starts_with s ~prefix
+      then (
+        let pos = String.length prefix in
+        let len = String.length s - pos in
+        String.sub s pos len)
+      else failwith "Prefixed_int.chop_prefix_exn"
+    ;;
+
+    let t_of_sexp = function
+      | Sexp.Atom s -> chop_prefix_exn s ~prefix:"custom_" |> int_of_string
+      | Sexp.List _ -> failwith "Prefixed_int.t_of_sexp"
+    ;;
+
+    let t_sexp_grammar : t Sexplib0.Sexp_grammar.t = { untyped = Any "PREFIXED_INT" }
+  end
+
+  module Basic = struct
+    type t = { x : (int[@sexp.custom: Prefixed_int.t]) }
+    [@@deriving sexp ~stackify, sexp_grammar]
+
+    let sexp = Sexplib.Sexp.of_string "((x custom_5))"
+    let t = { x = 5 }
+    let%test _ = sexp_of_t t = sexp
+    let%test _ = sexp_of_t__stack t = sexp
+    let%test _ = t_of_sexp sexp = t
+  end
+
+  (* The attribute works in arbitrary type positions, not just at the field level. *)
+  module Nested = struct
+    type t = (int[@sexp.custom: Prefixed_int.t]) list
+    [@@deriving sexp ~stackify, sexp_grammar]
+
+    let sexp = Sexplib.Sexp.of_string "(custom_1 custom_2)"
+    let t = [ 1; 2 ]
+    let%test _ = sexp_of_t t = sexp
+    let%test _ = sexp_of_t__stack t = sexp
+    let%test _ = t_of_sexp sexp = t
+  end
+
+  (* Composition with field attributes. *)
+  module With_field_attrs = struct
+    type t =
+      { a : (int[@sexp.custom: Prefixed_int.t]) option [@sexp.option]
+      ; b : (int[@sexp.custom: Prefixed_int.t]) [@default 0] [@sexp_drop_default.sexp]
+      }
+    [@@deriving sexp ~stackify, sexp_grammar]
+
+    let sexp = Sexplib.Sexp.of_string "()"
+    let t = { a = None; b = 0 }
+    let%test _ = sexp_of_t t = sexp
+    let%test _ = sexp_of_t__stack t = sexp
+    let%test _ = t_of_sexp sexp = t
+    let sexp = Sexplib.Sexp.of_string "((a custom_1) (b custom_2))"
+    let t = { a = Some 1; b = 2 }
+    let%test _ = sexp_of_t t = sexp
+    let%test _ = sexp_of_t__stack t = sexp
+    let%test _ = t_of_sexp sexp = t
+  end
+
+  (* Parameterized payload type: the ['a] converter flows through. *)
+  module Parametrized = struct
+    module Swapped_pair = struct
+      type ('a, 'b) t = 'a * 'b
+
+      let sexp_of_t sexp_of_a sexp_of_b ((a, b) : ('a, 'b) t) =
+        Sexp.List [ sexp_of_b b; sexp_of_a a ]
+      ;;
+
+      let t_of_sexp a_of_sexp b_of_sexp : Sexp.t -> ('a, 'b) t = function
+        | Sexp.List [ b; a ] -> a_of_sexp a, b_of_sexp b
+        | _ -> failwith "Swapped_pair.t_of_sexp"
+      ;;
+    end
+
+    type 'a t = ('a * int[@sexp.custom: ('a, int) Swapped_pair.t]) [@@deriving sexp]
+
+    let sexp = Sexplib.Sexp.of_string "(2 a)"
+    let t = "a", 2
+    let%test _ = sexp_of_t sexp_of_string t = sexp
+    let%test _ = t_of_sexp string_of_sexp sexp = t
+  end
+
+  (* A type that is only recursive through the payload of [[@sexp.custom]] must still be
+     generated with [let rec]. *)
+  module Recursive = struct
+    (* [T0] deliberately has no converters of its own: if the generated code did not use
+       [let rec], the references to [sexp_of_t] etc. below would be unbound. *)
+    module T0 = struct
+      type t =
+        | Leaf
+        | Node of t
+    end
+
+    type t = T0.t =
+      | Leaf
+      | Node of (T0.t[@sexp.custom: t])
+    [@@deriving sexp ~stackify]
+
+    let sexp = Sexplib.Sexp.of_string "(Node (Node Leaf))"
+    let t = Node (Node Leaf)
+    let%test _ = sexp_of_t t = sexp
+    let%test _ = sexp_of_t__stack t = sexp
+    let%test _ = t_of_sexp sexp = t
+  end
+
+  (* Sexp attributes in the custom type. *)
+  module With_ty_attrs = struct
+    (* The payload type's converters must agree with the type being converted. *)
+
+    module Phantom_int = struct
+      type 'a[@sexp.phantom] t = int [@@deriving sexp ~stackify]
+    end
+
+    type 'a[@sexp.phantom] t = (int[@sexp.custom: ('a[@sexp.phantom]) Phantom_int.t])
+    [@@deriving sexp ~stackify]
+
+    let sexp = Sexp.Atom "1"
+    let t = 1
+    let%test _ = sexp_of_t t = sexp
+    let%test _ = sexp_of_t__stack t = sexp
+    let%test _ = t_of_sexp sexp = t
+  end
+end
+
 module Optional = struct
   type t = { optional : int option [@sexp.option] }
   [@@deriving sexp ~stackify, sexp_grammar]
@@ -1047,4 +1180,26 @@ end
 
 module Type_parameter_with_constraint = struct
   type 'a t = Foo constraint 'a = [< `Foo ] [@@deriving sexp]
+end
+
+module Opaque_non_value_layout = struct
+  type t1 = #(int * string) [@@deriving sexp]
+  type ('a : bits32) t2 = 'a [@@deriving sexp]
+
+  type ('a : bits32) t =
+    { t1 : (t1[@sexp.opaque])
+    ; t2 : ('a t2[@sexp.opaque])
+    ; t3 : (unit#[@sexp.opaque])
+    }
+  [@@phantom: 'a] [@@deriving sexp]
+
+  let%expect_test _ =
+    Expect_test_helpers_base.print_s (sexp_of_t { t1 = #(1, "hi"); t2 = #1l; t3 = #() });
+    [%expect
+      {|
+      ((t1 <opaque>)
+       (t2 <opaque>)
+       (t3 <opaque>))
+      |}]
+  ;;
 end

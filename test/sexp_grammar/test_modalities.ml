@@ -18,7 +18,7 @@ module type Sexp_of_local = sig
     [@@@ocaml.warning "-32"]
 
     val sexp_of_t : t -> Sexplib0.Sexp.t @@ portable
-    val sexp_of_t__stack : local_ t -> local_ Sexplib0.Sexp.t @@ portable
+    val sexp_of_t__stack : t @ local -> Sexplib0.Sexp.t @ local @@ portable
   end
   [@@ocaml.doc "@inline"]
 
@@ -102,7 +102,7 @@ module type Sexp_poly_local = sig
     val t_of_sexp : Sexplib0.Sexp.t -> t @@ portable
     val __t_of_sexp__ : Sexplib0.Sexp.t -> t @@ portable
     val sexp_of_t : t -> Sexplib0.Sexp.t @@ portable
-    val sexp_of_t__stack : local_ t -> local_ Sexplib0.Sexp.t @@ portable
+    val sexp_of_t__stack : t @ local -> Sexplib0.Sexp.t @ local @@ portable
   end
   [@@ocaml.doc "@inline"]
 
