@@ -36,9 +36,39 @@ val fresh_lambda : loc:location -> (arg:expression -> expression) -> expression
     When [false], they may need to be eta-expanded or wrapped in [lazy]. *)
 val is_value_expression : expression -> bool
 
-(** Shadows [Ppxlib.really_recursive] with a version that respects the [[@opaque]]
-    attribute. *)
-val really_recursive_respecting_opaque : rec_flag -> type_declaration list -> rec_flag
+module Custom_or_opaque : sig
+  type t =
+    | Custom of core_type
+    | Opaque
+end
+
+(** A getter for [[@sexp.custom]] and [[@sexp.opaque]], because they are mutually
+    exclusive and callers likely need to treat either both of them or neither. *)
+val get_custom_or_opaque_attr
+  :  ?mark_as_seen:bool
+  -> core_type
+  -> Custom_or_opaque.t option
+
+module Custom_opaque_or_addr : sig
+  type t =
+    | Custom of core_type
+    | Opaque
+    | Addr of Addr.t
+end
+
+(** A getter for [[@sexp.custom]], [[@sexp.opaque]], and the [[@sexp.addr]]-style
+    attributes, which are all mutually exclusive. Raises if more than one is present. *)
+val get_custom_opaque_or_addr_attr
+  :  ?mark_as_seen:bool
+  -> core_type
+  -> Custom_opaque_or_addr.t option
+
+(** Shadows [Ppxlib.really_recursive] with a version that respects the [[@sexp.opaque]]
+    and [[@sexp.custom]] attributes. *)
+val really_recursive_respecting_opaque_and_custom
+  :  rec_flag
+  -> type_declaration list
+  -> rec_flag
 
 val strip_attributes : Ppxlib_jane.Ast_traverse.map
 

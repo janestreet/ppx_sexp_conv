@@ -34,7 +34,7 @@ let%expect_test "phantom type parameters work correctly" =
   let y : (bool, string) u = u_of_sexp string_of_sexp sexp in
   Expect_test_helpers_base.require_equal
     (module struct
-      type t = string list [@@deriving equal ~localize, sexp_of]
+      type t = string list [@@deriving equal, sexp_of]
     end)
     x
     y;
@@ -53,7 +53,7 @@ let%expect_test "phantom type parameters work correctly" =
   let y : (int, bool) w = w_of_sexp int_of_sexp sexp in
   Expect_test_helpers_base.require_equal
     (module struct
-      type t = int option [@@deriving equal ~localize, sexp_of]
+      type t = int option [@@deriving equal, sexp_of]
     end)
     x
     y;
@@ -90,7 +90,7 @@ let%expect_test "phantom type parameters using [@@phantom: 'a] syntax" =
   let y : (bool, string) u2 = u2_of_sexp string_of_sexp sexp in
   Expect_test_helpers_base.require_equal
     (module struct
-      type t = string list [@@deriving equal ~localize, sexp_of]
+      type t = string list [@@deriving equal, sexp_of]
     end)
     x
     y;
@@ -111,7 +111,7 @@ let%expect_test "phantom type parameters using [@@phantom: 'a] syntax" =
   let y : (int, bool) w2 = w2_of_sexp int_of_sexp sexp in
   Expect_test_helpers_base.require_equal
     (module struct
-      type t = int option [@@deriving equal ~localize, sexp_of]
+      type t = int option [@@deriving equal, sexp_of]
     end)
     x
     y;
@@ -140,7 +140,7 @@ let%expect_test "also in extensions" =
   let y : (foo_bool, string) u = [%of_sexp: ((foo_bool[@phantom]), string) u] sexp in
   Expect_test_helpers_base.require_equal
     (module struct
-      type t = string list [@@deriving equal ~localize, sexp_of]
+      type t = string list [@@deriving equal, sexp_of]
     end)
     x
     y;
@@ -161,7 +161,7 @@ let%expect_test "also in extensions" =
   let y : (int, foo_bool) w = [%of_sexp: (int, (foo_bool[@phantom])) w] sexp in
   Expect_test_helpers_base.require_equal
     (module struct
-      type t = int option [@@deriving equal ~localize, sexp_of]
+      type t = int option [@@deriving equal, sexp_of]
     end)
     x
     y;

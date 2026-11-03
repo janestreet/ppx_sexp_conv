@@ -2,8 +2,8 @@ open! Stdppx
 open! Ppxlib
 
 (** Sexp conversion function, expressed as either a single expression or as a collection
-    of [match] cases. Expressing as cases rather than wrapping directly in [pexp_function]
-    allows us to simplify some expressions built on this. *)
+    of [match] cases. Expressing as cases rather than wrapping directly in
+    [pexp_function_cases] allows us to simplify some expressions built on this. *)
 type t
 
 (** Construct [t] from a list of pattern/expression cases. *)

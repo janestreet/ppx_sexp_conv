@@ -3,7 +3,7 @@ open! Base
 [@@@disable_unused_warnings]
 
 module Sexp_of_t = struct
-  type t = A [@@deriving sexp_of ~portable]
+  type t = A [@@deriving sexp_of]
 end
 
 module Sexp_of_t_portable : sig
@@ -15,7 +15,7 @@ end = struct
 end
 
 module Sexp_of_not_t = struct
-  type not_t = A [@@deriving sexp_of ~portable]
+  type not_t = A [@@deriving sexp_of]
 end
 
 module Sexp_of_not_t_portable : sig
@@ -27,7 +27,7 @@ end = struct
 end
 
 module Of_sexp_t = struct
-  type t = A [@@deriving of_sexp ~portable]
+  type t = A [@@deriving of_sexp]
 end
 
 module Of_sexp_t_portable : sig
@@ -39,7 +39,7 @@ end = struct
 end
 
 module Of_sexp_not_t = struct
-  type not_t = A [@@deriving of_sexp ~portable]
+  type not_t = A [@@deriving of_sexp]
 end
 
 module Of_sexp_not_t_portable : sig
@@ -51,7 +51,7 @@ end = struct
 end
 
 module Sexp_t = struct
-  type t = A [@@deriving sexp ~portable]
+  type t = A [@@deriving sexp]
 end
 
 module Sexp_t_portable : sig
@@ -63,7 +63,7 @@ end = struct
 end
 
 module Sexp_not_t = struct
-  type not_t = A [@@deriving sexp ~portable]
+  type not_t = A [@@deriving sexp]
 end
 
 module Sexp_not_t_portable : sig
@@ -75,7 +75,7 @@ end = struct
 end
 
 module Sexp_t1 = struct
-  type 'a t = A of 'a [@@deriving sexp ~portable]
+  type 'a t = A of 'a [@@deriving sexp]
 end
 
 module Sexp_t1_portable : sig

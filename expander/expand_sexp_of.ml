@@ -18,13 +18,11 @@ let sexp_of_typename ~stackify ~prefix typename =
 let list_map ~loc ~stackify =
   match stackify with
   | false -> [%expr Sexplib0.Sexp_conv.list_map]
-  | true -> [%expr Sexplib0.Sexp_conv.list_map__stack]
+  | true -> [%expr Sexplib0.Sexp_conv.list_map]
 ;;
 
-let sexp_of_opaque ~loc ~stackify =
-  match stackify with
-  | false -> [%expr (Sexplib0.Sexp_conv.sexp_of_opaque : _ -> _)]
-  | true -> [%expr (Sexplib0.Sexp_conv.sexp_of_opaque : _ -> _)]
+let sexp_of_opaque ~loc =
+  Conversion.of_lambda [ ppat_any ~loc --> [%expr Sexplib0.Sexp_conv.sexp_of_opaque ()] ]
 ;;
 
 (* Generates the signature for type conversion to S-expressions *)
@@ -135,67 +133,98 @@ module Str_generate_sexp_of = struct
   (* Conversion of types *)
   let rec sexp_of_type ~renaming typ ~stackify : Conversion.t =
     let loc = { typ.ptyp_loc with loc_ghost = true } in
-    match Ppxlib_jane.Shim.Core_type.of_parsetree typ with
-    | _ when Option.is_some (Attribute.get Attrs.opaque typ) ->
-      Conversion.of_reference_exn ~thunk:false (sexp_of_opaque ~loc ~stackify)
-    | { ptyp_desc = Ptyp_any _; _ } ->
-      Conversion.of_lambda [ ppat_any ~loc --> [%expr Sexplib0.Sexp.Atom "_"] ]
-    | { ptyp_desc = (Ptyp_tuple labeled_tps | Ptyp_unboxed_tuple labeled_tps) as desc; _ }
-      ->
-      let unboxed =
-        match desc with
-        | Ptyp_unboxed_tuple _ -> true
-        | Ptyp_tuple _ -> false
-        | _ -> assert false
-      in
-      (match Ppxlib_jane.as_unlabeled_tuple labeled_tps with
-       | Some tps ->
-         Conversion.of_lambda [ sexp_of_tuple ~renaming ~unboxed (loc, tps) ~stackify ]
-       | None ->
+    match Helpers.get_custom_opaque_or_addr_attr typ with
+    | Some (Custom typ') -> sexp_of_type ~renaming typ' ~stackify
+    | Some Opaque -> sexp_of_opaque ~loc
+    | Some (Addr addr) ->
+      (match typ.ptyp_desc with
+       | Ptyp_constr (_, [ param ]) ->
+         let fresh = Fresh_name.create "addr" ~loc in
+         let coerced =
+           let expect = Addr.runtime_type ~loc addr (strip_attributes#core_type param) in
+           let message =
+             Printf.sprintf
+               "ppx_sexp_conv: expected [_ %s] or equivalent"
+               (Addr.common_type_name addr)
+           in
+           [%expr
+             ([%e Fresh_name.expression fresh]
+              : [%t expect])
+              [@error_message [%e estring ~loc message]]]
+         in
          Conversion.of_lambda
-           [ sexp_of_labeled_tuple ~renaming ~loc ~unboxed labeled_tps ~stackify ])
-    | { ptyp_desc = Ptyp_var (parm, _); _ } ->
-      (match Renaming.binding_kind renaming parm ~loc with
-       | Universally_bound fresh ->
-         Conversion.of_reference_exn ~thunk:false (Fresh_name.expression fresh)
-       | Existentially_bound -> sexp_of_type ~renaming [%type: _] ~stackify)
-    | { ptyp_desc = Ptyp_constr (id, args); _ } ->
-      (match typ with
-       | [%type: [%t? _] sexp_opaque] ->
-         Conversion.of_reference_exn ~thunk:false (sexp_of_opaque ~loc ~stackify)
-       | _ ->
-         Conversion.of_reference_exn
-           ~thunk:false
-           (sexp_of_type_constr
-              ~loc
-              id
-              (List.filter
-                 args
-                 ~f:
-                   (include_param_in_combinator
-                    (* We only provide [[@@phantom]] attributes for type declarations, not
-                       core types *)
-                      ~phantom_params:String.Set.empty)
-               |> List.map ~f:(fun tp ->
-                 Conversion.to_expression
+           [ Fresh_name.pattern fresh
+             --> Conversion.apply
                    ~loc
-                   (sexp_of_type ~renaming tp ~stackify)
-                   ~stackify))
-              ~stackify))
-    | { ptyp_desc = Ptyp_arrow (_, _, _, _, _); _ } ->
-      Conversion.of_lambda
-        [ ppat_any ~loc
-          --> [%expr Sexplib0.Sexp_conv.sexp_of_fun Sexplib0.Sexp_conv.ignore]
-        ]
-    | { ptyp_desc = Ptyp_variant (row_fields, Closed, _); _ } ->
-      sexp_of_variant ~renaming (loc, row_fields) ~stackify
-    | { ptyp_desc = Ptyp_poly (parms, poly_tp); _ } ->
-      sexp_of_poly ~renaming parms poly_tp ~stackify
-    | core_type ->
-      Location.raise_errorf
-        ~loc
-        "Type unsupported for ppx [sexp_of] conversion (%s)"
-        (Ppxlib_jane.Language_feature_name.of_core_type_desc core_type.ptyp_desc)
+                   (sexp_of_type ~renaming param ~stackify)
+                   [%expr [%e Addr.runtime_get addr ~loc] [%e coerced]]
+           ]
+       | _ ->
+         Location.raise_errorf
+           ~loc
+           "ppx_sexp_conv: [@%s] is only allowed on [_ %s] or equivalent."
+           (Addr.attr_name ~hum:true addr)
+           (Addr.common_type_name addr))
+    | None ->
+      (match Ppxlib_jane.Shim.Core_type.of_parsetree typ with
+       | { ptyp_desc = Ptyp_any _; _ } ->
+         Conversion.of_lambda [ ppat_any ~loc --> [%expr Sexplib0.Sexp.Atom "_"] ]
+       | { ptyp_desc = (Ptyp_tuple labeled_tps | Ptyp_unboxed_tuple labeled_tps) as desc
+         ; _
+         } ->
+         let unboxed =
+           match desc with
+           | Ptyp_unboxed_tuple _ -> true
+           | Ptyp_tuple _ -> false
+           | _ -> assert false
+         in
+         (match Ppxlib_jane.as_unlabeled_tuple labeled_tps with
+          | Some tps ->
+            Conversion.of_lambda [ sexp_of_tuple ~renaming ~unboxed (loc, tps) ~stackify ]
+          | None ->
+            Conversion.of_lambda
+              [ sexp_of_labeled_tuple ~renaming ~loc ~unboxed labeled_tps ~stackify ])
+       | { ptyp_desc = Ptyp_var (parm, _); _ } ->
+         (match Renaming.binding_kind renaming parm ~loc with
+          | Universally_bound fresh ->
+            Conversion.of_reference_exn ~thunk:false (Fresh_name.expression fresh)
+          | Existentially_bound -> sexp_of_type ~renaming [%type: _] ~stackify)
+       | { ptyp_desc = Ptyp_constr (id, args); _ } ->
+         (match typ with
+          | [%type: [%t? _] sexp_opaque] -> sexp_of_opaque ~loc
+          | _ ->
+            Conversion.of_reference_exn
+              ~thunk:false
+              (sexp_of_type_constr
+                 ~loc
+                 id
+                 (List.filter
+                    args
+                    ~f:
+                      (include_param_in_combinator
+                       (* We only provide [[@@phantom]] attributes for type declarations,
+                          not core types *)
+                         ~phantom_params:String.Set.empty)
+                  |> List.map ~f:(fun tp ->
+                    Conversion.to_expression
+                      ~loc
+                      (sexp_of_type ~renaming tp ~stackify)
+                      ~stackify))
+                 ~stackify))
+       | { ptyp_desc = Ptyp_arrow (_, _, _, _, _); _ } ->
+         Conversion.of_lambda
+           [ ppat_any ~loc
+             --> [%expr Sexplib0.Sexp_conv.sexp_of_fun Sexplib0.Sexp_conv.ignore]
+           ]
+       | { ptyp_desc = Ptyp_variant (row_fields, Closed, _); _ } ->
+         sexp_of_variant ~renaming (loc, row_fields) ~stackify
+       | { ptyp_desc = Ptyp_poly (parms, poly_tp); _ } ->
+         sexp_of_poly ~renaming parms poly_tp ~stackify
+       | core_type ->
+         Location.raise_errorf
+           ~loc
+           "Type unsupported for ppx [sexp_of] conversion (%s)"
+           (Ppxlib_jane.Language_feature_name.of_core_type_desc core_type.ptyp_desc))
 
   (* Conversion of (unlabeled) tuples *)
   and sexp_of_tuple ~renaming ~unboxed (loc, tps) ~stackify =
@@ -327,7 +356,8 @@ module Str_generate_sexp_of = struct
         value_binding
           ~loc
           ~pat:(Fresh_name.pattern name)
-          ~expr:(sexp_of_opaque ~loc ~stackify)
+          ~expr:(sexp_of_opaque ~loc |> Conversion.to_expression ~loc ~stackify)
+          ~constraint_:None
           ~modes:[]
       in
       List.map ~f:mk_binding parms
@@ -560,7 +590,7 @@ module Str_generate_sexp_of = struct
           ~stackify:use_local_arguments_in_custom_default_functions
           ld
       with
-      | Sexp_option tp ->
+      | Sexp_option { param = tp; must_type_check } ->
         let v = Fresh_name.create "v" ~loc in
         let bnd = Fresh_name.create "bnd" ~loc in
         let arg = Fresh_name.create "arg" ~loc in
@@ -570,6 +600,8 @@ module Str_generate_sexp_of = struct
           Conversion.apply ~loc (sexp_of_type ~renaming tp ~stackify) vname
         in
         let expr =
+          must_type_check
+          >>| fun () ->
           [%expr
             let [%p Fresh_name.pattern bnds] =
               match [%e Fresh_name.expression fresh] with
@@ -587,8 +619,8 @@ module Str_generate_sexp_of = struct
             in
             [%e expr]]
         in
-        Lifted.return (patt, expr)
-      | Sexp_or_null tp ->
+        expr >>| fun expr -> patt, expr
+      | Sexp_or_null { param = tp; must_type_check } ->
         let v = Fresh_name.create "v" ~loc in
         let bnd = Fresh_name.create "bnd" ~loc in
         let arg = Fresh_name.create "arg" ~loc in
@@ -598,6 +630,8 @@ module Str_generate_sexp_of = struct
           Conversion.apply ~loc (sexp_of_type ~renaming tp ~stackify) vname
         in
         let expr =
+          must_type_check
+          >>| fun () ->
           [%expr
             let [%p Fresh_name.pattern bnds] =
               match [%e Fresh_name.expression fresh] with
@@ -615,11 +649,13 @@ module Str_generate_sexp_of = struct
             in
             [%e expr]]
         in
-        Lifted.return (patt, expr)
-      | Sexp_bool ->
+        expr >>| fun expr -> patt, expr
+      | Sexp_bool { must_type_check } ->
         let patt = mk_rec_patt loc patt name fresh in
         let bnd = Fresh_name.create "bnd" ~loc in
         let expr =
+          must_type_check
+          >>| fun () ->
           [%expr
             let [%p Fresh_name.pattern bnds] =
               if [%e Fresh_name.expression fresh]
@@ -633,8 +669,10 @@ module Str_generate_sexp_of = struct
             in
             [%e expr]]
         in
-        Lifted.return (patt, expr)
-      | Sexp_list tp ->
+        expr >>| fun expr -> patt, expr
+      | Sexp_list { param = tp; must_type_check } ->
+        must_type_check
+        >>| fun () ->
         sexp_of_record_field
           ~renaming
           ~bnds
@@ -646,11 +684,12 @@ module Str_generate_sexp_of = struct
             (* deliberately using whatever [sexp_of_list] is in scope *)
             (match stackify with
              | false -> [%expr sexp_of_list]
-             | true -> [%expr sexp_of_list__stack])
+             | true -> [%expr sexp_of_list])
           list_empty_expr
           ~stackify
-        |> Lifted.return
-      | Sexp_array tp ->
+      | Sexp_array { param = tp; must_type_check } ->
+        must_type_check
+        >>| fun () ->
         sexp_of_record_field
           ~renaming
           ~bnds
@@ -662,10 +701,9 @@ module Str_generate_sexp_of = struct
             (* deliberately using whatever [sexp_of_array] is in scope *)
             (match stackify with
              | false -> [%expr sexp_of_array]
-             | true -> [%expr sexp_of_array__stack])
+             | true -> [%expr sexp_of_array])
           array_empty_expr
           ~stackify
-        |> Lifted.return
       | Specific (Drop_default how) ->
         let tp = ld.pld_type in
         (match Attribute.get Attrs.default ld with
@@ -1011,7 +1049,7 @@ module Str_generate_sexp_of = struct
   ;;
 
   let sexp_of_tds ~loc ~path:_ ~unboxed (rec_flag, tds) ~stackify ~portable ~localize =
-    let rec_flag = really_recursive_respecting_opaque rec_flag tds in
+    let rec_flag = really_recursive_respecting_opaque_and_custom rec_flag tds in
     let tds = Ppx_helpers.with_implicit_unboxed_types ~loc ~unboxed tds in
     let (types_being_defined : Types_being_defined.t) =
       match rec_flag with
@@ -1057,6 +1095,7 @@ module Str_generate_sexp_of = struct
                ~loc
                ~pat:[%pat? _]
                ~expr:(evar ~loc name)
+               ~constraint_:None
                ~modes:[ { loc; txt = Mode "portable" } ]))
       ]
     else bindings
@@ -1107,7 +1146,10 @@ module Str_generate_sexp_of = struct
         Location.raise_errorf ~loc "sexp_of_exn/rebind"
     in
     let expr = Lifted.let_bind_user_expressions ~loc expr in
-    [ pstr_value ~loc Nonrecursive [ value_binding ~loc ~pat:[%pat? ()] ~expr ~modes:[] ]
+    [ pstr_value
+        ~loc
+        Nonrecursive
+        [ value_binding ~loc ~pat:[%pat? ()] ~expr ~constraint_:None ~modes:[] ]
     ]
   ;;
 

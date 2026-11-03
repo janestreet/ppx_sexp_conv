@@ -2,14 +2,6 @@ open! Stdppx
 open! Ppxlib
 open Ast_builder.Default
 
-let copy =
-  object
-    inherit Ast_traverse.map
-    method! location loc = { loc with loc_ghost = true }
-    method! attributes _ = []
-  end
-;;
-
 let unsupported ~loc string =
   Location.raise_errorf ~loc "sexp_grammar: %s are unsupported" string
 ;;
@@ -98,7 +90,9 @@ let tyvar_grammar_name name = "_'" ^ name ^ "_sexp_grammar"
 let estr { loc; txt } = estring ~loc txt
 
 let grammar_type ~loc core_type =
-  [%type: [%t copy#core_type core_type] Sexplib0.Sexp_grammar.t]
+  [%type:
+    [%t Ppx_helpers.ghost_and_strip_attributes#core_type core_type]
+      Sexplib0.Sexp_grammar.t]
 ;;
 
 let abstract_grammar ~ctxt ~loc id =
@@ -258,86 +252,120 @@ let grammar_of_field_tags field grammar ~tags_of_doc_comments =
     ~core_type:[%type: Sexplib0.Sexp_grammar.field]
 ;;
 
+let extract_attribute core_type =
+  let loc = core_type.ptyp_loc in
+  let mark_custom_or_opaque_as_seen () =
+    Helpers.get_custom_or_opaque_attr ~mark_as_seen:true core_type
+    |> (ignore : Helpers.Custom_or_opaque.t option -> unit)
+  in
+  let error_mutually_exclusive attr1 attr2 =
+    (* Ensure the unused attribute error does not take priority over the error. *)
+    mark_custom_or_opaque_as_seen ();
+    `Error
+      (pexp_extension
+         ~loc
+         (Location.error_extensionf ~loc "%s and %s are mutually exclusive" attr1 attr2))
+  in
+  let assert_no_sexp_custom () =
+    match Helpers.get_custom_or_opaque_attr ~mark_as_seen:false core_type with
+    | Some (Custom _) -> Error ()
+    | Some Opaque | None -> Ok ()
+  in
+  match
+    ( Attribute.get Attrs.grammar_custom core_type
+    , Attribute.get Attrs.grammar_any core_type )
+  with
+  | None, None ->
+    (* Fall back to any present [@sexp.*] attributes. *)
+    (match Helpers.get_custom_or_opaque_attr core_type with
+     | None -> `None
+     | Some (Custom custom) -> `Custom_type custom
+     | Some Opaque -> `Opaque)
+  | Some custom, None ->
+    (match assert_no_sexp_custom () with
+     | Ok () -> `Custom_expr custom
+     | Error () -> error_mutually_exclusive "[@sexp.custom]" "[@sexp_grammar.custom]")
+  | None, Some maybe_name ->
+    (match assert_no_sexp_custom () with
+     | Ok () -> `Any maybe_name
+     | Error () -> error_mutually_exclusive "[@sexp.custom]" "[@sexp_grammar.any]")
+  | Some _, Some _ ->
+    error_mutually_exclusive "[@sexp_grammar.custom]" "[@sexp_grammar.any]"
+;;
+
 let rec grammar_of_type core_type ~rec_flag ~tags_of_doc_comments =
   let loc = core_type.ptyp_loc in
-  let grammar =
-    let from_attribute =
-      match
-        ( Attribute.get Attrs.grammar_custom core_type
-        , Attribute.get Attrs.grammar_any core_type )
-      with
-      | Some _, Some _ ->
-        Some
-          (pexp_extension
-             ~loc
-             (Location.error_extensionf
+  match extract_attribute core_type with
+  | `Custom_type type_ -> grammar_of_type type_ ~rec_flag ~tags_of_doc_comments
+  | (`Custom_expr _ | `Opaque | `Any _ | `None | `Error _) as attribute_kind ->
+    let grammar =
+      let from_attribute =
+        match attribute_kind with
+        | `Opaque -> Some (opaque_grammar ~loc)
+        (* [@sexp.opaque] composes with the grammar attributes: the converters are opaque
+           while the grammar comes from the attribute. *)
+        | `Custom_expr expr ->
+          Some (untyped_grammar ~loc (annotated_grammar ~loc expr core_type))
+        | `Any maybe_name ->
+          Some (any_grammar ~loc (Option.value maybe_name ~default:"ANY"))
+        | `None -> None
+        | `Error e -> Some e
+      in
+      match from_attribute with
+      | Some expr -> expr
+      | None ->
+        (match Ppxlib_jane.Shim.Core_type_desc.of_parsetree core_type.ptyp_desc with
+         | Ptyp_any _ -> any_grammar ~loc "_"
+         | Ptyp_var (name, _) ->
+           (match rec_flag with
+            | Recursive ->
+              (* For recursive grammars, [grammar_of_type] for any type variables is
+                 called inside a [defn]. The variables should therefore be resolved as
+                 [Tyvar] grammars. *)
+              tyvar_grammar ~loc (estring ~loc name)
+            | Nonrecursive ->
+              (* Outside recursive [defn]s, type variables are passed in as function
+                 arguments. *)
+              unapplied_type_constr_conv
                 ~loc
-                "[@sexp_grammar.custom] and [@sexp_grammar.any] are mutually exclusive"))
-      | Some expr, None ->
-        Some (untyped_grammar ~loc (annotated_grammar ~loc expr core_type))
-      | None, Some maybe_name ->
-        Some (any_grammar ~loc (Option.value maybe_name ~default:"ANY"))
-      | None, None ->
-        (* only check [[@sexp.opaque]] if neither other attribute is present, so that it
-           only counts as using the attribute when we actually base the grammar on it *)
-        (match Attribute.get Attrs.opaque core_type with
-         | Some () -> Some (opaque_grammar ~loc)
-         | None -> None)
+                ~f:tyvar_grammar_name
+                (Located.lident ~loc name)
+              |> untyped_grammar ~loc)
+         | Ptyp_arrow _ -> arrow_grammar ~loc
+         | Ptyp_tuple labeled_tps ->
+           (match Ppxlib_jane.as_unlabeled_tuple labeled_tps with
+            | Some tps ->
+              List.map ~f:(grammar_of_type ~rec_flag ~tags_of_doc_comments) tps
+              |> tuple_grammar ~loc
+              |> list_grammar ~loc
+            | None ->
+              grammar_of_labeled_tuple ~loc ~rec_flag ~tags_of_doc_comments labeled_tps)
+         | Ptyp_unboxed_tuple _ -> unsupported ~loc "unboxed tuple types"
+         | Ptyp_constr (id, args) ->
+           List.map args ~f:(fun core_type ->
+             let loc = core_type.ptyp_loc in
+             grammar_of_type ~rec_flag ~tags_of_doc_comments core_type
+             |> typed_grammar ~loc)
+           |> Ppx_helpers.type_constr_conv_expr ~loc ~f:grammar_name id
+           |> untyped_grammar ~loc
+         | Ptyp_object _ -> unsupported ~loc "object types"
+         | Ptyp_class _ -> unsupported ~loc "class types"
+         | Ptyp_alias _ -> unsupported ~loc "type aliases"
+         | Ptyp_variant (rows, closed_flag, (_ : string list option)) ->
+           (match closed_flag with
+            | Open -> unsupported ~loc "open polymorphic variant types"
+            | Closed ->
+              grammar_of_polymorphic_variant ~loc ~rec_flag ~tags_of_doc_comments rows)
+         | Ptyp_poly _ -> unsupported ~loc "explicitly polymorphic types"
+         | Ptyp_repr _ -> unsupported ~loc "kind-polymorphic types"
+         | Ptyp_newlayout _ -> unsupported ~loc "new-layout types"
+         | Ptyp_package _ -> unsupported ~loc "first-class module types"
+         | Ptyp_quote _ -> unsupported ~loc "quoted types"
+         | Ptyp_splice _ -> unsupported ~loc "spliced types"
+         | Ptyp_of_kind _ -> unsupported ~loc "type of a fixed kind"
+         | Ptyp_extension _ -> unsupported ~loc "unexpanded ppx extensions")
     in
-    match from_attribute with
-    | Some expr -> expr
-    | None ->
-      (match Ppxlib_jane.Shim.Core_type_desc.of_parsetree core_type.ptyp_desc with
-       | Ptyp_any _ -> any_grammar ~loc "_"
-       | Ptyp_var (name, _) ->
-         (match rec_flag with
-          | Recursive ->
-            (* For recursive grammars, [grammar_of_type] for any type variables is called
-               inside a [defn]. The variables should therefore be resolved as [Tyvar]
-               grammars. *)
-            tyvar_grammar ~loc (estring ~loc name)
-          | Nonrecursive ->
-            (* Outside recursive [defn]s, type variables are passed in as function
-               arguments. *)
-            unapplied_type_constr_conv
-              ~loc
-              ~f:tyvar_grammar_name
-              (Located.lident ~loc name)
-            |> untyped_grammar ~loc)
-       | Ptyp_arrow _ -> arrow_grammar ~loc
-       | Ptyp_tuple labeled_tps ->
-         (match Ppxlib_jane.as_unlabeled_tuple labeled_tps with
-          | Some tps ->
-            List.map ~f:(grammar_of_type ~rec_flag ~tags_of_doc_comments) tps
-            |> tuple_grammar ~loc
-            |> list_grammar ~loc
-          | None ->
-            grammar_of_labeled_tuple ~loc ~rec_flag ~tags_of_doc_comments labeled_tps)
-       | Ptyp_unboxed_tuple _ -> unsupported ~loc "unboxed tuple types"
-       | Ptyp_constr (id, args) ->
-         List.map args ~f:(fun core_type ->
-           let loc = core_type.ptyp_loc in
-           grammar_of_type ~rec_flag ~tags_of_doc_comments core_type |> typed_grammar ~loc)
-         |> Ppx_helpers.type_constr_conv_expr ~loc ~f:grammar_name id
-         |> untyped_grammar ~loc
-       | Ptyp_object _ -> unsupported ~loc "object types"
-       | Ptyp_class _ -> unsupported ~loc "class types"
-       | Ptyp_alias _ -> unsupported ~loc "type aliases"
-       | Ptyp_variant (rows, closed_flag, (_ : string list option)) ->
-         (match closed_flag with
-          | Open -> unsupported ~loc "open polymorphic variant types"
-          | Closed ->
-            grammar_of_polymorphic_variant ~loc ~rec_flag ~tags_of_doc_comments rows)
-       | Ptyp_poly _ -> unsupported ~loc "explicitly polymorphic types"
-       | Ptyp_repr _ -> unsupported ~loc "kind-polymorphic types"
-       | Ptyp_newlayout _ -> unsupported ~loc "new-layout types"
-       | Ptyp_package _ -> unsupported ~loc "first-class module types"
-       | Ptyp_quote _ -> unsupported ~loc "quoted types"
-       | Ptyp_splice _ -> unsupported ~loc "spliced types"
-       | Ptyp_of_kind _ -> unsupported ~loc "type of a fixed kind"
-       | Ptyp_extension _ -> unsupported ~loc "unexpanded ppx extensions")
-  in
-  grammar_of_type_tags core_type grammar ~tags_of_doc_comments
+    grammar_of_type_tags core_type grammar ~tags_of_doc_comments
 
 and grammar_of_labeled_tuple ~loc ~rec_flag ~tags_of_doc_comments alist =
   assert (Labeled_tuple.has_any_label alist);
@@ -411,7 +439,7 @@ let record_expr ~loc ~rec_flag ~tags_of_doc_comments ~extra_attr syntax fields =
         match field_kind with
         | Specific Required -> true
         | Specific (Default _)
-        | Sexp_bool
+        | Sexp_bool _
         | Sexp_option _
         | Sexp_or_null _
         | Sexp_array _
@@ -424,35 +452,46 @@ let record_expr ~loc ~rec_flag ~tags_of_doc_comments ~extra_attr syntax fields =
           [%expr
             Cons
               ([%e grammar_of_type ~tags_of_doc_comments ~rec_flag field.pld_type], Empty)]
-        | Sexp_bool -> [%expr Empty]
-        | Sexp_option ty | Sexp_or_null ty ->
-          [%expr Cons ([%e grammar_of_type ~tags_of_doc_comments ~rec_flag ty], Empty)]
-        | Sexp_list ty | Sexp_array ty ->
-          [%expr
-            Cons
-              (List (Many [%e grammar_of_type ~tags_of_doc_comments ~rec_flag ty]), Empty)]
+          |> Lifted.return
+        | Sexp_bool { must_type_check } ->
+          Lifted.map must_type_check ~f:(fun () -> [%expr Empty])
+        | Sexp_option { param = ty; must_type_check }
+        | Sexp_or_null { param = ty; must_type_check } ->
+          Lifted.map must_type_check ~f:(fun () ->
+            [%expr Cons ([%e grammar_of_type ~tags_of_doc_comments ~rec_flag ty], Empty)])
+        | Sexp_list { param = ty; must_type_check }
+        | Sexp_array { param = ty; must_type_check } ->
+          Lifted.map must_type_check ~f:(fun () ->
+            [%expr
+              Cons
+                ( List (Many [%e grammar_of_type ~tags_of_doc_comments ~rec_flag ty])
+                , Empty )])
       in
-      [%expr
-        { name = [%e estr field.pld_name]
-        ; required = [%e ebool ~loc required]
-        ; args = [%e args]
-        }]
-      |> grammar_of_field_tags field ~tags_of_doc_comments)
+      Lifted.map args ~f:(fun args ->
+        [%expr
+          { name = [%e estr field.pld_name]
+          ; required = [%e ebool ~loc required]
+          ; args = [%e args]
+          }]
+        |> grammar_of_field_tags field ~tags_of_doc_comments))
+    |> Lifted.all
   in
   let allow_extra_fields =
     match Attribute.get extra_attr syntax with
     | Some () -> true
     | None -> false
   in
-  [%expr
-    { allow_extra_fields = [%e ebool ~loc allow_extra_fields]
-    ; fields = [%e elist ~loc fields]
-    }]
+  Lifted.map fields ~f:(fun fields ->
+    [%expr
+      { allow_extra_fields = [%e ebool ~loc allow_extra_fields]
+      ; fields = [%e elist ~loc fields]
+      }])
 ;;
 
 let grammar_of_variant ~loc ~rec_flag ~tags_of_doc_comments clause_decls =
   let clauses =
-    List.map clause_decls ~f:(fun clause : Variant_clause_type.t ->
+    List.map clause_decls ~f:(fun clause ->
+      let open Variant_clause_type in
       let loc = clause.pcd_loc in
       let tags = Tags.get clause ~tags:Attrs.tags_cd ~tag:Attrs.tag_cd in
       let comments = attr_doc_comments ~tags_of_doc_comments clause.pcd_attributes in
@@ -471,12 +510,14 @@ let grammar_of_variant ~loc ~rec_flag ~tags_of_doc_comments clause_decls =
               ; tags
               ; clause_kind = list_clause ~loc args
               }
+              |> Lifted.return
             | _ -> Attrs.invalid_attribute ~loc Attrs.list_variant "_ list")
          | _ -> Attrs.invalid_attribute ~loc Attrs.list_variant "_ list")
       | None ->
         (match clause.pcd_args with
          | Pcstr_tuple [] ->
            { name = clause.pcd_name; comments; tags; clause_kind = atom_clause ~loc }
+           |> Lifted.return
          | Pcstr_tuple (_ :: _ as args) ->
            let args =
              tuple_grammar
@@ -486,24 +527,29 @@ let grammar_of_variant ~loc ~rec_flag ~tags_of_doc_comments clause_decls =
                   |> grammar_of_type ~rec_flag ~tags_of_doc_comments))
            in
            { name = clause.pcd_name; comments; tags; clause_kind = list_clause ~loc args }
+           |> Lifted.return
          | Pcstr_record fields ->
-           let args =
-             record_expr
-               ~loc
-               ~rec_flag
-               ~tags_of_doc_comments
-               ~extra_attr:Attrs.allow_extra_fields_cd
-               clause
-               fields
-             |> fields_grammar ~loc
-           in
-           { name = clause.pcd_name; comments; tags; clause_kind = list_clause ~loc args }))
+           record_expr
+             ~loc
+             ~rec_flag
+             ~tags_of_doc_comments
+             ~extra_attr:Attrs.allow_extra_fields_cd
+             clause
+             fields
+           |> Lifted.map ~f:(fun record ->
+             { name = clause.pcd_name
+             ; comments
+             ; tags
+             ; clause_kind = list_clause ~loc (fields_grammar ~loc record)
+             })))
+    |> Lifted.all
   in
-  variant_grammars
-    ~loc
-    ~case_sensitivity:[%expr Case_sensitive_except_first_character]
-    ~clauses
-  |> union_grammar ~loc
+  Lifted.map clauses ~f:(fun clauses ->
+    variant_grammars
+      ~loc
+      ~case_sensitivity:[%expr Case_sensitive_except_first_character]
+      ~clauses
+    |> union_grammar ~loc)
 ;;
 
 let grammar_of_td ~ctxt ~rec_flag ~tags_of_doc_comments td =
@@ -518,15 +564,16 @@ let grammar_of_td ~ctxt ~rec_flag ~tags_of_doc_comments td =
       ~extra_attr:Attrs.allow_extra_fields_td
       td
       fields
-    |> fields_grammar ~loc
-    |> list_grammar ~loc
+    |> Lifted.map ~f:(fields_grammar ~loc)
+    |> Lifted.map ~f:(list_grammar ~loc)
   | Ptype_record_unboxed_product _ -> unsupported ~loc "unboxed record types"
   | Ptype_variant clauses ->
     grammar_of_variant ~loc ~rec_flag ~tags_of_doc_comments clauses
   | Ptype_abstract ->
     (match td.ptype_manifest with
-     | None -> abstract_grammar ~ctxt ~loc td.ptype_name
-     | Some core_type -> grammar_of_type ~rec_flag ~tags_of_doc_comments core_type)
+     | None -> abstract_grammar ~ctxt ~loc td.ptype_name |> Lifted.return
+     | Some core_type ->
+       grammar_of_type ~rec_flag ~tags_of_doc_comments core_type |> Lifted.return)
 ;;
 
 let pattern_of_td td =
@@ -598,9 +645,9 @@ let nonrecursive_grammars ~ctxt ~loc ~tags_of_doc_comments td_lists =
       let pat = pattern_of_td td in
       let expr =
         grammar_of_td ~ctxt ~rec_flag:Nonrecursive ~tags_of_doc_comments td
-        |> lazy_grammar td ~loc
-        |> typed_grammar ~loc
-        |> td_params_fun td
+        |> Lifted.map ~f:(fun grammar ->
+          grammar |> lazy_grammar td ~loc |> typed_grammar ~loc |> td_params_fun td)
+        |> Lifted.let_bind_user_expressions ~loc
       in
       value_binding ~loc ~pat ~expr)
     |> pstr_value_list ~loc Nonrecursive)
@@ -637,8 +684,9 @@ let recursive_grammar_defns ~ctxt ~loc ~tags_of_doc_comments tds =
       |> elist ~loc
     in
     let grammar = grammar_of_td ~ctxt ~rec_flag:Recursive ~tags_of_doc_comments td in
-    defn_expr ~loc ~tycon ~tyvars ~grammar)
-  |> elist ~loc
+    Lifted.map grammar ~f:(fun grammar -> defn_expr ~loc ~tycon ~tyvars ~grammar))
+  |> Lifted.all
+  |> Lifted.map ~f:(elist ~loc)
 ;;
 
 (* Grammar expression using [Recursive] and a shared definition of grammar definitions.
@@ -675,7 +723,8 @@ let recursive_grammars ~ctxt ~loc ~tags_of_doc_comments tds =
     let defns_item =
       let expr =
         recursive_grammar_defns ~ctxt ~loc ~tags_of_doc_comments tds
-        |> pexp_let ~loc Nonrecursive (recursive_grammar_tycons tds)
+        |> Lifted.map ~f:(pexp_let ~loc Nonrecursive (recursive_grammar_tycons tds))
+        |> Lifted.let_bind_user_expressions ~loc
       in
       let expr =
         [%expr

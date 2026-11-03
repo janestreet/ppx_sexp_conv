@@ -8,7 +8,7 @@ type abstract_a [@@deriving sexp] [@@deriving_inline sexp_grammar]
 
 let _ = fun (_ : abstract_a) -> ()
 
-let (abstract_a_sexp_grammar : abstract_a Sexplib0.Sexp_grammar.t) =
+let abstract_a_sexp_grammar : abstract_a Sexplib0.Sexp_grammar.t =
   { untyped = Any "Test_coverage_for_deriving.abstract_a" }
 ;;
 
@@ -20,7 +20,7 @@ type abstract_b [@@deriving sexp] [@@deriving_inline sexp_grammar]
 
 let _ = fun (_ : abstract_b) -> ()
 
-let (abstract_b_sexp_grammar : abstract_b Sexplib0.Sexp_grammar.t) =
+let abstract_b_sexp_grammar : abstract_b Sexplib0.Sexp_grammar.t =
   { untyped = Any "Test_coverage_for_deriving.abstract_b" }
 ;;
 
@@ -31,7 +31,7 @@ let _ = abstract_b_sexp_grammar
 type integer = int [@@deriving sexp] [@@deriving_inline sexp_grammar]
 
 let _ = fun (_ : integer) -> ()
-let (integer_sexp_grammar : integer Sexplib0.Sexp_grammar.t) = int_sexp_grammar
+let integer_sexp_grammar : integer Sexplib0.Sexp_grammar.t = int_sexp_grammar
 let _ = integer_sexp_grammar
 
 [@@@end]
@@ -105,7 +105,7 @@ type enum =
 
 let _ = fun (_ : enum) -> ()
 
-let (enum_sexp_grammar : enum Sexplib0.Sexp_grammar.t) =
+let enum_sexp_grammar : enum Sexplib0.Sexp_grammar.t =
   { untyped =
       Variant
         { case_sensitivity = Case_sensitive_except_first_character
@@ -192,7 +192,7 @@ let _ = optional_sexp_grammar
 type empty = | [@@deriving sexp] [@@deriving_inline sexp_grammar]
 
 let _ = fun (_ : empty) -> ()
-let (empty_sexp_grammar : empty Sexplib0.Sexp_grammar.t) = { untyped = Union [] }
+let empty_sexp_grammar : empty Sexplib0.Sexp_grammar.t = { untyped = Union [] }
 let _ = empty_sexp_grammar
 
 [@@@end]
@@ -219,7 +219,7 @@ type color =
 
 let _ = fun (_ : color) -> ()
 
-let (color_sexp_grammar : color Sexplib0.Sexp_grammar.t) =
+let color_sexp_grammar : color Sexplib0.Sexp_grammar.t =
   { untyped =
       Variant
         { case_sensitivity = Case_sensitive
@@ -438,6 +438,45 @@ type record_attributes =
 let _ = fun (_ : record_attributes) -> ()
 
 let record_attributes_sexp_grammar : record_attributes Sexplib0.Sexp_grammar.t =
+  let _must_type_check__186_ : _ =
+    fun (b : bool) ->
+    let _ : _ =
+      (b : Stdlib.Bool.t) [@error_message "ppx_sexp_conv: expected [bool] or equivalent"]
+    in
+    ()
+  and _must_type_check__187_ : _ =
+    fun (c : float option) ->
+    let _ : _ =
+      (c
+       : float Stdlib.Option.t)
+       [@error_message "ppx_sexp_conv: expected [_ option] or equivalent"]
+    in
+    ()
+  and _must_type_check__188_ : _ =
+    fun (d : string list) ->
+    let _ : _ =
+      (d
+       : string Stdlib.List.t)
+       [@error_message "ppx_sexp_conv: expected [_ list] or equivalent"]
+    in
+    ()
+  and _must_type_check__189_ : _ =
+    fun (e : bytes array) ->
+    let _ : _ =
+      (e
+       : bytes Stdlib.Array.t)
+       [@error_message "ppx_sexp_conv: expected [_ array] or equivalent"]
+    in
+    ()
+  and _must_type_check__190_ : _ =
+    fun (g : char or_null) ->
+    let _ : _ =
+      (g
+       : char Basement.Or_null_shim.t)
+       [@error_message "ppx_sexp_conv: expected [_ or_null] or equivalent"]
+    in
+    ()
+  in
   { untyped =
       List
         (Fields
@@ -500,6 +539,45 @@ type variant_attributes =
 let _ = fun (_ : variant_attributes) -> ()
 
 let variant_attributes_sexp_grammar : variant_attributes Sexplib0.Sexp_grammar.t =
+  let _must_type_check__240_ : _ =
+    fun (b : bool) ->
+    let _ : _ =
+      (b : Stdlib.Bool.t) [@error_message "ppx_sexp_conv: expected [bool] or equivalent"]
+    in
+    ()
+  and _must_type_check__241_ : _ =
+    fun (c : float option) ->
+    let _ : _ =
+      (c
+       : float Stdlib.Option.t)
+       [@error_message "ppx_sexp_conv: expected [_ option] or equivalent"]
+    in
+    ()
+  and _must_type_check__242_ : _ =
+    fun (d : string list) ->
+    let _ : _ =
+      (d
+       : string Stdlib.List.t)
+       [@error_message "ppx_sexp_conv: expected [_ list] or equivalent"]
+    in
+    ()
+  and _must_type_check__243_ : _ =
+    fun (e : bytes array) ->
+    let _ : _ =
+      (e
+       : bytes Stdlib.Array.t)
+       [@error_message "ppx_sexp_conv: expected [_ array] or equivalent"]
+    in
+    ()
+  and _must_type_check__244_ : _ =
+    fun (g : char or_null) ->
+    let _ : _ =
+      (g
+       : char Basement.Or_null_shim.t)
+       [@error_message "ppx_sexp_conv: expected [_ or_null] or equivalent"]
+    in
+    ()
+  in
   { untyped =
       Variant
         { case_sensitivity = Case_sensitive_except_first_character

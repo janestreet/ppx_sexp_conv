@@ -255,6 +255,31 @@ field, respectively, can be omitted when it is empty.
   { arr = [|1;2|]; lst = [3;4] } => ((arr (1 2)) (lst (3 4)))
 #+end_src
 
+The attributes =sexp.addr=, =sexp.addr.imm=, =sexp.addr.ext=, and =sexp.addr.ext.imm=
+indicate that a record field containing an =Ox= address (=Ox.Addr.t=, =Ox.Addr.Imm.t=,
+=Ox.Addr.Ext.t=, or =Ox.Addr.Ext.Imm.t=, respectively) should be serialized by reading
+the value the address points at. In particular, this makes it possible to derive
+=sexp_of= for records containing addresses of unboxed types whose kinds =Ox= does not
+provide =sexp_of= functions for.
+
+#+begin_src ocaml
+  type t = #{ p : #(i64 * i64) Addr.t [@sexp.addr] } [@@deriving sexp_of]
+
+  #{ p } (* where [p] is the address of [#(#1L, #2L)] *) => ((p (1 2)))
+#+end_src
+
+The attributes may also be placed on the address type itself, including in standalone
+=[%sexp_of: _]= position:
+
+#+begin_src ocaml
+  [%sexp_of: #(i64 * i64) Addr.t [@sexp.addr]]
+#+end_src
+
+These attributes only support =sexp_of=; deriving =of_sexp= is not supported. The
+generated code reads through the address via =Ppx_ox_runtime=, the runtime library of
+=ppx_ox=, so these attributes can only be used in libraries that are also preprocessed
+with =ppx_ox=.
+
 *** Defaults
 
 More complex default values can be specified explicitly using several
@@ -448,6 +473,31 @@ back to the original value.  Here is an example conversion:
 #+begin_src ocaml
   (42, some_stuff)  =>  (42 <opaque>)
 #+end_src
+
+** Custom converters
+
+Use =[@sexp.custom: ty]= to serialize a type using the converters of another,
+equal type =ty=:
+
+#+begin_src ocaml
+  type t = { x : (My_type.t [@sexp.custom: Other.t]) } [@@deriving sexp]
+#+end_src
+
+This calls =Other.sexp_of_t= and =Other.t_of_sexp= for the field, while the
+field type stays =My_type.t=.  The two types must be equal, otherwise the
+generated code does not type-check.
+
+The payload type's module must provide the necessary functions (=sexp_of_t=,
+=t_of_sexp=, =t_sexp_grammar=, =sexp_of_t__stack=, depending on the
+=[@@deriving]=); a missing one shows up as an "Unbound value" error.
+
+This is useful when a type exports multiple serializations (likely via different
+modules), or when a type exports different derivers via different modules, and
+this makes combining them easier.
+
+=[@sexp.custom]= is mutually exclusive with =[@sexp.opaque]=,
+=[@sexp_grammar.custom]=, and =[@sexp_grammar.any]= because it would otherwise
+be unclear which attribute takes priority.
 
 ** Function types
 
@@ -647,7 +697,8 @@ Convert uses of ~sexp_option~, ~sexp_list~, ~sexp_array~, and ~sexp_bool~ to
 uses of ~[@sexp.option]~, ~[@sexp.list]~, ~[@sexp.array]~, and ~[@sexp.bool]~ as
 appropriate. The attribute only specifies the modification, not the type, so you
 will need to use the regular types ~option~, ~list~, ~array~, and/or ~bool~ as
-well. Unlike ~[@sexp.opaque]~, these attributes do not need extra parentheses.
+well. Equivalent types, like ~Bool.t~ or ~List.t~, work too. Unlike
+~[@sexp.opaque]~, these attributes do not need extra parentheses.
 
 Before:
 

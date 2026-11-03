@@ -1,12 +1,12 @@
 open! Base
 
-module%template Abstract : sig
-  type t [@@deriving_inline sexp [@alloc stack]]
+module Abstract : sig
+  type t [@@deriving_inline sexp]
 
   include sig
     [@@@ocaml.warning "-32"]
 
-    include Sexplib0.Sexpable.S__stack with type t := t
+    include Sexplib0.Sexpable.S with type t := t
   end
   [@@ocaml.doc "@inline"]
 
@@ -371,7 +371,7 @@ module Record_with_defaults_and_stackify : sig
   include sig
     [@@@ocaml.warning "-32"]
 
-    include Sexplib0.Sexpable.S__stack with type t := t
+    include Sexplib0.Sexpable.S with type t := t
   end
   [@@ocaml.doc "@inline"]
 
@@ -494,4 +494,9 @@ module Portable : sig
   [@@ocaml.doc "@inline"]
 
   [@@@end]
+end
+
+module Custom : sig
+  type t = (int * int * int) list [@@deriving sexp]
+  type 'a t1 = ('a * 'a) list [@@deriving sexp]
 end

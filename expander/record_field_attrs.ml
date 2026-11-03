@@ -1,15 +1,23 @@
 open! Stdppx
 open! Ppxlib
 open Attrs
+open Ast_builder.Default
 
 module Generic = struct
+  type nullary = { must_type_check : unit Lifted.t }
+
+  type unary =
+    { param : core_type
+    ; must_type_check : unit Lifted.t
+    }
+
   type 'specific t =
     | Omit_nil
-    | Sexp_array of core_type
-    | Sexp_bool
-    | Sexp_list of core_type
-    | Sexp_option of core_type
-    | Sexp_or_null of core_type
+    | Sexp_array of unary
+    | Sexp_bool of nullary
+    | Sexp_list of unary
+    | Sexp_option of unary
+    | Sexp_or_null of unary
     | Specific of 'specific
 end
 
@@ -19,41 +27,88 @@ let get_attribute attr ld ~f =
   Option.map (Attribute.get attr ld) ~f:(fun x -> f x, Attribute.name attr)
 ;;
 
+let must_type_check ~loc ~name ~actual ~expect type_description =
+  let actual = Helpers.strip_attributes#core_type actual in
+  let expect = Helpers.strip_attributes#core_type expect in
+  let message =
+    Printf.sprintf "ppx_sexp_conv: expected [%s] or equivalent" type_description
+  in
+  [%expr
+    fun ([%p pvar ~loc name] : [%t actual]) ->
+      let _ : _ =
+        ([%e evar ~loc name] : [%t expect]) [@error_message [%e estring ~loc message]]
+      in
+      ()]
+  |> Lifted.create ~loc ~prefix:"_must_type_check" ~ty:[%type: _]
+  |> Lifted.map ~f:(fun (_ : expression) -> ())
+;;
+
+let get_unary ld attr ~short_type_name ~make_type f =
+  get_attribute attr ~f:(fun () ->
+    let loc = ld.pld_type.ptyp_loc in
+    match ld.pld_type.ptyp_desc with
+    | Ptyp_constr (_, [ param ]) ->
+      let must_type_check =
+        must_type_check
+          ~loc
+          ~name:ld.pld_name.txt
+          ~actual:ld.pld_type
+          ~expect:(make_type ~loc param)
+          ("_ " ^ short_type_name)
+      in
+      f { param; must_type_check }
+    | _ ->
+      Location.raise_errorf
+        ~loc
+        "ppx_sexp_conv: [@%s] is only allowed on [_ %s] or equivalent."
+        (Attribute.name attr)
+        short_type_name)
+;;
+
 let create ~loc specific_getters ld ~if_no_attribute =
   let generic_getters =
     [ get_attribute omit_nil ~f:(fun () -> Omit_nil)
-    ; (fun ld ->
-        match ld.pld_type with
-        | ty when Option.is_some (Attribute.get bool ld) ->
-          (match ty with
-           | [%type: bool] -> Some (Sexp_bool, "[@sexp.bool]")
-           | _ -> invalid_attribute ~loc bool "bool")
-        | ty when Option.is_some (Attribute.get option ld) ->
-          (match ty with
-           | [%type: [%t? ty] option] -> Some (Sexp_option ty, "[@sexp.option]")
-           | _ -> invalid_attribute ~loc option "_ option")
-        | ty when Option.is_some (Attribute.get or_null ld) ->
-          (match ty with
-           | [%type: [%t? ty] or_null] -> Some (Sexp_or_null ty, "[@sexp.or_null]")
-           | _ -> invalid_attribute ~loc or_null "_ or_null")
-        | ty when Option.is_some (Attribute.get list ld) ->
-          (match ty with
-           | [%type: [%t? ty] list] -> Some (Sexp_list ty, "[@sexp.list]")
-           | _ -> invalid_attribute ~loc list "_ list")
-        | ty when Option.is_some (Attribute.get array ld) ->
-          (match ty with
-           | [%type: [%t? ty] array] -> Some (Sexp_array ty, "[@sexp.array]")
-           | _ -> invalid_attribute ~loc array "_ array")
-        | _ -> None)
+    ; get_attribute bool ~f:(fun () ->
+        let must_type_check =
+          must_type_check
+            ~loc
+            ~name:ld.pld_name.txt
+            ~actual:ld.pld_type
+            ~expect:[%type: Stdlib.Bool.t]
+            "bool"
+        in
+        Sexp_bool { must_type_check })
+    ; get_unary
+        ld
+        option
+        ~short_type_name:"option"
+        ~make_type:(fun ~loc ty -> [%type: [%t ty] Stdlib.Option.t])
+        (fun x -> Sexp_option x)
+    ; get_unary
+        ld
+        or_null
+        ~short_type_name:"or_null"
+        ~make_type:(fun ~loc ty -> [%type: [%t ty] Basement.Or_null_shim.t])
+        (fun x -> Sexp_or_null x)
+    ; get_unary
+        ld
+        list
+        ~short_type_name:"list"
+        ~make_type:(fun ~loc ty -> [%type: [%t ty] Stdlib.List.t])
+        (fun x -> Sexp_list x)
+    ; get_unary
+        ld
+        array
+        ~short_type_name:"array"
+        ~make_type:(fun ~loc ty -> [%type: [%t ty] Stdlib.Array.t])
+        (fun x -> Sexp_array x)
     ]
   in
-  let getters =
-    let wrapped_getters =
-      List.map specific_getters ~f:(fun get ld ->
-        Option.map (get ld) ~f:(fun (specific, string) -> Specific specific, string))
-    in
-    List.concat [ wrapped_getters; generic_getters ]
+  let wrapped_getters =
+    List.map specific_getters ~f:(fun get ld ->
+      Option.map (get ld) ~f:(fun (specific, string) -> Specific specific, string))
   in
+  let getters = List.concat [ wrapped_getters; generic_getters ] in
   match List.filter_map getters ~f:(fun f -> f ld) with
   | [] -> Specific if_no_attribute
   | [ (v, _) ] -> v
@@ -61,15 +116,11 @@ let create ~loc specific_getters ld ~if_no_attribute =
     Location.raise_errorf
       ~loc
       "The following elements are mutually exclusive: %s"
-      (String.concat ~sep:" " (List.map attributes ~f:snd))
+      (List.map attributes ~f:(fun (_, name) -> Printf.sprintf "[@%s]" name)
+       |> String.concat ~sep:" ")
 ;;
 
-let strip_attributes =
-  object
-    inherit Ast_traverse.map
-    method! attributes _ = []
-  end
-;;
+let strip_attributes = Ppx_helpers.strip_attributes
 
 let lift_default ~loc ld expr =
   let ty = strip_attributes#core_type ld.pld_type in

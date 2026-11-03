@@ -4,7 +4,7 @@ type t = { a : int [@sexp_drop_default ( = )] [@sexp.omit_nil] }
 [%%expect
   {|
 Line _, characters _-_:
-Error: The following elements are mutually exclusive: sexp.sexp_drop_default sexp.omit_nil
+Error: The following elements are mutually exclusive: [@sexp.sexp_drop_default] [@sexp.omit_nil]
 |}]
 
 type t = { a : int list [@sexp.list] [@sexp.omit_nil] } [@@deriving sexp_of ~stackify]
@@ -12,7 +12,7 @@ type t = { a : int list [@sexp.list] [@sexp.omit_nil] } [@@deriving sexp_of ~sta
 [%%expect
   {|
 Line _, characters _-_:
-Error: The following elements are mutually exclusive: sexp.omit_nil [@sexp.list]
+Error: The following elements are mutually exclusive: [@sexp.omit_nil] [@sexp.list]
 |}]
 
 type t = { a : int [@default 0] [@sexp.omit_nil] } [@@deriving of_sexp]
@@ -20,7 +20,7 @@ type t = { a : int [@default 0] [@sexp.omit_nil] } [@@deriving of_sexp]
 [%%expect
   {|
 Line _, characters _-_:
-Error: The following elements are mutually exclusive: sexp.default sexp.omit_nil
+Error: The following elements are mutually exclusive: [@sexp.default] [@sexp.omit_nil]
 |}]
 
 type t = int [@@deriving sexp ~stackify] [@@sexp.allow_extra_fields]
@@ -134,13 +134,13 @@ type t = { x : unit [@sexp.option] } [@@deriving sexp_grammar]
 [%%expect
   {|
 Line _, characters _-_:
-Error: ppx_sexp_conv: [@sexp.option] is only allowed on type [_ option].
+Error: ppx_sexp_conv: [@sexp.option] is only allowed on [_ option] or equivalent.
 
 Line _, characters _-_:
-Error: ppx_sexp_conv: [@sexp.option] is only allowed on type [_ option].
+Error: ppx_sexp_conv: [@sexp.option] is only allowed on [_ option] or equivalent.
 
 Line _, characters _-_:
-Error: ppx_sexp_conv: [@sexp.option] is only allowed on type [_ option].
+Error: ppx_sexp_conv: [@sexp.option] is only allowed on [_ option] or equivalent.
 |}]
 
 type t = { x : unit [@sexp.or_null] } [@@deriving sexp_of ~stackify]
@@ -150,13 +150,13 @@ type t = { x : unit [@sexp.or_null] } [@@deriving sexp_grammar]
 [%%expect
   {|
 Line _, characters _-_:
-Error: ppx_sexp_conv: [@sexp.or_null] is only allowed on type [_ or_null].
+Error: ppx_sexp_conv: [@sexp.or_null] is only allowed on [_ or_null] or equivalent.
 
 Line _, characters _-_:
-Error: ppx_sexp_conv: [@sexp.or_null] is only allowed on type [_ or_null].
+Error: ppx_sexp_conv: [@sexp.or_null] is only allowed on [_ or_null] or equivalent.
 
 Line _, characters _-_:
-Error: ppx_sexp_conv: [@sexp.or_null] is only allowed on type [_ or_null].
+Error: ppx_sexp_conv: [@sexp.or_null] is only allowed on [_ or_null] or equivalent.
 |}]
 
 type t = { x : unit [@sexp.list] } [@@deriving sexp_of ~stackify]
@@ -166,13 +166,13 @@ type t = { x : unit [@sexp.list] } [@@deriving sexp_grammar]
 [%%expect
   {|
 Line _, characters _-_:
-Error: ppx_sexp_conv: [@sexp.list] is only allowed on type [_ list].
+Error: ppx_sexp_conv: [@sexp.list] is only allowed on [_ list] or equivalent.
 
 Line _, characters _-_:
-Error: ppx_sexp_conv: [@sexp.list] is only allowed on type [_ list].
+Error: ppx_sexp_conv: [@sexp.list] is only allowed on [_ list] or equivalent.
 
 Line _, characters _-_:
-Error: ppx_sexp_conv: [@sexp.list] is only allowed on type [_ list].
+Error: ppx_sexp_conv: [@sexp.list] is only allowed on [_ list] or equivalent.
 |}]
 
 type t = { x : unit [@sexp.array] } [@@deriving sexp_of ~stackify]
@@ -182,13 +182,13 @@ type t = { x : unit [@sexp.array] } [@@deriving sexp_grammar]
 [%%expect
   {|
 Line _, characters _-_:
-Error: ppx_sexp_conv: [@sexp.array] is only allowed on type [_ array].
+Error: ppx_sexp_conv: [@sexp.array] is only allowed on [_ array] or equivalent.
 
 Line _, characters _-_:
-Error: ppx_sexp_conv: [@sexp.array] is only allowed on type [_ array].
+Error: ppx_sexp_conv: [@sexp.array] is only allowed on [_ array] or equivalent.
 
 Line _, characters _-_:
-Error: ppx_sexp_conv: [@sexp.array] is only allowed on type [_ array].
+Error: ppx_sexp_conv: [@sexp.array] is only allowed on [_ array] or equivalent.
 |}]
 
 type t = { x : unit [@sexp.bool] } [@@deriving sexp_of ~stackify]
@@ -198,13 +198,19 @@ type t = { x : unit [@sexp.bool] } [@@deriving sexp_grammar]
 [%%expect
   {|
 Line _, characters _-_:
-Error: ppx_sexp_conv: [@sexp.bool] is only allowed on type [bool].
+Error: The value x has type unit but an expression was expected of type
+         bool
+       ppx_sexp_conv: expected [bool] or equivalent
 
 Line _, characters _-_:
-Error: ppx_sexp_conv: [@sexp.bool] is only allowed on type [bool].
+Error: The value x has type unit but an expression was expected of type
+         bool
+       ppx_sexp_conv: expected [bool] or equivalent
 
 Line _, characters _-_:
-Error: ppx_sexp_conv: [@sexp.bool] is only allowed on type [bool].
+Error: The value x has type unit but an expression was expected of type
+         bool
+       ppx_sexp_conv: expected [bool] or equivalent
 |}]
 
 type t = A of unit [@sexp.list] [@@deriving sexp_of ~stackify]
@@ -281,7 +287,7 @@ type t = T : 'a -> t [@@deriving sexp_grammar]
   {|
 Line _, characters _-_:
 Error: Unbound value _'a_sexp_grammar
-Hint: Did you mean char_sexp_grammar, int_sexp_grammar or ref_sexp_grammar?
+Hint:   Did you mean char_sexp_grammar, int_sexp_grammar or ref_sexp_grammar?
 |}]
 
 (* If we can sensibly derive [sexp_grammar], we might as well, because the user might
@@ -295,9 +301,9 @@ type _ t = T : int -> string t [@@deriving of_sexp]
 [%%expect
   {|
 Line _, characters _-_:
-Error: This expression has type string t
-       but an expression was expected of type a__110_ t
-       Type string is not compatible with type a__110_
+Error: This constructor has type string t
+       but an expression was expected of type a__120_ t
+       Type string is not compatible with type a__120_
 |}]
 
 type t = exn [@@deriving sexp_of ~stackify]
@@ -306,7 +312,7 @@ type t = exn [@@deriving sexp_of ~stackify]
   {|
 Line _, characters _-_:
 Error: Unbound value sexp_of_exn__stack
-Hint: Did you mean sexp_of_int__stack,
+Hint:   Did you mean sexp_of_int__stack,
 sexp_of_many__stack or sexp_of_ref__stack?
 |}]
 
@@ -369,6 +375,39 @@ type t = (int[@sexp_grammar.any] [@sexp_grammar.custom int_sexp_grammar])
 Line _, characters _-_:
 Error: [@sexp_grammar.custom] and [@sexp_grammar.any] are mutually exclusive
 |}]
+
+type t = (int[@sexp.custom: int] [@sexp.opaque]) [@@deriving sexp_of ~stackify]
+type t = (int[@sexp.custom: int] [@sexp.opaque]) [@@deriving of_sexp]
+type t = (int[@sexp.custom: int] [@sexp.opaque]) [@@deriving sexp_grammar]
+
+[%%expect
+  {|
+Line _, characters _-_:
+Error: ppx_sexp_conv: [@sexp.custom] and [@sexp.opaque] are mutually exclusive
+
+Line _, characters _-_:
+Error: ppx_sexp_conv: [@sexp.custom] and [@sexp.opaque] are mutually exclusive
+
+Line _, characters _-_:
+Error: ppx_sexp_conv: [@sexp.custom] and [@sexp.opaque] are mutually exclusive
+|}]
+
+type t = (int[@sexp.custom: int] [@sexp_grammar.custom int_sexp_grammar])
+[@@deriving sexp_grammar]
+
+[%%expect
+  {|
+Line _, characters _-_:
+Error: [@sexp.custom] and [@sexp_grammar.custom] are mutually exclusive
+|}]
+
+type t = (int[@sexp.custom: int] [@sexp_grammar.any]) [@@deriving sexp_grammar]
+
+[%%expect
+  {|
+Line _, characters _-_:
+Error: [@sexp.custom] and [@sexp_grammar.any] are mutually exclusive
+|}]
 ;;
 
 #reset_line_numbers
@@ -394,4 +433,58 @@ Error: The value Non_portable.t_of_sexp is nonportable
        but is expected to be portable
          because it is used inside the function at file "errors.mlt", lines 6-10, characters 0-27
          which is expected to be portable.
+|}]
+
+(* [@sexp.custom] *)
+
+(* The payload type's converters must agree with the type being converted. *)
+
+type t = (int[@sexp.custom: string]) [@@deriving sexp_of]
+type t = (int[@sexp.custom: string]) [@@deriving of_sexp]
+
+[%%expect
+  {|
+Line _, characters _-_:
+Error: The value sexp_of_string has type string -> Sexp.t
+       but an expression was expected of type t -> Sexp.t
+       Type string is not compatible with type t
+
+Line _, characters _-_:
+Error: The value string_of_sexp has type Sexp.t -> string
+       but an expression was expected of type Sexp.t -> t
+       Type string is not compatible with type t
+|}]
+
+(* The attribute name cannot be abbreviated. *)
+
+type t = (int[@custom: string]) [@@deriving sexp_of]
+
+[%%expect
+  {|
+Line _, characters _-_:
+Error: Attribute `custom' was not used
+|}]
+
+(* The payload type's module must provide the converters needed by the derivers in use. *)
+
+module No_converters : sig
+  type t
+end = struct
+  type t = int
+end
+
+type t = (int[@sexp.custom: No_converters.t]) [@@deriving sexp_of]
+type t = (int[@sexp.custom: No_converters.t]) [@@deriving of_sexp]
+type t = (int[@sexp.custom: No_converters.t]) [@@deriving sexp_grammar]
+
+[%%expect
+  {|
+Line _, characters _-_:
+Error: Unbound value No_converters.sexp_of_t
+
+Line _, characters _-_:
+Error: Unbound value No_converters.t_of_sexp
+
+Line _, characters _-_:
+Error: Unbound value No_converters.t_sexp_grammar
 |}]

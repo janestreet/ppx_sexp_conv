@@ -17,7 +17,7 @@ Line _, characters _-_:
 Error: The function sexp_of_t has type int -> Sexp_type.Sexp.t
        It is applied to too many arguments
 Line _, characters _-_:
-  This extra argument is not expected.
+This extra argument is not expected.
 |}]
 
 

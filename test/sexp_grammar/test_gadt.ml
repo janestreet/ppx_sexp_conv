@@ -29,7 +29,7 @@ type nullary = Nullary : nullary [@@deriving sexp] [@@deriving_inline sexp_gramm
 
 let _ = fun (_ : nullary) -> ()
 
-let (nullary_sexp_grammar : nullary Sexplib0.Sexp_grammar.t) =
+let nullary_sexp_grammar : nullary Sexplib0.Sexp_grammar.t =
   { untyped =
       Variant
         { case_sensitivity = Case_sensitive_except_first_character

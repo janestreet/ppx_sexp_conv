@@ -66,6 +66,16 @@ let opaque =
   Attribute.declare "sexp.opaque" Attribute.Context.core_type Ast_pattern.(pstr nil) ()
 ;;
 
+(* Do not allow [@custom] because it is very likely to conflict with other derivers. Only
+   allow [@sexp.custom]. *)
+let custom =
+  Attribute.declare
+    "@sexp.custom"
+    Attribute.Context.core_type
+    Ast_pattern.(ptyp __)
+    (fun ty -> ty)
+;;
+
 let omit_nil =
   Attribute.declare
     "sexp.omit_nil"
@@ -258,3 +268,13 @@ let fail_if_allow_extra_field_td ~loc x =
         ~loc
         "ppx_sexp_conv: [@@@@allow_extra_fields] is only allowed on records.")
 ;;
+
+let addr_attribute_for_context context =
+  List.map Addr.all ~f:(fun addr ->
+    ( addr
+    , Attribute.declare (Addr.attr_name ~hum:false addr) context Ast_pattern.(pstr nil) ()
+    ))
+;;
+
+let addr_ld = addr_attribute_for_context Label_declaration
+let addr_type = addr_attribute_for_context Core_type

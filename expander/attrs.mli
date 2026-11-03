@@ -23,6 +23,7 @@ val list : (label_declaration, unit) Attribute.t
 val array : (label_declaration, unit) Attribute.t
 val bool : (label_declaration, unit) Attribute.t
 val opaque : (core_type, unit) Attribute.t
+val custom : (core_type, core_type) Attribute.t
 val phantom : (core_type, unit) Attribute.t
 val phantom_td : (type_declaration, string list) Attribute.t
 val list_variant : (constructor_declaration, unit) Attribute.t
@@ -43,3 +44,5 @@ val tags_type : (core_type, expression) Attribute.t
 val tags_ld : (label_declaration, expression) Attribute.t
 val tags_cd : (constructor_declaration, expression) Attribute.t
 val tags_poly : (row_field, expression) Attribute.t
+val addr_ld : (Addr.t * (label_declaration, unit) Attribute.t) list
+val addr_type : (Addr.t * (core_type, unit) Attribute.t) list

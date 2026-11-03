@@ -254,8 +254,6 @@ module Of_sexp_poly = struct
 end
 
 let sexp_of = Sexp_of.deriver
-let sexp_of__stack = Sexp_of.deriver_stack
-let sexp_of__local = Sexp_of.deriver_local
 let of_sexp = Of_sexp.deriver
 let of_sexp_poly = Of_sexp_poly.deriver
 let sexp_grammar = Sexp_grammar.deriver
@@ -312,24 +310,6 @@ let sexp =
     ~sig_type_decl:[ Sexp_in_sig.deriver ]
     ~str_exception:[ sexp_of ]
     ~sig_exception:[ sexp_of ]
-;;
-
-let sexp__local =
-  Deriving.add_alias
-    "sexp__local"
-    [ sexp_of__local; of_sexp ]
-    ~sig_type_decl:[ Sexp_in_sig.deriver_local ]
-    ~str_exception:[ sexp_of__local ]
-    ~sig_exception:[ sexp_of__local ]
-;;
-
-let sexp__stack =
-  Deriving.add_alias
-    "sexp__stack"
-    [ sexp_of__stack; of_sexp ]
-    ~sig_type_decl:[ Sexp_in_sig.deriver_stack ]
-    ~str_exception:[ sexp_of__stack ]
-    ~sig_exception:[ sexp_of__stack ]
 ;;
 
 let sexp_poly = Deriving.add_alias "sexp_poly" [ sexp_of; of_sexp_poly ]

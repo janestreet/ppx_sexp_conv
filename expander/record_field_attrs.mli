@@ -2,13 +2,20 @@ open! Stdppx
 open! Ppxlib
 
 module Generic : sig
+  type nullary = { must_type_check : unit Lifted.t }
+
+  type unary =
+    { param : core_type
+    ; must_type_check : unit Lifted.t
+    }
+
   type 'specific t =
     | Omit_nil
-    | Sexp_array of core_type
-    | Sexp_bool
-    | Sexp_list of core_type
-    | Sexp_option of core_type
-    | Sexp_or_null of core_type
+    | Sexp_array of unary
+    | Sexp_bool of nullary
+    | Sexp_list of unary
+    | Sexp_option of unary
+    | Sexp_or_null of unary
     | Specific of 'specific
 end
 
